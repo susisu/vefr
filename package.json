@@ -1,0 +1,26 @@
+{
+  "name": "@susisu/vefr",
+  "version": "0.0.0",
+  "private": true,
+  "repository": "https://github.com/susisu/vefr.git",
+  "author": "Susisu <susisu2413@yahoo.co.jp>",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint --fix .",
+    "lint:check": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:dev": "vitest dev"
+  },
+  "devDependencies": {
+    "@susisu/eslint-config": "^0.0.102",
+    "eslint": "^10.2.1",
+    "globals": "^17.5.0",
+    "prettier": "^3.8.3",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.4"
+  }
+}
