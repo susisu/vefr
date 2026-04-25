@@ -7,7 +7,7 @@
     "verbatimModuleSyntax": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom", "dom.iterable"],
     "strict": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
