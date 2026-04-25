@@ -130,8 +130,10 @@ function TrackRowBody({ track }: { track: Track }): ReactElement {
     <>
       <RenameField track={track} />
       <span className="track-kind">
-        <Chip tone={tone}>{kindLabel}</Chip>{" "}
-        <Chip tone={track.source === "auto" ? "default" : "default"}>{sourceLabel}</Chip>
+        <Chip tone={tone} width={72}>
+          {kindLabel}
+        </Chip>{" "}
+        <Chip width={72}>{sourceLabel}</Chip>
       </span>
       <button
         type="button"

@@ -10,6 +10,7 @@ import {
 } from "../../engine/types.js";
 import { Chip, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
+import { drumPadLabel } from "../drumPadLabel.js";
 import { trackTone } from "../trackTone.js";
 
 /** Number of steps shown in the drum grid: 32 sixteenth-notes spanning 2 bars. */
@@ -52,14 +53,17 @@ function ManualDrumEditorInner({
     <div className="editor" data-tone={tone}>
       <div className="editor-header">
         <span>
-          <Chip tone={tone}>DRUM</Chip> <Chip>MANUAL</Chip> {track.name}
+          <Chip tone={tone} width={72}>
+            DRUM
+          </Chip>{" "}
+          <Chip width={72}>MANUAL</Chip> {track.name}
         </span>
       </div>
       <div className="grid-stack">
         <div className="drum-grid">
           {DRUM_PADS.map((pad) => (
             <div key={pad} className="drum-row">
-              <span className="pad-label">{pad}</span>
+              <span className="pad-label">{drumPadLabel(pad)}</span>
               {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
                 const tick = i * STEP_TICKS;
                 const on = pattern.events.some(

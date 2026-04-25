@@ -16,11 +16,11 @@ export function App(): ReactElement {
   const tracks = useTracks();
   return (
     <main>
-      <h1>vefr</h1>
       <div className="top-row">
         <TransportPanel />
         <GlobalPanel />
         <ProjectMenu />
+        <h1 className="brand">vefr</h1>
       </div>
       <TrackList />
       <Panel title="Editors">

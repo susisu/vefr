@@ -52,6 +52,11 @@ body {
   font-family: var(--font-ui);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+  /* The brand mark in the top-row uses a negative `margin-right` to bridge
+   * main's padding; at exactly viewport = main max-width, that 0.22rem of
+   * (invisible) box overflow would otherwise summon a horizontal
+   * scrollbar. Clip it; nothing visible lives in that overflow region. */
+  overflow-x: clip;
 }
 
 main {
@@ -64,12 +69,13 @@ main {
   border-right: 1px solid var(--panel-rim);
 }
 
-/* Top row: Transport + Global + Project share one horizontal band. Each child
- * panel grows to fill its slot, but Transport / Project stay tight while
- * Global takes the slack since it has the most controls. */
+/* Top row: Transport + Global + Project + brand mark share one horizontal
+ * band. Global takes the 1fr slack so Project + Brand stay packed against
+ * the right edge — putting the slack on the brand's column instead would
+ * leave a big empty space to its left and make the brand look stranded. */
 .top-row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
   align-items: stretch;
@@ -95,16 +101,47 @@ main {
   margin-bottom: 0;
 }
 
-h1 {
+/* Brand mark stamped into the chassis. Letterpress-style depth: a bright
+ * highlight below the glyphs + a darker shadow above traces the depression's
+ * edges, so the letters read as cut into the surface. The base color is a
+ * mid-grey for legibility — engraved illusion rides on the shadows, not on
+ * the text being darker than the chassis. No frame; just the engraving.
+ *
+ * Position the *visible* glyph centre of "VEFR" midway between Project's
+ * right edge and the chassis's outer right edge. The brand sits in the
+ * trailing `auto` grid cell, so without intervention its box's right edge
+ * is flush with the top-row's right edge — i.e. one main-padding inside
+ * the chassis border. We push it right with a negative `margin-right` so
+ * the box bridges main's padding, then nudge an extra half letter-spacing
+ * to put the *visible* centre (not the geometric box centre — trailing
+ * letter-spacing lives inside the inline box and would otherwise pull the
+ * visible centre to the left) on the midpoint.
+ *
+ *   m = G − M − T
+ *     where  G = grid gap to Project        (0.5rem)
+ *            M = main's right padding        (0.85rem)
+ *            T = letter-spacing trail width  (0.45em ≈ 0.72rem here)
+ *
+ * The visible glyphs stay well inside the chassis; only the brand box's
+ * invisible right padding & letter-spacing trail extend past the border. */
+h1.brand {
+  margin: 0 calc(0.5rem - 0.85rem - 0.45em) 0 0;
+  padding: 0 0.4rem;
   font-family: var(--font-mono);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.3em;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.45em;
   text-transform: uppercase;
-  color: var(--fg-dim);
-  margin: 0 0 0.6rem;
-  padding: 0.25rem 0.5rem;
-  border-left: 3px solid var(--accent);
+  /* Letterpress: glyph fill matches the chassis surface so the only
+   * thing the eye sees is the brighter highlight tracing the bottom edge
+   * of the depression and the soft shadow above it. */
+  color: var(--chassis);
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3),
+    0 -1px 1px rgba(0, 0, 0, 0.85);
+  align-self: center;
+  user-select: none;
+  border: none;
 }
 
 h2 {
@@ -217,7 +254,7 @@ button.danger:hover {
 button.transport-play {
   border-color: var(--accent-dim);
   color: var(--accent);
-  min-width: 72px;
+  text-align: center;
 }
 button.transport-play.is-playing {
   background: linear-gradient(180deg, #1f3a1f 0%, #122112 100%);
@@ -543,7 +580,9 @@ input[type="range"]::-moz-range-thumb {
   background: transparent;
   border: 1px solid var(--inset-rim);
   padding: 0.2rem 0.45rem;
-  min-width: 54px;
+  /* Fixed width so the row geometry doesn't shift between MUTE (4ch) and
+   * ON (2ch) — same reasoning as the Play button. */
+  width: 80px;
   justify-content: center;
   font-size: 0.66rem;
 }
@@ -908,7 +947,7 @@ details[open] > .auto-phrases-summary::before {
 
 .auto-params {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 1rem;
   flex-wrap: wrap;
   padding-top: 0.5rem;
@@ -924,24 +963,56 @@ details[open] > .auto-phrases-summary::before {
   color: var(--fg-dim);
 }
 
+/* Layout-only: auto-seed-label + auto-seed-row stack vertically. The label
+ * + control rhythm mirrors the readout-select pattern and the knob's
+ * label-above-control layout, so SEED reads as just another labeled
+ * control in the auto-params row. */
 .auto-seed {
   display: inline-flex;
   flex-direction: column;
   align-items: stretch;
+  gap: 0.15rem;
+}
+/* Match the knob label tone — both sit in `.auto-params` so a shared
+ * label aesthetic keeps the row coherent. */
+.auto-seed-label {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--fg-dim);
-  letter-spacing: 0.14em;
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
+  color: var(--fg-faint);
+  line-height: 1;
+}
+.auto-seed-row {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0.3rem;
 }
 .auto-seed input {
   width: 96px;
-  margin-top: 0.2rem;
 }
+/* Override the icon button's fixed 28x28 sizing in this row so the button
+ * matches the input's natural height. The Seed `<input>` is taller than
+ * the readouts the button sits next to in Global, and a vertically
+ * undersized button there reads as misaligned. */
+.auto-seed-row .reroll-button {
+  height: auto;
+  align-self: stretch;
+}
+/* Square icon button for "regenerate this value". Used next to Key / Scale
+ * readouts in Global and next to the Seed input in the auto-track editor.
+ * Reset letter-spacing / text-transform so the arrow glyph isn't shifted. */
 .reroll-button {
-  font-size: 0.65rem;
-  padding: 0.3rem 0.6rem;
-  margin-top: 0.35rem;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ===== Project menu / drop zone ========================================= */
@@ -987,11 +1058,34 @@ details[open] > .auto-phrases-summary::before {
   align-items: center;
 }
 
+/* Play / Stop stacked vertically, both at the same width — keeps the
+ * Transport panel narrow (frees horizontal space for the Global panel
+ * next to it) and avoids the visual mismatch of a wide Play next to a
+ * narrow Stop. */
+.transport-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.transport-buttons > button {
+  width: 96px;
+  text-align: center;
+}
+
 .global-controls {
   display: flex;
   gap: 0.6rem;
   align-items: flex-end;
   flex-wrap: wrap;
+}
+
+/* Each readout (Key, Scale) and its iconic Reroll button form a logical
+ * unit — group them so when the row wraps, the button stays attached to
+ * the readout it acts on instead of getting orphaned. */
+.readout-group {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.3rem;
 }
 
 /*

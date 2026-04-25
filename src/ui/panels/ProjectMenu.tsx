@@ -105,7 +105,7 @@ export function ProjectMenu(): ReactElement {
         </label>
       </div>
       <div className="dropzone" onDrop={onDrop} onDragOver={onDragOver}>
-        Drop a vefr project file here
+        Drop a project file here
       </div>
       {errors && errors.length > 0 ?
         <ImportErrors errors={errors} />

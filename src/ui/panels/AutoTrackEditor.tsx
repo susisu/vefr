@@ -9,6 +9,7 @@ import {
 import type { DrumTemplate, RhythmTemplate } from "../../phrases/types.js";
 import { Chip, Knob, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
+import { drumPadLabel } from "../drumPadLabel.js";
 import { useActivePhraseId } from "../hooks.js";
 import { trackTone } from "../trackTone.js";
 
@@ -91,7 +92,10 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
     <div className="editor" data-tone={tone}>
       <div className="editor-header">
         <span>
-          <Chip tone={tone}>{kindLabel}</Chip> <Chip>AUTO</Chip> {track.name}
+          <Chip tone={tone} width={72}>
+            {kindLabel}
+          </Chip>{" "}
+          <Chip width={72}>AUTO</Chip> {track.name}
         </span>
       </div>
       <ActivePhrasePreview phrase={activePhrase} />
@@ -142,11 +146,19 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
           />
         ))}
         <label className="auto-seed">
-          Seed
-          <input type="number" value={track.seed} onChange={setSeed} step={1} />
-          <button type="button" className="reroll-button" onClick={rerollPhrase}>
-            Reroll
-          </button>
+          <span className="auto-seed-label">Seed</span>
+          <span className="auto-seed-row">
+            <input type="number" value={track.seed} onChange={setSeed} step={1} />
+            <button
+              type="button"
+              className="reroll-button"
+              title="Reroll phrase"
+              aria-label="Reroll phrase"
+              onClick={rerollPhrase}
+            >
+              ↻
+            </button>
+          </span>
         </label>
       </div>
     </div>
@@ -218,7 +230,7 @@ function DrumPreview({ template }: { template: DrumTemplate }): ReactElement {
         const row = template[pad];
         return (
           <div key={pad} className="auto-preview-row">
-            <span className="pad-label">{pad}</span>
+            <span className="pad-label">{drumPadLabel(pad)}</span>
             {Array.from({ length: PREVIEW_STEPS }, (_, i) => (
               <PreviewCell key={i} velocity={row?.[i] ?? 0} />
             ))}

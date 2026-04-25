@@ -73,7 +73,10 @@ function ManualPitchedEditorInner({
     <div className="editor" data-tone={tone}>
       <div className="editor-header">
         <span>
-          <Chip tone={tone}>{kindLabel}</Chip> <Chip>MANUAL</Chip> {track.name}
+          <Chip tone={tone} width={72}>
+            {kindLabel}
+          </Chip>{" "}
+          <Chip width={72}>MANUAL</Chip> {track.name}
         </span>
       </div>
       <div className="grid-stack">

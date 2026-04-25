@@ -26,38 +26,46 @@ export function GlobalPanel(): ReactElement {
   return (
     <Panel title="Global">
       <div className="global-controls">
-        <ReadoutSelect label="Key" value={String(global.key)} onChange={onKeyChange}>
-          {KEY_NAMES.map((name, i) => (
-            <option key={name} value={i}>
-              {name}
-            </option>
-          ))}
-        </ReadoutSelect>
-        <button
-          type="button"
-          className="reroll-button"
-          onClick={() => {
-            api.global.rerollKey();
-          }}
-        >
-          Reroll
-        </button>
-        <ReadoutSelect label="Scale" value={global.scale} onChange={onScaleChange}>
-          {SCALE_IDS.map((id) => (
-            <option key={id} value={id}>
-              {id}
-            </option>
-          ))}
-        </ReadoutSelect>
-        <button
-          type="button"
-          className="reroll-button"
-          onClick={() => {
-            api.global.rerollScale();
-          }}
-        >
-          Reroll
-        </button>
+        <div className="readout-group">
+          <ReadoutSelect label="Key" value={String(global.key)} onChange={onKeyChange}>
+            {KEY_NAMES.map((name, i) => (
+              <option key={name} value={i}>
+                {name}
+              </option>
+            ))}
+          </ReadoutSelect>
+          <button
+            type="button"
+            className="reroll-button"
+            title="Reroll key"
+            aria-label="Reroll key"
+            onClick={() => {
+              api.global.rerollKey();
+            }}
+          >
+            ↻
+          </button>
+        </div>
+        <div className="readout-group">
+          <ReadoutSelect label="Scale" value={global.scale} onChange={onScaleChange}>
+            {SCALE_IDS.map((id) => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
+          </ReadoutSelect>
+          <button
+            type="button"
+            className="reroll-button"
+            title="Reroll scale"
+            aria-label="Reroll scale"
+            onClick={() => {
+              api.global.rerollScale();
+            }}
+          >
+            ↻
+          </button>
+        </div>
       </div>
     </Panel>
   );

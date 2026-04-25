@@ -39,16 +39,18 @@ export function TransportPanel(): ReactElement {
       }
     >
       <div className="transport-controls">
-        <button
-          type="button"
-          className={`transport-play ${transport.playing ? "is-playing" : ""}`}
-          onClick={onPlayPause}
-        >
-          {transport.playing ? "Pause" : "Play"}
-        </button>
-        <button type="button" onClick={onStop}>
-          Stop
-        </button>
+        <div className="transport-buttons">
+          <button
+            type="button"
+            className={`transport-play ${transport.playing ? "is-playing" : ""}`}
+            onClick={onPlayPause}
+          >
+            {transport.playing ? "Pause" : "Play"}
+          </button>
+          <button type="button" className="transport-stop" onClick={onStop}>
+            Stop
+          </button>
+        </div>
         <Knob
           label="BPM"
           value={transport.bpm}
