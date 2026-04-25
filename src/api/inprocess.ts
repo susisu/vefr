@@ -1,14 +1,25 @@
 import { TrackError, type Engine, type TrackPatch } from "../engine/engine.js";
 import type {
+  DrumHit,
   GlobalMusicState,
+  Note,
+  Pattern,
   Tick,
   Track,
   TrackRef,
   TransportState,
 } from "../engine/types.js";
+import {
+  parseProject,
+  type ImportError,
+  type PresetResolver,
+  type Project,
+  CURRENT_SCHEMA_VERSION,
+} from "./project.js";
 import type {
   ControlApi,
   GlobalApi,
+  ProjectApi,
   Result,
   TrackApi,
   TrackUpdateError,
@@ -32,11 +43,13 @@ export class InProcessControlApi implements ControlApi {
   readonly transport: TransportApi;
   readonly global: GlobalApi;
   readonly track: TrackApi;
+  readonly project: ProjectApi;
 
-  constructor(engine: Engine, hooks: InProcessHooks = {}) {
+  constructor(engine: Engine, presetExists: PresetResolver, hooks: InProcessHooks = {}) {
     this.transport = makeTransportApi(engine, hooks);
     this.global = makeGlobalApi(engine);
     this.track = makeTrackApi(engine);
+    this.project = makeProjectApi(engine, presetExists);
   }
 }
 
@@ -82,21 +95,103 @@ function makeTrackApi(engine: Engine): TrackApi {
   return {
     list: (): readonly Track[] => engine.getTracks(),
     findByName: (name: string): Track | undefined => engine.findTrackByName(name),
-    update: (ref: TrackRef, patch: TrackPatch): Result<void, TrackUpdateError> => {
-      try {
-        engine.updateTrack(ref, patch);
-        return { ok: true, value: undefined };
-      } catch (e) {
-        if (e instanceof TrackError) {
-          if (e.code === "not-found") {
-            return { ok: false, error: { code: "not-found", ref } };
-          }
-          return { ok: false, error: { code: "name-conflict", name: patch.name ?? "" } };
-        }
-        throw e;
-      }
-    },
+    update: (ref: TrackRef, patch: TrackPatch): Result<void, TrackUpdateError> =>
+      runTrackOp(() => engine.updateTrack(ref, patch), ref, () => patch.name ?? ""),
+    setDrumPattern: (ref: TrackRef, pattern: Pattern<DrumHit>): Result<void, TrackUpdateError> =>
+      runTrackOp(() => engine.setDrumPattern(ref, pattern), ref, () => ""),
+    setPitchedPattern: (
+      ref: TrackRef,
+      pattern: Pattern<Note>,
+    ): Result<void, TrackUpdateError> =>
+      runTrackOp(() => engine.setPitchedPattern(ref, pattern), ref, () => ""),
     onChange: (handler: (tracks: readonly Track[]) => void): (() => void) =>
       engine.tracksChanged.on(handler),
+  };
+}
+
+/** Build the project sub-API: snapshot, load, import, and a coarse change feed. */
+function makeProjectApi(engine: Engine, presetExists: PresetResolver): ProjectApi {
+  return {
+    snapshot: (): Project => snapshotProject(engine),
+    load: (project: Project): void => {
+      engine.loadState({
+        transport: {
+          playing: false,
+          bpm: project.transport.bpm,
+          signature: project.transport.signature,
+          positionTick: 0,
+        },
+        global: project.global,
+        tracks: project.tracks,
+      });
+    },
+    importJson: (raw: unknown): Result<void, ImportError[]> => {
+      const parsed = parseProject(raw, presetExists);
+      if (!parsed.ok) return { ok: false, error: parsed.errors };
+      engine.loadState({
+        transport: {
+          playing: false,
+          bpm: parsed.value.transport.bpm,
+          signature: parsed.value.transport.signature,
+          positionTick: 0,
+        },
+        global: parsed.value.global,
+        tracks: parsed.value.tracks,
+      });
+      return { ok: true, value: undefined };
+    },
+    onAnyChange: (handler: () => void): (() => void) => {
+      const offT = engine.transportChanged.on(() => {
+        handler();
+      });
+      const offG = engine.globalChanged.on(() => {
+        handler();
+      });
+      const offTracks = engine.tracksChanged.on(() => {
+        handler();
+      });
+      return () => {
+        offT();
+        offG();
+        offTracks();
+      };
+    },
+  };
+}
+
+/** Convert a TrackError-throwing engine call into a {@link Result}. */
+function runTrackOp(
+  op: () => void,
+  ref: TrackRef,
+  conflictName: () => string,
+): Result<void, TrackUpdateError> {
+  try {
+    op();
+    return { ok: true, value: undefined };
+  } catch (e) {
+    if (e instanceof TrackError) {
+      switch (e.code) {
+        case "not-found":
+          return { ok: false, error: { code: "not-found", ref } };
+        case "name-conflict":
+          return { ok: false, error: { code: "name-conflict", name: conflictName() } };
+        case "kind-mismatch":
+          return { ok: false, error: { code: "kind-mismatch", trackName: e.message } };
+        default:
+          return { ok: false, error: { code: "not-found", ref } };
+      }
+    }
+    throw e;
+  }
+}
+
+/** Build a portable {@link Project} from the engine's current state. */
+function snapshotProject(engine: Engine): Project {
+  const transport = engine.getTransport();
+  return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    transport: { bpm: transport.bpm, signature: transport.signature },
+    global: engine.getGlobal(),
+    tracks: engine.getTracks(),
   };
 }

@@ -1,16 +1,21 @@
 import type { TrackPatch } from "../engine/engine.js";
 import type {
+  DrumHit,
   GlobalMusicState,
+  Note,
+  Pattern,
   Tick,
   Track,
   TrackRef,
   TransportState,
 } from "../engine/types.js";
+import type { ImportError, Project } from "./project.js";
 
 /** Reason a {@link ControlApi.track.update} call failed. */
 export type TrackUpdateError =
   | { code: "not-found"; ref: TrackRef }
-  | { code: "name-conflict"; name: string };
+  | { code: "name-conflict"; name: string }
+  | { code: "kind-mismatch"; trackName: string };
 
 /** Standard railway-oriented result: either success value or recoverable error. */
 export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
@@ -27,6 +32,7 @@ export interface ControlApi {
   transport: TransportApi;
   global: GlobalApi;
   track: TrackApi;
+  project: ProjectApi;
 }
 
 /** Transport sub-API: play/pause/stop/seek + tempo + state subscription. */
@@ -64,11 +70,25 @@ export interface TrackApi {
   /** Resolve a track by its (unique) human-readable name. */
   findByName: (name: string) => Track | undefined;
   /**
-   * Patch a track. Failures (missing target, name conflict) are returned as
-   * `{ ok: false, error }` rather than thrown, so callers (UI / external API)
-   * can surface them without try/catch.
+   * Patch a track's basic attributes (name / mute / volume).
    */
   update: (ref: TrackRef, patch: TrackPatch) => Result<void, TrackUpdateError>;
+  /** Replace the manual pattern of a drum track. */
+  setDrumPattern: (ref: TrackRef, pattern: Pattern<DrumHit>) => Result<void, TrackUpdateError>;
+  /** Replace the manual pattern of a pitched track. */
+  setPitchedPattern: (ref: TrackRef, pattern: Pattern<Note>) => Result<void, TrackUpdateError>;
   /** Subscribe to track-list changes. */
   onChange: (handler: (tracks: readonly Track[]) => void) => () => void;
+}
+
+/** Project sub-API: snapshot, replace, and listen for changes. */
+export interface ProjectApi {
+  /** Build a {@link Project} snapshot of the current engine state. */
+  snapshot: () => Project;
+  /** Apply a parsed {@link Project} to the engine, replacing all state. */
+  load: (project: Project) => void;
+  /** Parse and apply a JSON-shaped blob; surfaces import errors. */
+  importJson: (raw: unknown) => Result<void, ImportError[]>;
+  /** Subscribe to any state change that should trigger an autosave. */
+  onAnyChange: (handler: () => void) => () => void;
 }

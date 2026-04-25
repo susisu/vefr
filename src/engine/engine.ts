@@ -1,10 +1,14 @@
+import { degreeToMidi } from "../shared/music.js";
 import { Signal } from "../shared/signal.js";
 import type { Clock } from "./clock.js";
 import { Scheduler } from "./scheduler.js";
 import type { SoundOutput } from "./sound-port.js";
 import {
   TICKS_PER_BEAT,
+  type DrumHit,
   type GlobalMusicState,
+  type Note,
+  type Pattern,
   type Tick,
   type Track,
   type TrackRef,
@@ -29,7 +33,7 @@ export type TrackPatch = {
 export class TrackError extends Error {
   constructor(
     message: string,
-    readonly code: "not-found" | "name-conflict",
+    readonly code: "not-found" | "name-conflict" | "kind-mismatch",
   ) {
     super(message);
     this.name = "TrackError";
@@ -82,6 +86,21 @@ export class Engine {
   /** Snapshot of the current track list (immutable). */
   getTracks(): readonly Track[] {
     return this.tracks;
+  }
+
+  /**
+   * Replace every piece of engine state in one shot. Used by project
+   * import / autosave restore.
+   */
+  loadState(initial: EngineInitial): void {
+    this.scheduler.stop();
+    this.scheduler.seek(0);
+    this.transport = { ...initial.transport, playing: false };
+    this.global = { ...initial.global };
+    this.tracks = [...initial.tracks];
+    this.transportChanged.emit(this.transport);
+    this.globalChanged.emit(this.global);
+    this.tracksChanged.emit(this.tracks);
   }
 
   /** Begin playback from the saved play head position. */
@@ -170,6 +189,38 @@ export class Engine {
   }
 
   /**
+   * Replace the manual pattern of a drum track. Throws if the resolved track
+   * is not a manual drum track.
+   */
+  setDrumPattern(ref: TrackRef, pattern: Pattern<DrumHit>): void {
+    const target = this.resolveTrack(ref);
+    if (!target) {
+      throw new TrackError(`track not found: ${JSON.stringify(ref)}`, "not-found");
+    }
+    if (target.kind !== "drum" || target.source !== "manual") {
+      throw new TrackError(`expected manual drum track: ${target.name}`, "kind-mismatch");
+    }
+    this.tracks = this.tracks.map((t) => (t.id === target.id ? { ...target, pattern } : t));
+    this.tracksChanged.emit(this.tracks);
+  }
+
+  /**
+   * Replace the manual pattern of a pitched track. Throws if the resolved
+   * track is not a manual pitched track.
+   */
+  setPitchedPattern(ref: TrackRef, pattern: Pattern<Note>): void {
+    const target = this.resolveTrack(ref);
+    if (!target) {
+      throw new TrackError(`track not found: ${JSON.stringify(ref)}`, "not-found");
+    }
+    if (target.kind !== "pitched" || target.source !== "manual") {
+      throw new TrackError(`expected manual pitched track: ${target.name}`, "kind-mismatch");
+    }
+    this.tracks = this.tracks.map((t) => (t.id === target.id ? { ...target, pattern } : t));
+    this.tracksChanged.emit(this.tracks);
+  }
+
+  /**
    * Resolve every track's events for `tick` and forward them to the SoundOutput.
    * Manual tracks index their pattern modulo `lengthTicks`. Auto handling is
    * added in M3.
@@ -190,22 +241,13 @@ export class Engine {
         for (const ev of track.pattern.events) {
           if (ev.tick !== localTick) continue;
           const note = ev.payload;
-          const midi = degreeToMidi(this.global.key, note.degree, note.octave);
+          const midi = degreeToMidi(this.global, note.degree, note.octave);
           const lengthSec = (note.lengthTicks * 60) / (this.transport.bpm * TICKS_PER_BEAT);
           this.output.playNote(time, midi, lengthSec, note.velocity, track.role, gain);
         }
       }
     }
   }
-}
-
-/**
- * Placeholder pitch resolver. Treats `degree` as a raw semitone offset and
- * `octave` as octaves above middle C. The full scale-aware resolver lives
- * in `src/shared/music.ts` and replaces this in M2.
- */
-function degreeToMidi(key: number, degree: number, octave: number): number {
-  return 60 + key + degree + octave * 12;
 }
 
 /** Apply only the present fields of a {@link TrackPatch} to a track. */
