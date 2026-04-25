@@ -36,16 +36,19 @@ export type Preset = DrumPreset | PitchedPreset;
 /**
  * Default {@link AutoParams} for a given pitched role. Tuned conservatively
  * so a fresh boot reads as steady BGM rather than constantly mutating noise:
- * microVariance is low, mid/macro rotation is slow.
+ * microVariance is low, mid/macro rotation is slow. Bass defaults to
+ * `lockVariant: true` because moving bass lines distract from the groove;
+ * melody defaults to `false` so phrases still evolve over time.
  */
 export const DEFAULT_AUTO_PARAMS_PITCHED: Record<PitchedRole, AutoParams> = {
-  melody: { microVariance: 0.2, midPeriodBars: 4, macroPeriodBars: 16 },
-  bass: { microVariance: 0.1, midPeriodBars: 8, macroPeriodBars: 32 },
+  melody: { microVariance: 0.2, midPeriodBars: 4, macroPeriodBars: 16, lockVariant: false },
+  bass: { microVariance: 0.1, midPeriodBars: 8, macroPeriodBars: 32, lockVariant: true },
 };
 
-/** Default {@link AutoParams} for an auto drum track. */
+/** Default {@link AutoParams} for an auto drum track. Locked by default. */
 export const DEFAULT_AUTO_PARAMS_DRUM: AutoParams = {
   microVariance: 0.12,
   midPeriodBars: 4,
   macroPeriodBars: 32,
+  lockVariant: true,
 };

@@ -223,3 +223,18 @@ input[type="range"] {
   border-radius: 3px;
   padding: 0.2rem 0.4rem;
 }
+
+.reroll-button {
+  font-size: 0.8em;
+  padding: 0.2rem 0.6rem;
+  margin-left: 0.4rem;
+}
+
+.auto-lock {
+  font-size: 0.85em;
+  color: #bbb;
+}
+
+.auto-param.disabled {
+  opacity: 0.5;
+}

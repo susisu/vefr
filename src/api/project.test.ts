@@ -63,7 +63,7 @@ function makeAutoBassTrack(): PitchedTrack {
     source: "auto",
     presetIds: ["bass.preset"],
     seed: 42,
-    params: { microVariance: 0.2, midPeriodBars: 4, macroPeriodBars: 16 },
+    params: { microVariance: 0.2, midPeriodBars: 4, macroPeriodBars: 16, lockVariant: false },
   };
 }
 

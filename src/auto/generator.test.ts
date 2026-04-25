@@ -86,7 +86,7 @@ describe("generateDrumBar", () => {
       bar: 0,
       seed: 42,
       presets: [kickSnarePreset],
-      params: { microVariance: 0.5, midPeriodBars: 1, macroPeriodBars: 1 },
+      params: { microVariance: 0.5, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
     };
     const a = generateDrumBar(args);
     const b = generateDrumBar(args);
@@ -98,13 +98,13 @@ describe("generateDrumBar", () => {
       bar: 0,
       seed: 7,
       presets: [kickPreset],
-      params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1 },
+      params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
     });
     expect(out.events).toEqual(fourBeatKick().events);
   });
 
   it("rotates presets at the macro boundary", () => {
-    const params = { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 2 };
+    const params = { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 2, lockVariant: false };
     const presets = [kickPreset, hatPreset];
     const pads = new Set<string>();
     for (let bar = 0; bar < 16; bar++) {
@@ -118,7 +118,7 @@ describe("generateDrumBar", () => {
   });
 
   it("rotates variants at the mid boundary", () => {
-    const params = { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 64 };
+    const params = { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 64, lockVariant: false };
     const pads = new Set<string>();
     for (let bar = 0; bar < 16; bar++) {
       const out = generateDrumBar({ bar, seed: 13, presets: [kickSnarePreset], params });
@@ -133,7 +133,7 @@ describe("generateDrumBar", () => {
       bar: 0,
       seed: 0,
       presets: [],
-      params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1 },
+      params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
     });
     expect(out.events).toEqual([]);
   });
@@ -145,7 +145,7 @@ describe("generatePitchedBar", () => {
       bar: 3,
       seed: 99,
       presets: [rootPreset],
-      params: { microVariance: 0.4, midPeriodBars: 2, macroPeriodBars: 4 },
+      params: { microVariance: 0.4, midPeriodBars: 2, macroPeriodBars: 4, lockVariant: false },
     };
     expect(generatePitchedBar(args)).toEqual(generatePitchedBar(args));
   });
@@ -157,7 +157,7 @@ describe("generatePitchedBar", () => {
         bar,
         seed: 21,
         presets: [rootPreset],
-        params: { microVariance: 1, midPeriodBars: 1, macroPeriodBars: 1 },
+        params: { microVariance: 1, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
       });
       for (const ev of out.events) octaves.add(ev.payload.octave);
     }
@@ -171,7 +171,7 @@ describe("generatePitchedBar", () => {
         bar,
         seed: 21,
         presets: [rootPreset],
-        params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1 },
+        params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
       });
       for (const ev of out.events) expect(ev.payload.octave).toBe(0);
     }

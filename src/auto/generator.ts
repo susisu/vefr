@@ -63,22 +63,30 @@ function emptyBar<T>(): MaterializedBar<T> {
 type MaterializedBar<T> = { lengthTicks: Tick; events: ReadonlyArray<PatternEvent<T>> };
 
 /**
- * Run the macro and mid tiers to land on a single variant. Both tiers are
- * deterministic in `(seed, bar)` so the same arguments always produce the
- * same {@link Pattern}.
+ * Run the macro and mid tiers to land on a single variant.
+ *
+ * Both tiers are deterministic in `(seed, bar)` so the same arguments always
+ * produce the same {@link Pattern}. When `params.lockVariant` is true the
+ * macro/mid period is effectively infinite — slot stays at 0 — but the seed
+ * still drives which preset and variant the track is locked to. That way a
+ * caller can "re-roll" the locked pattern by handing over a fresh seed.
  */
 function pickVariant<P extends { variants: ReadonlyArray<Pattern<T>> }, T>(input: {
   bar: number;
   seed: number;
   presets: readonly P[];
-  params: { macroPeriodBars: number; midPeriodBars: number };
+  params: { macroPeriodBars: number; midPeriodBars: number; lockVariant: boolean };
 }): Pattern<T> | undefined {
   if (input.presets.length === 0) return undefined;
-  const macroSlot = Math.floor(input.bar / Math.max(1, input.params.macroPeriodBars));
+  const macroSlot = input.params.lockVariant
+    ? 0
+    : Math.floor(input.bar / Math.max(1, input.params.macroPeriodBars));
   const macroIdx = pickIndex(input.seed, TAG_MACRO, macroSlot, input.presets.length);
   const preset = input.presets[macroIdx];
   if (!preset || preset.variants.length === 0) return undefined;
-  const midSlot = Math.floor(input.bar / Math.max(1, input.params.midPeriodBars));
+  const midSlot = input.params.lockVariant
+    ? 0
+    : Math.floor(input.bar / Math.max(1, input.params.midPeriodBars));
   const midIdx = pickIndex(input.seed, TAG_MID, midSlot, preset.variants.length);
   return preset.variants[midIdx];
 }

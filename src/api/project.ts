@@ -67,8 +67,28 @@ const ScaleIdSchema = v.picklist([
   "minor",
   "dorian",
   "mixolydian",
+  "lydian",
+  "phrygian",
+  "harmonic-minor",
+  "melodic-minor",
+  "phrygian-dominant",
+  "hijaz",
+  "hungarian",
   "minor-pentatonic",
   "major-pentatonic",
+  "blues",
+  "blues-major",
+  "hirajoshi",
+  "iwato",
+  "insen",
+  "yo",
+  "kumoi",
+  "chinese",
+  "wholetone",
+  "diminished",
+  "minor7",
+  "major7",
+  "dorian-hex",
 ]);
 
 /** Engine-recognised drum pads. */
@@ -117,6 +137,7 @@ const AutoParamsSchema = v.object({
   microVariance: NormalizedNumber,
   midPeriodBars: PositiveInteger,
   macroPeriodBars: PositiveInteger,
+  lockVariant: v.boolean(),
 });
 
 /** Fields shared by every track. */

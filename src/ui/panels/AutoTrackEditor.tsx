@@ -1,7 +1,6 @@
 import type { ChangeEvent, ReactElement } from "react";
 import {
   refById,
-  type AutoParams,
   type DrumTrack,
   type PitchedTrack,
   type PresetId,
@@ -14,9 +13,12 @@ import {
 } from "../../presets/index.js";
 import { useControlApi } from "../context.js";
 
-/** Tunable param-slider description used to render each AutoParams field. */
+/** AutoParams fields that map to a numeric slider. */
+type NumericParamKey = "microVariance" | "midPeriodBars" | "macroPeriodBars";
+
+/** Tunable slider description used to render each numeric AutoParams field. */
 type ParamSpec = {
-  key: keyof AutoParams;
+  key: NumericParamKey;
   label: string;
   min: number;
   max: number;
@@ -52,10 +54,17 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
     api.track.setAutoConfig(refById(track.id), { presetIds: [...next] });
   };
 
-  /** Patch a single AutoParams field. */
-  const setParam = (key: keyof AutoParams, value: number): void => {
+  /** Patch a single numeric AutoParams field. */
+  const setParam = (key: NumericParamKey, value: number): void => {
     api.track.setAutoConfig(refById(track.id), {
       params: { ...track.params, [key]: value },
+    });
+  };
+
+  /** Toggle the lockVariant flag — freeze rotation across macro + mid tiers. */
+  const toggleLock = (): void => {
+    api.track.setAutoConfig(refById(track.id), {
+      params: { ...track.params, lockVariant: !track.params.lockVariant },
     });
   };
 
@@ -66,6 +75,11 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
     const n = Number(value);
     if (!Number.isFinite(n)) return;
     api.track.setAutoConfig(refById(track.id), { seed: Math.trunc(n) });
+  };
+
+  /** Re-roll the seed via the API so the (locked or rotating) variant changes. */
+  const rerollSeed = (): void => {
+    api.track.rerollSeed(refById(track.id));
   };
 
   return (
@@ -92,11 +106,20 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
             onChange={(v) => {
               setParam(spec.key, v);
             }}
+            // Macro/mid period sliders are no-ops while the variant is locked.
+            disabled={track.params.lockVariant && spec.key !== "microVariance"}
           />
         ))}
         <label className="auto-seed">
           Seed
           <input type="number" value={track.seed} onChange={setSeed} step={1} />
+          <button type="button" className="reroll-button" onClick={rerollSeed}>
+            Reroll
+          </button>
+        </label>
+        <label className="auto-lock">
+          <input type="checkbox" checked={track.params.lockVariant} onChange={toggleLock} />
+          Lock variant (no rotation)
         </label>
       </div>
     </div>
@@ -130,13 +153,15 @@ function ParamSlider({
   spec,
   value,
   onChange,
+  disabled,
 }: {
   spec: ParamSpec;
   value: number;
   onChange: (v: number) => void;
+  disabled: boolean;
 }): ReactElement {
   return (
-    <label className="auto-param">
+    <label className={`auto-param ${disabled ? "disabled" : ""}`}>
       <span>
         {spec.label}: {value}
       </span>
@@ -146,6 +171,7 @@ function ParamSlider({
         max={spec.max}
         step={spec.step}
         value={value}
+        disabled={disabled}
         onChange={(e) => {
           onChange(Number(e.target.value));
         }}

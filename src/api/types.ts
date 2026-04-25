@@ -53,12 +53,16 @@ export interface TransportApi {
   onChange: (handler: (state: TransportState) => void) => () => void;
 }
 
-/** Global sub-API: key/scale read+write. */
+/** Global sub-API: key/scale read+write, plus convenience random-pick helpers. */
 export interface GlobalApi {
   /** Latest snapshot of {@link GlobalMusicState}. */
   get: () => GlobalMusicState;
   /** Patch the global musical context (key/scale). Absent fields are left alone. */
   set: (partial: Partial<GlobalMusicState>) => void;
+  /** Pick a fresh random tonic key 0..11. */
+  rerollKey: () => void;
+  /** Pick a fresh random scale from the engine's scale list. */
+  rerollScale: () => void;
   /** Subscribe to global-state changes. */
   onChange: (handler: (state: GlobalMusicState) => void) => () => void;
 }
@@ -79,6 +83,13 @@ export interface TrackApi {
   setPitchedPattern: (ref: TrackRef, pattern: Pattern<Note>) => Result<void, TrackUpdateError>;
   /** Patch the auto-generation config (presetIds / seed / params) of an auto track. */
   setAutoConfig: (ref: TrackRef, patch: AutoConfigPatch) => Result<void, TrackUpdateError>;
+  /**
+   * Replace an auto track's seed with a fresh random integer. With
+   * `lockVariant` on this picks a new locked variant; with it off it just
+   * shuffles where the rotation cycle lands. Manual tracks return
+   * kind-mismatch (they have no seed).
+   */
+  rerollSeed: (ref: TrackRef) => Result<void, TrackUpdateError>;
   /** Subscribe to track-list changes. */
   onChange: (handler: (tracks: readonly Track[]) => void) => () => void;
 }

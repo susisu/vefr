@@ -9,6 +9,7 @@ import type {
   TrackRef,
   TransportState,
 } from "../engine/types.js";
+import { SCALE_IDS } from "../shared/music.js";
 import {
   parseProject,
   type ImportError,
@@ -85,6 +86,16 @@ function makeGlobalApi(engine: Engine): GlobalApi {
     set: (partial: Partial<GlobalMusicState>): void => {
       engine.setGlobal(partial);
     },
+    rerollKey: (): void => {
+      engine.setGlobal({ key: Math.floor(Math.random() * 12) });
+    },
+    rerollScale: (): void => {
+      const idx = Math.floor(Math.random() * SCALE_IDS.length);
+      const scale = SCALE_IDS[idx];
+      if (scale !== undefined) {
+        engine.setGlobal({ scale });
+      }
+    },
     onChange: (handler: (state: GlobalMusicState) => void): (() => void) =>
       engine.globalChanged.on(handler),
   };
@@ -106,9 +117,16 @@ function makeTrackApi(engine: Engine): TrackApi {
       runTrackOp(() => engine.setPitchedPattern(ref, pattern), ref, () => ""),
     setAutoConfig: (ref: TrackRef, patch: AutoConfigPatch): Result<void, TrackUpdateError> =>
       runTrackOp(() => engine.setAutoConfig(ref, patch), ref, () => ""),
+    rerollSeed: (ref: TrackRef): Result<void, TrackUpdateError> =>
+      runTrackOp(() => engine.setAutoConfig(ref, { seed: randomSeed() }), ref, () => ""),
     onChange: (handler: (tracks: readonly Track[]) => void): (() => void) =>
       engine.tracksChanged.on(handler),
   };
+}
+
+/** Generate a fresh non-negative 31-bit integer for use as an auto-track seed. */
+function randomSeed(): number {
+  return Math.floor(Math.random() * 0x7fffffff);
 }
 
 /** Build the project sub-API: snapshot, load, import, and a coarse change feed. */

@@ -37,6 +37,15 @@ export function GlobalPanel(): ReactElement {
           </select>
           <span>{keyName(global.key)}</span>
         </label>
+        <button
+          type="button"
+          className="reroll-button"
+          onClick={() => {
+            api.global.rerollKey();
+          }}
+        >
+          Reroll
+        </button>
         <label>
           Scale
           <select value={global.scale} onChange={onScaleChange}>
@@ -47,6 +56,15 @@ export function GlobalPanel(): ReactElement {
             ))}
           </select>
         </label>
+        <button
+          type="button"
+          className="reroll-button"
+          onClick={() => {
+            api.global.rerollScale();
+          }}
+        >
+          Reroll
+        </button>
       </div>
     </section>
   );

@@ -113,7 +113,7 @@ describe("Engine", () => {
       source: "auto",
       presetIds: [preset.id],
       seed: 0,
-      params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1 },
+      params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
     };
     const initial: EngineInitial = {
       transport: {

@@ -24,14 +24,41 @@ export type TransportState = {
   positionTick: Tick;
 };
 
-/** Built-in scales recognised by the engine; indices added in {@link shared/music}. */
+/** Built-in scales recognised by the engine; intervals defined in {@link shared/music}. */
 export type ScaleId =
+  // Diatonic
   | "major"
   | "minor"
+  // Modal
   | "dorian"
   | "mixolydian"
+  | "lydian"
+  | "phrygian"
+  // Exotic / Eastern
+  | "harmonic-minor"
+  | "melodic-minor"
+  | "phrygian-dominant"
+  | "hijaz"
+  | "hungarian"
+  // Pentatonic / blues
   | "minor-pentatonic"
-  | "major-pentatonic";
+  | "major-pentatonic"
+  | "blues"
+  | "blues-major"
+  // Japanese / Asian pentatonic
+  | "hirajoshi"
+  | "iwato"
+  | "insen"
+  | "yo"
+  | "kumoi"
+  | "chinese"
+  // Symmetric
+  | "wholetone"
+  | "diminished"
+  // Chord-tone "scales" (sparse — degrees wrap fast)
+  | "minor7"
+  | "major7"
+  | "dorian-hex";
 
 /** Global musical context shared by every pitched track. */
 export type GlobalMusicState = {
@@ -77,8 +104,7 @@ export type Pattern<T> = {
 };
 
 /**
- * Tunables for an auto track. Same shape for all roles; defaults vary by role
- * (drums/bass slow, melody fast — see PHASE1.md §7).
+ * Tunables for an auto track. Same shape for all roles; defaults vary by role.
  */
 export type AutoParams = {
   /** Strength of per-event jitter (octave shift / velocity / drop probability). 0..1. */
@@ -87,6 +113,14 @@ export type AutoParams = {
   midPeriodBars: number;
   /** How often the preset itself rotates among `presetIds`. */
   macroPeriodBars: number;
+  /**
+   * When true, both the macro (preset) and mid (variant) tiers freeze at slot
+   * 0 — the auto track keeps playing the same materialized pattern until the
+   * user changes the track config. Useful for drums and bass where rotation
+   * tends to distract from a steady groove; melody usually wants this off so
+   * phrases evolve over time.
+   */
+  lockVariant: boolean;
 };
 
 /** Fields common to every track. */
