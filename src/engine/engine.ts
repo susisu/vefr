@@ -1,3 +1,6 @@
+import { generateDrumBar, generatePitchedBar } from "../auto/generator.js";
+import type { DrumBar, PitchedBar } from "../auto/types.js";
+import type { DrumPreset, PitchedPreset, Preset } from "../presets/types.js";
 import { degreeToMidi } from "../shared/music.js";
 import { Signal } from "../shared/signal.js";
 import type { Clock } from "./clock.js";
@@ -5,12 +8,15 @@ import { Scheduler } from "./scheduler.js";
 import type { SoundOutput } from "./sound-port.js";
 import {
   TICKS_PER_BEAT,
+  type AutoParams,
   type DrumHit,
   type GlobalMusicState,
   type Note,
   type Pattern,
+  type PresetId,
   type Tick,
   type Track,
+  type TrackId,
   type TrackRef,
   type TransportState,
 } from "./types.js";
@@ -28,6 +34,16 @@ export type TrackPatch = {
   mute?: boolean;
   volume?: number;
 };
+
+/** Mutation applied via {@link Engine.setAutoConfig}; absent fields are left alone. */
+export type AutoConfigPatch = {
+  presetIds?: readonly PresetId[];
+  seed?: number;
+  params?: AutoParams;
+};
+
+/** Resolves preset ids into the data the generator needs. */
+export type PresetLookup = (id: PresetId) => Preset | undefined;
 
 /** Engine-level error for track operations the caller can recover from. */
 export class TrackError extends Error {
@@ -52,6 +68,13 @@ export class Engine {
   private tracks: readonly Track[];
   private readonly scheduler: Scheduler;
   private readonly output: SoundOutput;
+  private readonly resolvePreset: PresetLookup;
+  /**
+   * Cache of materialized auto-track bars keyed by track id. The dispatcher
+   * fires per tick; without this the 3-tier generator would re-run several
+   * hundred times per second per track.
+   */
+  private readonly autoCache: Map<TrackId, AutoCacheEntry> = new Map();
 
   /** Fires whenever transport state (playing / bpm / position / signature) changes. */
   readonly transportChanged: Signal<TransportState> = new Signal();
@@ -60,11 +83,15 @@ export class Engine {
   /** Fires whenever the track list or any track's fields change. */
   readonly tracksChanged: Signal<readonly Track[]> = new Signal();
 
-  constructor(initial: EngineInitial, opts: { clock: Clock; output: SoundOutput }) {
+  constructor(
+    initial: EngineInitial,
+    opts: { clock: Clock; output: SoundOutput; resolvePreset: PresetLookup },
+  ) {
     this.transport = { ...initial.transport, playing: false };
     this.global = { ...initial.global };
     this.tracks = [...initial.tracks];
     this.output = opts.output;
+    this.resolvePreset = opts.resolvePreset;
     this.scheduler = new Scheduler({
       clock: opts.clock,
       onTick: (tick, time) => {
@@ -98,6 +125,7 @@ export class Engine {
     this.transport = { ...initial.transport, playing: false };
     this.global = { ...initial.global };
     this.tracks = [...initial.tracks];
+    this.autoCache.clear();
     this.transportChanged.emit(this.transport);
     this.globalChanged.emit(this.global);
     this.tracksChanged.emit(this.tracks);
@@ -221,34 +249,150 @@ export class Engine {
   }
 
   /**
+   * Patch the auto-generation config of an auto track. Throws if the resolved
+   * track is manual. Invalidates the materialized-bar cache for that track so
+   * the next bar reflects the change immediately.
+   */
+  setAutoConfig(ref: TrackRef, patch: AutoConfigPatch): void {
+    const target = this.resolveTrack(ref);
+    if (!target) {
+      throw new TrackError(`track not found: ${JSON.stringify(ref)}`, "not-found");
+    }
+    if (target.source !== "auto") {
+      throw new TrackError(`expected auto track: ${target.name}`, "kind-mismatch");
+    }
+    const next: Track = {
+      ...target,
+      presetIds: patch.presetIds ?? target.presetIds,
+      seed: patch.seed ?? target.seed,
+      params: patch.params ?? target.params,
+    };
+    this.tracks = this.tracks.map((t) => (t.id === target.id ? next : t));
+    this.autoCache.delete(target.id);
+    this.tracksChanged.emit(this.tracks);
+  }
+
+  /**
    * Resolve every track's events for `tick` and forward them to the SoundOutput.
-   * Manual tracks index their pattern modulo `lengthTicks`. Auto handling is
-   * added in M3.
+   * Manual tracks index their pattern modulo `lengthTicks`; auto tracks use
+   * a per-bar materialized cache produced by the {@link generator} module.
    */
   private dispatch(tick: Tick, time: number): void {
+    const barLength = TICKS_PER_BEAT * this.transport.signature.numerator;
+    const bar = Math.floor(tick / barLength);
+    const localTick = tick - bar * barLength;
     for (const track of this.tracks) {
       if (track.mute) continue;
       const gain = track.volume;
-      if (track.source !== "manual") continue;
-      const len = track.pattern.lengthTicks;
-      const localTick = ((tick % len) + len) % len;
-      if (track.kind === "drum") {
-        for (const ev of track.pattern.events) {
-          if (ev.tick !== localTick) continue;
-          this.output.playDrum(time, ev.payload, gain);
-        }
+      if (track.source === "manual") {
+        this.dispatchManual(track, tick, time, gain);
       } else {
-        for (const ev of track.pattern.events) {
-          if (ev.tick !== localTick) continue;
-          const note = ev.payload;
-          const midi = degreeToMidi(this.global, note.degree, note.octave);
-          const lengthSec = (note.lengthTicks * 60) / (this.transport.bpm * TICKS_PER_BEAT);
-          this.output.playNote(time, midi, lengthSec, note.velocity, track.role, gain);
-        }
+        this.dispatchAuto(track, bar, localTick, time, gain);
       }
     }
   }
+
+  /** Fire matching events from a manual track's pattern at the given tick. */
+  private dispatchManual(
+    track: Extract<Track, { source: "manual" }>,
+    tick: Tick,
+    time: number,
+    gain: number,
+  ): void {
+    const len = track.pattern.lengthTicks;
+    const localTick = ((tick % len) + len) % len;
+    if (track.kind === "drum") {
+      for (const ev of track.pattern.events) {
+        if (ev.tick !== localTick) continue;
+        this.output.playDrum(time, ev.payload, gain);
+      }
+    } else {
+      for (const ev of track.pattern.events) {
+        if (ev.tick !== localTick) continue;
+        this.playPitched(ev.payload, time, gain, track.role);
+      }
+    }
+  }
+
+  /**
+   * Fire matching events from an auto track's materialized bar at the given
+   * intra-bar tick. Re-materializes when crossing a bar boundary (or when the
+   * track config has changed since the last cache write).
+   */
+  private dispatchAuto(
+    track: Extract<Track, { source: "auto" }>,
+    bar: number,
+    localTick: Tick,
+    time: number,
+    gain: number,
+  ): void {
+    const cached = this.autoCache.get(track.id);
+    const entry = cached && cached.bar === bar ? cached : this.materializeAuto(track, bar);
+    if (entry !== cached) this.autoCache.set(track.id, entry);
+    if (entry.lengthTicks <= 0 || localTick >= entry.lengthTicks) return;
+    if (entry.kind === "drum") {
+      for (const ev of entry.events) {
+        if (ev.tick !== localTick) continue;
+        this.output.playDrum(time, ev.payload, gain);
+      }
+    } else if (track.kind === "pitched") {
+      for (const ev of entry.events) {
+        if (ev.tick !== localTick) continue;
+        this.playPitched(ev.payload, time, gain, track.role);
+      }
+    }
+  }
+
+  /** Run the appropriate generator and wrap the result in a cache entry. */
+  private materializeAuto(
+    track: Extract<Track, { source: "auto" }>,
+    bar: number,
+  ): AutoCacheEntry {
+    if (track.kind === "drum") {
+      const presets = this.collectDrumPresets(track.presetIds);
+      const out = generateDrumBar({ bar, seed: track.seed, presets, params: track.params });
+      return { kind: "drum", bar, lengthTicks: out.lengthTicks, events: out.events };
+    }
+    const presets = this.collectPitchedPresets(track.presetIds, track.role);
+    const out = generatePitchedBar({ bar, seed: track.seed, presets, params: track.params });
+    return { kind: "pitched", bar, lengthTicks: out.lengthTicks, events: out.events };
+  }
+
+  /** Resolve preset ids into drum-preset objects, dropping unknown / wrong-kind ids. */
+  private collectDrumPresets(ids: readonly PresetId[]): readonly DrumPreset[] {
+    const out: DrumPreset[] = [];
+    for (const id of ids) {
+      const p = this.resolvePreset(id);
+      if (p && p.kind === "drum") out.push(p);
+    }
+    return out;
+  }
+
+  /** Resolve preset ids into pitched-preset objects matching `role`. */
+  private collectPitchedPresets(
+    ids: readonly PresetId[],
+    role: "melody" | "bass",
+  ): readonly PitchedPreset[] {
+    const out: PitchedPreset[] = [];
+    for (const id of ids) {
+      const p = this.resolvePreset(id);
+      if (p && p.kind === "pitched" && p.role === role) out.push(p);
+    }
+    return out;
+  }
+
+  /** Common pitched-event dispatch path shared by manual and auto tracks. */
+  private playPitched(note: Note, time: number, gain: number, role: "melody" | "bass"): void {
+    const midi = degreeToMidi(this.global, note.degree, note.octave);
+    const lengthSec = (note.lengthTicks * 60) / (this.transport.bpm * TICKS_PER_BEAT);
+    this.output.playNote(time, midi, lengthSec, note.velocity, role, gain);
+  }
 }
+
+/** Cached materialized bar (drum or pitched) plus the bar index it was produced for. */
+type AutoCacheEntry =
+  | { kind: "drum"; bar: number; lengthTicks: Tick; events: DrumBar["events"] }
+  | { kind: "pitched"; bar: number; lengthTicks: Tick; events: PitchedBar["events"] };
 
 /** Apply only the present fields of a {@link TrackPatch} to a track. */
 function applyPatch(t: Track, patch: TrackPatch): Track {

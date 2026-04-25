@@ -1,4 +1,4 @@
-import { TrackError, type Engine, type TrackPatch } from "../engine/engine.js";
+import { TrackError, type AutoConfigPatch, type Engine, type TrackPatch } from "../engine/engine.js";
 import type {
   DrumHit,
   GlobalMusicState,
@@ -104,6 +104,8 @@ function makeTrackApi(engine: Engine): TrackApi {
       pattern: Pattern<Note>,
     ): Result<void, TrackUpdateError> =>
       runTrackOp(() => engine.setPitchedPattern(ref, pattern), ref, () => ""),
+    setAutoConfig: (ref: TrackRef, patch: AutoConfigPatch): Result<void, TrackUpdateError> =>
+      runTrackOp(() => engine.setAutoConfig(ref, patch), ref, () => ""),
     onChange: (handler: (tracks: readonly Track[]) => void): (() => void) =>
       engine.tracksChanged.on(handler),
   };

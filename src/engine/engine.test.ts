@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
+import type { DrumPreset, Preset } from "../presets/types.js";
 import { RecordingSoundOutput } from "../sound/mock.js";
 import { TestClock } from "./clock.js";
 import { Engine } from "./engine.js";
 import type { EngineInitial } from "./engine.js";
-import { refById, TICKS_PER_BEAT, type DrumTrack } from "./types.js";
+import { refById, TICKS_PER_BEAT, type DrumTrack, type PresetId } from "./types.js";
 
 function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine: Engine } {
   const clock = new TestClock();
@@ -30,7 +31,11 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
     global: { key: 0, scale: "minor" },
     tracks: [drumTrack],
   };
-  return { clock, output, engine: new Engine(initial, { clock, output }) };
+  return {
+    clock,
+    output,
+    engine: new Engine(initial, { clock, output, resolvePreset: () => undefined }),
+  };
 }
 
 describe("Engine", () => {
@@ -81,6 +86,51 @@ describe("Engine", () => {
       engine.updateTrack(refById("drum-1"), { name: "Manual Drum 1" });
     }).not.toThrow();
     // The only track exists; renaming it to its own name is a no-op success.
+  });
+
+  it("dispatches auto-drum events from a single-variant preset", () => {
+    const clock = new TestClock();
+    const output = new RecordingSoundOutput();
+    const preset: DrumPreset = {
+      id: "p.kick",
+      kind: "drum",
+      name: "Kick",
+      variants: [
+        {
+          lengthTicks: 4 * TICKS_PER_BEAT,
+          events: [{ tick: 0, payload: { pad: "kick", velocity: 1 } }],
+        },
+      ],
+    };
+    const resolvePreset = (id: PresetId): Preset | undefined =>
+      id === preset.id ? preset : undefined;
+    const drum: DrumTrack = {
+      id: "auto-1",
+      name: "Auto Drum",
+      kind: "drum",
+      mute: false,
+      volume: 1,
+      source: "auto",
+      presetIds: [preset.id],
+      seed: 0,
+      params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1 },
+    };
+    const initial: EngineInitial = {
+      transport: {
+        playing: false,
+        bpm: 60,
+        signature: { numerator: 4, denominator: 4 },
+        positionTick: 0,
+      },
+      global: { key: 0, scale: "minor" },
+      tracks: [drum],
+    };
+    const engine = new Engine(initial, { clock, output, resolvePreset });
+    engine.play();
+    clock.advanceTo(8.5); // 60 BPM, 4-beat bar = 4s/bar; ~2 bars + slack
+    const drums = output.events.filter((e) => e.kind === "drum");
+    // One kick per bar (tick 0); within 8.5s at 60 BPM expect 2 hits.
+    expect(drums.length).toBeGreaterThanOrEqual(2);
   });
 
   it("resumes from paused position", () => {

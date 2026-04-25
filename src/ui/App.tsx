@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 import type { Track } from "../engine/types.js";
 import { useTracks } from "./hooks.js";
+import { AutoTrackEditor } from "./panels/AutoTrackEditor.js";
 import { GlobalPanel } from "./panels/GlobalPanel.js";
 import { ManualDrumEditor } from "./panels/ManualDrumEditor.js";
 import { ManualPitchedEditor } from "./panels/ManualPitchedEditor.js";
@@ -29,9 +30,11 @@ export function App(): ReactElement {
   );
 }
 
-/** Pick the editor matching a track's kind/source; auto tracks gain an editor in M3. */
+/** Pick the editor matching a track's kind/source. */
 function TrackEditor({ track }: { track: Track }): ReactElement | null {
-  if (track.source !== "manual") return null;
+  if (track.source === "auto") {
+    return <AutoTrackEditor track={track} />;
+  }
   if (track.kind === "drum") {
     return <ManualDrumEditor track={track} />;
   }

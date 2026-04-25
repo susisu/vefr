@@ -1,4 +1,4 @@
-import type { TrackPatch } from "../engine/engine.js";
+import type { AutoConfigPatch, TrackPatch } from "../engine/engine.js";
 import type {
   DrumHit,
   GlobalMusicState,
@@ -77,6 +77,8 @@ export interface TrackApi {
   setDrumPattern: (ref: TrackRef, pattern: Pattern<DrumHit>) => Result<void, TrackUpdateError>;
   /** Replace the manual pattern of a pitched track. */
   setPitchedPattern: (ref: TrackRef, pattern: Pattern<Note>) => Result<void, TrackUpdateError>;
+  /** Patch the auto-generation config (presetIds / seed / params) of an auto track. */
+  setAutoConfig: (ref: TrackRef, patch: AutoConfigPatch) => Result<void, TrackUpdateError>;
   /** Subscribe to track-list changes. */
   onChange: (handler: (tracks: readonly Track[]) => void) => () => void;
 }

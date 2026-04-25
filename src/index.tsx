@@ -11,7 +11,12 @@ import {
   type Pattern,
   type PitchedTrack,
 } from "./engine/types.js";
-import { drumFourOnTheFloor, getPreset } from "./presets/index.js";
+import {
+  defaultAutoParamsFor,
+  drumFourOnTheFloor,
+  getPreset,
+  presetExists,
+} from "./presets/index.js";
 import { WebAudioSoundOutput } from "./sound/webaudio.js";
 import { App } from "./ui/App.js";
 import { ControlApiProvider } from "./ui/context.js";
@@ -42,7 +47,7 @@ function defaultBassPattern(): Pattern<Note> {
 
 /** Default engine state used on every fresh boot when no autosave is found. */
 function defaultInitial(): EngineInitial {
-  const drum: DrumTrack = {
+  const manualDrum: DrumTrack = {
     id: "manual-drum-1",
     name: "Manual Drum 1",
     kind: "drum",
@@ -51,7 +56,7 @@ function defaultInitial(): EngineInitial {
     source: "manual",
     pattern: drumFourOnTheFloor,
   };
-  const melody: PitchedTrack = {
+  const manualMelody: PitchedTrack = {
     id: "manual-melody-1",
     name: "Manual Melody 1",
     kind: "pitched",
@@ -61,7 +66,7 @@ function defaultInitial(): EngineInitial {
     source: "manual",
     pattern: defaultMelodyPattern(),
   };
-  const bass: PitchedTrack = {
+  const manualBass: PitchedTrack = {
     id: "manual-bass-1",
     name: "Manual Bass 1",
     kind: "pitched",
@@ -71,6 +76,43 @@ function defaultInitial(): EngineInitial {
     source: "manual",
     pattern: defaultBassPattern(),
   };
+  // Auto tracks: muted by default so a fresh boot stays minimal — the user
+  // toggles them on from the track list when they want generated parts.
+  const autoDrum: DrumTrack = {
+    id: "auto-drum-1",
+    name: "Auto Drum 1",
+    kind: "drum",
+    mute: true,
+    volume: 0.9,
+    source: "auto",
+    presetIds: ["drum.basic.four-on-the-floor"],
+    seed: 1,
+    params: defaultAutoParamsFor("drum"),
+  };
+  const autoMelody: PitchedTrack = {
+    id: "auto-melody-1",
+    name: "Auto Melody 1",
+    kind: "pitched",
+    role: "melody",
+    mute: true,
+    volume: 0.7,
+    source: "auto",
+    presetIds: ["melody.basic.arpeggio"],
+    seed: 2,
+    params: defaultAutoParamsFor("pitched", "melody"),
+  };
+  const autoBass: PitchedTrack = {
+    id: "auto-bass-1",
+    name: "Auto Bass 1",
+    kind: "pitched",
+    role: "bass",
+    mute: true,
+    volume: 0.85,
+    source: "auto",
+    presetIds: ["bass.basic.root"],
+    seed: 3,
+    params: defaultAutoParamsFor("pitched", "bass"),
+  };
   return {
     transport: {
       playing: false,
@@ -79,7 +121,7 @@ function defaultInitial(): EngineInitial {
       positionTick: 0,
     },
     global: { key: 0, scale: "minor" },
-    tracks: [drum, melody, bass],
+    tracks: [manualDrum, manualMelody, manualBass, autoDrum, autoMelody, autoBass],
   };
 }
 
@@ -93,12 +135,16 @@ async function bootstrap(): Promise<void> {
   const audioCtx = new AudioContext();
   const clock = new WebAudioClock(audioCtx);
   const output = new WebAudioSoundOutput(audioCtx);
-  const engine = new Engine(defaultInitial(), { clock, output });
+  const engine = new Engine(defaultInitial(), {
+    clock,
+    output,
+    resolvePreset: getPreset,
+  });
   // AudioContext starts suspended in most browsers; resume it on the first
   // user gesture (the Play button click) per the autoplay policy.
   const api = new InProcessControlApi(
     engine,
-    (id) => getPreset(id) !== undefined,
+    presetExists,
     {
       beforePlay: () => {
         if (audioCtx.state === "suspended") {
