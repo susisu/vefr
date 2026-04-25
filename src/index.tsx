@@ -9,81 +9,31 @@ import {
 } from "./api/storage.js";
 import { WebAudioClock } from "./engine/clock.js";
 import { Engine, type EngineInitial } from "./engine/engine.js";
-import {
-  TICKS_PER_BEAT,
-  type DrumHit,
-  type DrumTrack,
-  type Note,
-  type Pattern,
-  type PitchedTrack,
-} from "./engine/types.js";
+import type { DrumTrack, PitchedTrack } from "./engine/types.js";
 import { defaultAutoParamsFor, getPhrase, phraseExists } from "./phrases/index.js";
 import { WebAudioSoundOutput } from "./sound/webaudio.js";
 import { App } from "./ui/App.js";
 import { ControlApiProvider } from "./ui/context.js";
 
-/** Phrase length used by every default pattern: 2 musical bars in 4/4. */
-const DEFAULT_PHRASE_TICKS = 8 * TICKS_PER_BEAT;
-
-/** Empty drum pattern at the standard phrase length — manual tracks start blank. */
-function emptyDrumPattern(): Pattern<DrumHit> {
-  return { lengthTicks: DEFAULT_PHRASE_TICKS, events: [] };
-}
-
-/** Empty pitched pattern at the standard phrase length — manual tracks start blank. */
-function emptyPitchedPattern(): Pattern<Note> {
-  return { lengthTicks: DEFAULT_PHRASE_TICKS, events: [] };
-}
-
 /**
  * Default engine state used on every fresh boot when no autosave is found.
- * Manual tracks ship empty + muted (the user fills them in via the editor);
- * auto tracks ship enabled with calm presets so a brand-new session is
- * immediately playable as BGM.
+ * Ships only auto tracks with calm presets so a brand-new session is
+ * immediately playable as BGM; the user adds manual tracks on demand.
  */
 function defaultInitial(): EngineInitial {
-  const manualDrum: DrumTrack = {
-    id: "manual-drum-1",
-    name: "Manual Drum 1",
-    kind: "drum",
-    mute: true,
-    volume: 0.9,
-    source: "manual",
-    pattern: emptyDrumPattern(),
-  };
-  const manualMelody: PitchedTrack = {
-    id: "manual-melody-1",
-    name: "Manual Melody 1",
-    kind: "pitched",
-    role: "melody",
-    mute: true,
-    volume: 0.7,
-    source: "manual",
-    pattern: emptyPitchedPattern(),
-  };
-  const manualBass: PitchedTrack = {
-    id: "manual-bass-1",
-    name: "Manual Bass 1",
-    kind: "pitched",
-    role: "bass",
-    mute: true,
-    volume: 0.8,
-    source: "manual",
-    pattern: emptyPitchedPattern(),
-  };
   const autoDrum: DrumTrack = {
     id: "auto-drum-1",
     name: "Auto Drum 1",
     kind: "drum",
     mute: false,
-    volume: 0.85,
+    volume: 0.8,
     source: "auto",
     phraseIds: [
       "drum.techno.four.offbeat",
       "drum.techno.four.driving",
       "drum.lofi.boom-bap.classic",
     ],
-    seed: 1,
+    seed: 0,
     params: defaultAutoParamsFor("drum"),
   };
   const autoMelody: PitchedTrack = {
@@ -92,7 +42,7 @@ function defaultInitial(): EngineInitial {
     kind: "pitched",
     role: "melody",
     mute: false,
-    volume: 0.55,
+    volume: 0.8,
     source: "auto",
     phraseIds: [
       "melody.sparse.classic",
@@ -100,7 +50,7 @@ function defaultInitial(): EngineInitial {
       "melody.sparse.pointillist",
       "melody.pair.classic",
     ],
-    seed: 2,
+    seed: 0,
     params: defaultAutoParamsFor("pitched", "melody"),
   };
   const autoBass: PitchedTrack = {
@@ -109,10 +59,10 @@ function defaultInitial(): EngineInitial {
     kind: "pitched",
     role: "bass",
     mute: false,
-    volume: 0.75,
+    volume: 0.8,
     source: "auto",
     phraseIds: ["bass.pulse.quarter", "bass.pulse.eighth"],
-    seed: 3,
+    seed: 0,
     params: defaultAutoParamsFor("pitched", "bass"),
   };
   return {
@@ -123,7 +73,7 @@ function defaultInitial(): EngineInitial {
       positionTick: 0,
     },
     global: { key: 0, scale: "minor" },
-    tracks: [manualDrum, manualMelody, manualBass, autoDrum, autoMelody, autoBass],
+    tracks: [autoDrum, autoBass, autoMelody],
   };
 }
 

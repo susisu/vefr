@@ -275,12 +275,12 @@ type ChoiceKey =
 
 /** Dropdown options laid out in the order they're shown. */
 const CHOICES: ReadonlyArray<{ key: ChoiceKey; label: string }> = [
-  { key: "drum-manual", label: "Manual Drum" },
   { key: "drum-auto", label: "Auto Drum" },
-  { key: "melody-manual", label: "Manual Melody" },
-  { key: "melody-auto", label: "Auto Melody" },
-  { key: "bass-manual", label: "Manual Bass" },
   { key: "bass-auto", label: "Auto Bass" },
+  { key: "melody-auto", label: "Auto Melody" },
+  { key: "drum-manual", label: "Manual Drum" },
+  { key: "bass-manual", label: "Manual Bass" },
+  { key: "melody-manual", label: "Manual Melody" },
 ];
 
 /** Set form of {@link CHOICES} used to validate untrusted strings (`<select>` value). */
@@ -315,7 +315,7 @@ function decodeChoice(key: ChoiceKey): TrackKindChoice {
 /** Footer row that adds a new track of the chosen kind/role/source. */
 function AddTrackRow(): ReactElement {
   const api = useControlApi();
-  const [choice, setChoice] = useState<ChoiceKey>("drum-manual");
+  const [choice, setChoice] = useState<ChoiceKey>("drum-auto");
 
   /** Build the input from the dropdown choice and forward to the API. */
   const onAdd = (): void => {
