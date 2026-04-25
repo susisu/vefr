@@ -1,6 +1,11 @@
-import { generateDrumBar, generatePitchedBar } from "../auto/generator.js";
+import {
+  generateBassBar,
+  generateDrumBar,
+  generateMelodyBar,
+  pickAutoPhraseIndex,
+} from "../auto/generator.js";
 import type { DrumBar, PitchedBar } from "../auto/types.js";
-import type { Phrase } from "../phrases/types.js";
+import type { DrumPhrase, Phrase, PitchedPhrase } from "../phrases/types.js";
 import { degreeToMidi } from "../shared/music.js";
 import { Signal } from "../shared/signal.js";
 import type { Clock } from "./clock.js";
@@ -89,6 +94,14 @@ export class Engine {
   readonly globalChanged: Signal<GlobalMusicState> = new Signal();
   /** Fires whenever the track list or any track's fields change. */
   readonly tracksChanged: Signal<readonly Track[]> = new Signal();
+  /**
+   * Fires when the macro-tier phrase pick changes for an auto track. The
+   * UI uses this to refresh "now playing" displays without polling.
+   */
+  readonly activePhraseChanged: Signal<{
+    trackId: TrackId;
+    phraseId: PhraseId | undefined;
+  }> = new Signal();
 
   constructor(
     initial: EngineInitial,
@@ -356,8 +369,8 @@ export class Engine {
   /**
    * Run the appropriate generator and wrap the result in a cache entry.
    * The generator is called once per phrase boundary with the bar index at
-   * the start of that phrase. Phrase patterns are pre-resolved from the
-   * track's `phraseIds` and passed in directly.
+   * the start of that phrase. Phrases are pre-resolved so we can also report
+   * which phrase id was picked for the macro slot (used by the UI preview).
    */
   private materializeAuto(
     track: Extract<Track, { source: "auto" }>,
@@ -365,36 +378,80 @@ export class Engine {
   ): AutoCacheEntry {
     const bar = phrase * PHRASE_BARS;
     if (track.kind === "drum") {
-      const patterns = this.collectDrumPatterns(track.phraseIds);
-      const out = generateDrumBar({ bar, seed: track.seed, patterns, params: track.params });
-      return { kind: "drum", phrase, lengthTicks: out.lengthTicks, events: out.events };
+      const phrases = this.collectDrumPhrases(track.phraseIds);
+      const phraseId = pickActivePhraseId(phrases, track.seed, bar, track.params.macroPeriodBars);
+      this.maybeEmitPhraseChange(track.id, phraseId);
+      const templates = phrases.map((p) => p.template);
+      const out = generateDrumBar({ bar, seed: track.seed, templates, params: track.params });
+      return {
+        kind: "drum",
+        phrase,
+        phraseId,
+        lengthTicks: out.lengthTicks,
+        events: out.events,
+      };
     }
-    const patterns = this.collectPitchedPatterns(track.phraseIds, track.role);
-    const out = generatePitchedBar({ bar, seed: track.seed, patterns, params: track.params });
-    return { kind: "pitched", phrase, lengthTicks: out.lengthTicks, events: out.events };
+    const phrases = this.collectPitchedPhrases(track.phraseIds, track.role);
+    const phraseId = pickActivePhraseId(phrases, track.seed, bar, track.params.macroPeriodBars);
+    this.maybeEmitPhraseChange(track.id, phraseId);
+    const templates = phrases.map((p) => p.template);
+    const args = { bar, seed: track.seed, templates, params: track.params };
+    const out = track.role === "melody" ? generateMelodyBar(args) : generateBassBar(args);
+    return {
+      kind: "pitched",
+      phrase,
+      phraseId,
+      lengthTicks: out.lengthTicks,
+      events: out.events,
+    };
   }
 
-  /** Resolve phrase ids into drum patterns, dropping unknown / wrong-kind ids. */
-  private collectDrumPatterns(ids: readonly PhraseId[]): ReadonlyArray<Pattern<DrumHit>> {
-    const out: Array<Pattern<DrumHit>> = [];
+  /** Emit `activePhraseChanged` only when the new id differs from the cached one. */
+  private maybeEmitPhraseChange(trackId: TrackId, phraseId: PhraseId | undefined): void {
+    const prev = this.autoCache.get(trackId)?.phraseId;
+    if (prev !== phraseId) this.activePhraseChanged.emit({ trackId, phraseId });
+  }
+
+  /** Resolve phrase ids into drum phrase records, dropping unknown / wrong-kind ids. */
+  private collectDrumPhrases(ids: readonly PhraseId[]): readonly DrumPhrase[] {
+    const out: DrumPhrase[] = [];
     for (const id of ids) {
       const p = this.resolvePhrase(id);
-      if (p?.kind === "drum") out.push(p.pattern);
+      if (p?.kind === "drum") out.push(p);
     }
     return out;
   }
 
-  /** Resolve phrase ids into pitched patterns matching `role`. */
-  private collectPitchedPatterns(
+  /** Resolve phrase ids into pitched phrase records matching `role`. */
+  private collectPitchedPhrases(
     ids: readonly PhraseId[],
     role: "melody" | "bass",
-  ): ReadonlyArray<Pattern<Note>> {
-    const out: Array<Pattern<Note>> = [];
+  ): readonly PitchedPhrase[] {
+    const out: PitchedPhrase[] = [];
     for (const id of ids) {
       const p = this.resolvePhrase(id);
-      if (p?.kind === "pitched" && p.role === role) out.push(p.pattern);
+      if (p?.kind === "pitched" && p.role === role) out.push(p);
     }
     return out;
+  }
+
+  /**
+   * Compute which phrase id is selected for `ref`'s auto track at the
+   * current transport position. Pure derivation — no caching — so the UI
+   * can call this from `getSnapshot` with stable results.
+   */
+  getActiveAutoPhraseId(ref: TrackRef): PhraseId | undefined {
+    const track = this.resolveTrack(ref);
+    if (!track || track.source !== "auto") return undefined;
+    const barLength = TICKS_PER_BEAT * this.transport.signature.numerator;
+    const phraseTicks = barLength * PHRASE_BARS;
+    const phrase = Math.floor(this.transport.positionTick / phraseTicks);
+    const bar = phrase * PHRASE_BARS;
+    const phrases =
+      track.kind === "drum"
+        ? this.collectDrumPhrases(track.phraseIds)
+        : this.collectPitchedPhrases(track.phraseIds, track.role);
+    return pickActivePhraseId(phrases, track.seed, bar, track.params.macroPeriodBars);
   }
 
   /** Common pitched-event dispatch path shared by manual and auto tracks. */
@@ -409,10 +466,39 @@ export class Engine {
  * Cached materialized phrase (drum or pitched) plus the phrase index it was
  * produced for. `phrase` indexes whole {@link PHRASE_BARS}-bar chunks of
  * playback, so a single materialization covers `PHRASE_BARS` musical bars.
+ * `phraseId` is the macro-tier picked phrase used for that chunk; the UI
+ * reads it via {@link Engine.getActiveAutoPhraseId} to render the preview.
  */
 type AutoCacheEntry =
-  | { kind: "drum"; phrase: number; lengthTicks: Tick; events: DrumBar["events"] }
-  | { kind: "pitched"; phrase: number; lengthTicks: Tick; events: PitchedBar["events"] };
+  | {
+      kind: "drum";
+      phrase: number;
+      phraseId: PhraseId | undefined;
+      lengthTicks: Tick;
+      events: DrumBar["events"];
+    }
+  | {
+      kind: "pitched";
+      phrase: number;
+      phraseId: PhraseId | undefined;
+      lengthTicks: Tick;
+      events: PitchedBar["events"];
+    };
+
+/**
+ * Run the macro-tier picker and translate the index back into a phrase id.
+ * Returns `undefined` when the candidate list is empty.
+ */
+function pickActivePhraseId(
+  phrases: ReadonlyArray<{ id: PhraseId }>,
+  seed: number,
+  bar: number,
+  macroPeriodBars: number,
+): PhraseId | undefined {
+  if (phrases.length === 0) return undefined;
+  const idx = pickAutoPhraseIndex(seed, bar, macroPeriodBars, phrases.length);
+  return phrases[idx]?.id;
+}
 
 /** Apply only the present fields of a {@link TrackPatch} to a track. */
 function applyPatch(t: Track, patch: TrackPatch): Track {

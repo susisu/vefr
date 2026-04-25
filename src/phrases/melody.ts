@@ -1,729 +1,209 @@
-import { TICKS_PER_BEAT, type Note, type Pattern, type PatternEvent } from "../engine/types.js";
-import type { PitchedPhrase } from "./types.js";
+import type { PitchedPhrase, RhythmTemplate } from "./types.js";
 
-/** Phrase length used by every melody phrase: 2 musical bars in 4/4 = 32 sixteenths. */
-const PHRASE = 8 * TICKS_PER_BEAT;
-/** One musical beat in ticks. */
-const BEAT = TICKS_PER_BEAT;
-/** One eighth-note in ticks. */
-const EIGHTH = TICKS_PER_BEAT / 2;
-/** One sixteenth-note in ticks (the editor's step granularity). */
-const SIXTEENTH = TICKS_PER_BEAT / 4;
+/** Standard hit velocity for melody phrases — walk dynamics carry the variety. */
+const V = 0.75;
+/** Softer velocity used for ghost / answer notes to highlight the main hits. */
+const G = 0.6;
 
-/** Options accepted by the `(step, degree)` pattern builders. */
-type FromOpts = {
-  /** Per-event `lengthTicks` field. WebAudio voice currently ignores this. */
-  noteLength?: number;
-  velocity?: number;
-  /** Default register; melody role lives one octave above the tonic. */
-  octave?: number;
-};
+// --- Pulse ------------------------------------------------------------------
 
-/**
- * Build a {@link Pattern} from `(tick, degree)` pairs.
- * `tick` is in ticks-from-phrase-start; phrase length is fixed at {@link PHRASE}.
- */
-function fromTicks(
-  pairs: ReadonlyArray<readonly [number, number]>,
-  options: FromOpts = {},
-): Pattern<Note> {
-  const noteLength = options.noteLength ?? EIGHTH;
-  const velocity = options.velocity ?? 0.75;
-  const octave = options.octave ?? 1;
-  return {
-    lengthTicks: PHRASE,
-    events: pairs.map(
-      ([tick, degree]): PatternEvent<Note> => ({
-        tick,
-        payload: { degree, octave, velocity, lengthTicks: noteLength },
-      }),
-    ),
-  };
-}
+/** 8 quarter-note hits — the simplest steady pulse. */
+const melodyQuarter: RhythmTemplate = [
+  V, 0, 0, 0,  V, 0, 0, 0,  V, 0, 0, 0,  V, 0, 0, 0,
+  V, 0, 0, 0,  V, 0, 0, 0,  V, 0, 0, 0,  V, 0, 0, 0,
+];
 
-/**
- * Build a pattern from `(stepIdx, degree)` pairs where `stepIdx` is a
- * sixteenth-note index 0..31 over the 2-bar phrase.
- */
-function fromSteps(
-  pairs: ReadonlyArray<readonly [number, number]>,
-  options: FromOpts = {},
-): Pattern<Note> {
-  return fromTicks(
-    pairs.map(([step, degree]): readonly [number, number] => [step * SIXTEENTH, degree]),
-    options,
-  );
-}
+/** 16 eighth-note stream — continuous flowing 8ths. */
+const melodyEighth: RhythmTemplate = [
+  V, 0, V, 0,  V, 0, V, 0,  V, 0, V, 0,  V, 0, V, 0,
+  V, 0, V, 0,  V, 0, V, 0,  V, 0, V, 0,  V, 0, V, 0,
+];
 
-// --- Off-beat Stab phrases ---------------------------------------------------
+// --- Stab (syncopated hits aligned to off-beats) ----------------------------
 
-const melodyOffbeatStab: Pattern<Note> = fromTicks([
-  [EIGHTH, 4],
-  [BEAT + EIGHTH, 6],
-  [2 * BEAT + EIGHTH, 4],
-  [3 * BEAT, 7],
-  [4 * BEAT + EIGHTH, 4],
-  [5 * BEAT + EIGHTH, 6],
-  [6 * BEAT + EIGHTH, 7],
-  [7 * BEAT, 0],
-]);
+/** Syncopation — leading hits + offbeat pickups, second bar varies. */
+const melodySynco: RhythmTemplate = [
+  V, 0, 0, 0,  V, 0, V, 0,  V, 0, 0, V,  0, 0, V, 0,
+  V, 0, 0, 0,  V, 0, V, 0,  V, 0, 0, V,  0, 0, V, V,
+];
 
-const melodyModalRiff: Pattern<Note> = fromTicks([
-  [0, 7],
-  [3 * SIXTEENTH, 6],
-  [BEAT, 4],
-  [BEAT + EIGHTH, 4],
-  [2 * BEAT + 3 * SIXTEENTH, 6],
-  [3 * BEAT, 0],
-  [4 * BEAT, 7],
-  [4 * BEAT + 3 * SIXTEENTH, 6],
-  [5 * BEAT, 4],
-  [5 * BEAT + EIGHTH, 4],
-  [6 * BEAT + 3 * SIXTEENTH, 7],
-  [7 * BEAT, 4],
-]);
+/** Front-loaded — three quick hits early then trailing tag. */
+const melodyFrontLoaded: RhythmTemplate = [
+  V, 0, V, 0,  V, 0, 0, 0,  V, 0, 0, 0,  0, 0, 0, 0,
+  V, 0, V, 0,  V, 0, 0, 0,  0, 0, 0, 0,  0, 0, V, 0,
+];
 
-const melodySyncoStab: Pattern<Note> = fromSteps([
-  [0, 4],
-  [4, 6],
-  [6, 7],
-  [8, 4],
-  [11, 6],
-  [14, 0],
-  [16, 4],
-  [20, 6],
-  [22, 7],
-  [26, 4],
-  [29, 0],
-  [30, -1],
-]);
+/** Alternating — hits drift across the bar so the loop reads as motion. */
+const melodyAlternating: RhythmTemplate = [
+  V, 0, 0, 0,  0, V, 0, 0,  0, V, 0, 0,  V, 0, 0, 0,
+  0, V, 0, 0,  V, 0, 0, 0,  0, V, 0, 0,  0, V, 0, 0,
+];
 
-const melodyFrontLoaded: Pattern<Note> = fromSteps([
-  [0, 4],
-  [2, 6],
-  [4, 7],
-  [8, 4],
-  [16, 4],
-  [18, 6],
-  [20, 7],
-  [30, 0],
-]);
+/** Triplet feel — uneven groupings of three sixteenths leaving space. */
+const melodyTriplet: RhythmTemplate = [
+  V, 0, V, 0,  V, 0, 0, 0,  V, 0, V, 0,  0, 0, 0, 0,
+  V, 0, V, 0,  V, 0, 0, 0,  V, 0, V, 0,  0, 0, 0, 0,
+];
 
-const melodyAlternating: Pattern<Note> = fromSteps([
-  [0, 4],
-  [5, 6],
-  [9, 0],
-  [12, 7],
-  [17, 4],
-  [20, 6],
-  [25, 0],
-  [29, 7],
-]);
+/** Three-feel against four — every-3-sixteenths placement. */
+const melodyThreeFeel: RhythmTemplate = [
+  V, 0, 0, V,  0, 0, V, 0,  0, V, 0, 0,  V, 0, 0, V,
+  0, 0, V, 0,  0, V, 0, 0,  V, 0, 0, V,  0, 0, V, 0,
+];
 
-const melodyThreeFeel: Pattern<Note> = fromSteps([
-  [0, 0],
-  [3, 4],
-  [6, 7],
-  [9, 6],
-  [12, 4],
-  [15, 0],
-  [18, 4],
-  [21, 7],
-  [24, 6],
-  [27, 4],
-  [30, 0],
-]);
+/** Backbeat — hits land on 2 / 4 with ghost answers in between. */
+const melodyBackbeat: RhythmTemplate = [
+  0, G, 0, G,  0, 0, V, 0,  V, 0, 0, 0,  0, G, 0, G,
+  0, G, 0, G,  0, 0, V, 0,  V, 0, 0, 0,  0, G, 0, 0,
+];
 
-// --- Sparse phrases ----------------------------------------------------------
+// --- Sparse -----------------------------------------------------------------
 
-const melodyHover: Pattern<Note> = fromTicks(
-  [
-    [0, 4],
-    [BEAT, 7],
-    [2 * BEAT, 4],
-    [3 * BEAT, 7],
-    [4 * BEAT, 4],
-    [5 * BEAT, 7],
-    [6 * BEAT, 4],
-    [7 * BEAT, 7],
-  ],
-  { noteLength: BEAT, velocity: 0.65 },
-);
+/** Sparse — widely-spaced hits answering across the bar. */
+const melodySparse: RhythmTemplate = [
+  V, 0, 0, 0,  0, 0, 0, V,  0, 0, 0, 0,  V, 0, 0, 0,
+  V, 0, 0, 0,  0, 0, 0, V,  0, 0, 0, 0,  V, 0, 0, 0,
+];
 
-const melodySparse: Pattern<Note> = fromTicks([
-  [0, 4],
-  [3 * BEAT + EIGHTH, 7],
-  [4 * BEAT, 4],
-  [6 * BEAT, 6],
-  [7 * BEAT + EIGHTH, -1],
-]);
+/** Minimal — six hits scattered across two bars. */
+const melodyMinimal: RhythmTemplate = [
+  V, 0, 0, 0,  0, 0, 0, 0,  V, 0, 0, 0,  0, V, 0, 0,
+  0, 0, 0, 0,  V, 0, 0, 0,  0, 0, 0, 0,  0, 0, V, V,
+];
 
-const melodyBellStab: Pattern<Note> = fromTicks(
-  [
-    [0, 7],
-    [3 * BEAT + 2 * SIXTEENTH, 4],
-    [4 * BEAT, 7],
-    [7 * BEAT, 6],
-  ],
-  { velocity: 0.6, octave: 2 },
-);
+/** Pointillist — six widely-spaced single notes drifting across the phrase. */
+const melodyPointillist: RhythmTemplate = [
+  V, 0, 0, 0,  0, 0, V, 0,  0, 0, V, 0,  0, 0, 0, 0,
+  0, 0, 0, 0,  V, 0, 0, 0,  0, 0, V, 0,  0, 0, V, 0,
+];
 
-const melodyPointillist: Pattern<Note> = fromSteps(
-  [
-    [0, 0],
-    [6, 4],
-    [10, 7],
-    [20, 4],
-    [26, 0],
-    [30, -1],
-  ],
-  { velocity: 0.65 },
-);
+// --- Pair (paired sixteenths) -----------------------------------------------
 
-const melodyMinimal: Pattern<Note> = fromSteps(
-  [
-    [0, 7],
-    [8, 4],
-    [13, 6],
-    [20, 0],
-    [27, 4],
-    [31, -1],
-  ],
-  { velocity: 0.7 },
-);
+/** Pair — two-note motif at four positions across the phrase. */
+const melodyPair: RhythmTemplate = [
+  V, 0, V, 0,  0, 0, 0, 0,  0, 0, V, 0,  V, 0, 0, 0,
+  V, 0, V, 0,  0, 0, 0, 0,  0, 0, V, 0,  V, 0, 0, 0,
+];
 
-const melodyCallResponse: Pattern<Note> = fromSteps([
-  [0, 4],
-  [4, 7],
-  [10, 6],
-  [11, 4],
-  [16, 0],
-  [20, 7],
-  [26, 6],
-  [27, 0],
-]);
+/** Delayed entry — empty start then accelerating offbeat phrase per bar. */
+const melodyDelayed: RhythmTemplate = [
+  0, 0, 0, 0,  V, 0, 0, V,  0, 0, V, 0,  0, V, 0, V,
+  0, 0, 0, 0,  V, 0, 0, V,  0, 0, V, 0,  0, V, 0, V,
+];
 
-const melodyBackbeat: Pattern<Note> = fromSteps(
-  [
-    [1, 4],
-    [3, 6],
-    [6, 7],
-    [8, 4],
-    [13, 0],
-    [15, -1],
-    [17, 4],
-    [19, 6],
-    [22, 7],
-    [24, 4],
-    [29, 0],
-  ],
-  { velocity: 0.65 },
-);
+/** Double-tap — paired sixteenths giving a stuttering chiptune feel. */
+const melodyDoubleTap: RhythmTemplate = [
+  V, V, 0, 0,  V, V, 0, 0,  V, 0, 0, 0,  V, V, 0, 0,
+  V, V, 0, 0,  V, V, 0, 0,  V, 0, 0, 0,  0, 0, V, V,
+];
 
-const melodyHighBell: Pattern<Note> = fromSteps(
-  [
-    [0, 0],
-    [7, 4],
-    [16, 7],
-    [25, 4],
-    [30, 0],
-  ],
-  { velocity: 0.55, octave: 2 },
-);
+// --- Dense / characterful --------------------------------------------------
 
-// --- Pair Riff phrases -------------------------------------------------------
+/** Burst — three quick notes, rest, three quick notes, then a tag. */
+const melodyBurst: RhythmTemplate = [
+  V, V, V, 0,  0, 0, 0, 0,  V, V, V, 0,  0, 0, 0, 0,
+  V, V, V, 0,  0, 0, V, 0,  0, 0, 0, 0,  V, V, V, 0,
+];
 
-const melodyPair: Pattern<Note> = fromSteps([
-  [0, 0],
-  [2, 4],
-  [10, 0],
-  [12, 4],
-  [16, 7],
-  [18, 4],
-  [26, 7],
-  [28, 4],
-]);
+/** Call & response — a phrase, an answer with the same rhythm. */
+const melodyCallResponse: RhythmTemplate = [
+  V, 0, 0, 0,  V, 0, 0, 0,  0, 0, V, V,  0, 0, 0, 0,
+  V, 0, 0, 0,  V, 0, 0, 0,  0, 0, V, V,  0, 0, 0, 0,
+];
 
-const melodyDelayed: Pattern<Note> = fromSteps([
-  [4, 0],
-  [7, 4],
-  [10, 6],
-  [13, 4],
-  [15, 7],
-  [20, 0],
-  [23, 4],
-  [26, 6],
-  [29, 4],
-  [31, -1],
-]);
+/** Acid lead — dense 16th line with a couple of drop-outs. */
+const melodyAcid: RhythmTemplate = [
+  V, 0, V, V,  0, V, V, 0,  V, 0, V, V,  0, V, V, 0,
+  V, 0, V, V,  0, V, V, 0,  V, 0, V, V,  0, V, V, 0,
+];
 
-const melodyDoubleTap: Pattern<Note> = fromSteps(
-  [
-    [0, 0],
-    [1, 2],
-    [4, 4],
-    [5, 6],
-    [8, 7],
-    [12, 4],
-    [13, 6],
-    [16, 0],
-    [17, 2],
-    [20, 4],
-    [21, 6],
-    [24, 7],
-    [30, 4],
-    [31, 0],
-  ],
-  { noteLength: SIXTEENTH, velocity: 0.7 },
-);
+/** Random feel — looser, less grid-aligned line; intentionally jagged. */
+const melodyRandom: RhythmTemplate = [
+  V, 0, 0, 0,  V, 0, V, V,  0, 0, 0, 0,  V, 0, 0, 0,
+  0, 0, V, 0,  V, 0, 0, 0,  V, V, 0, 0,  0, 0, V, 0,
+];
 
-const melodyIrregular: Pattern<Note> = fromSteps([
-  [0, 7],
-  [2, 4],
-  [7, 0],
-  [9, 4],
-  [14, 6],
-  [16, 7],
-  [21, 4],
-  [23, 0],
-  [27, -1],
-]);
+/** Irregular — asymmetric placements that resist a fixed beat reading. */
+const melodyIrregular: RhythmTemplate = [
+  V, 0, V, 0,  0, 0, 0, V,  0, V, 0, 0,  0, 0, V, 0,
+  V, 0, 0, 0,  0, V, 0, V,  0, 0, 0, V,  0, 0, 0, 0,
+];
 
-// --- Acid Lead phrases -------------------------------------------------------
+// --- registry ----------------------------------------------------------------
 
-const melodyAcidLead: Pattern<Note> = {
-  lengthTicks: PHRASE,
-  events: (() => {
-    const bar: ReadonlyArray<readonly [number, number]> = [
-      [0, 4],
-      [2, 7],
-      [3, 4],
-      [5, 6],
-      [6, 4],
-      [8, 4],
-      [10, 7],
-      [11, 6],
-      [13, 4],
-      [14, 0],
-    ];
-    const events: Array<PatternEvent<Note>> = [];
-    for (const [step, degree] of bar) {
-      events.push({
-        tick: step * SIXTEENTH,
-        payload: { degree, octave: 1, velocity: 0.7, lengthTicks: SIXTEENTH },
-      });
-    }
-    for (const [step, degree] of bar) {
-      events.push({
-        tick: 16 * SIXTEENTH + step * SIXTEENTH,
-        payload: { degree, octave: 2, velocity: 0.7, lengthTicks: SIXTEENTH },
-      });
-    }
-    return events;
-  })(),
-};
-
-const melodyBurst: Pattern<Note> = fromSteps(
-  [
-    [0, 0],
-    [1, 2],
-    [2, 4],
-    [8, 4],
-    [9, 6],
-    [10, 7],
-    [16, 0],
-    [17, 2],
-    [18, 4],
-    [22, -1],
-    [28, 7],
-    [29, 6],
-    [30, 4],
-  ],
-  { noteLength: SIXTEENTH, velocity: 0.7 },
-);
-
-const melodyTriplet: Pattern<Note> = fromSteps(
-  [
-    [0, 0],
-    [2, 2],
-    [4, 4],
-    [8, 6],
-    [10, 4],
-    [16, 0],
-    [18, 2],
-    [20, 4],
-    [28, 7],
-  ],
-  { noteLength: SIXTEENTH, velocity: 0.7 },
-);
-
-const melodyRandomFeel: Pattern<Note> = fromSteps(
-  [
-    [0, 4],
-    [4, 6],
-    [6, 7],
-    [7, 4],
-    [12, 0],
-    [18, 4],
-    [20, 7],
-    [24, 0],
-    [25, 2],
-    [30, 4],
-  ],
-  { noteLength: SIXTEENTH, velocity: 0.7 },
-);
-
-// --- Stepwise phrases --------------------------------------------------------
-
-/** Straight scalar ascent — one step per beat over both bars. */
-const melodyStepwiseAscend: Pattern<Note> = fromSteps([
-  [0, 0],
-  [4, 1],
-  [8, 2],
-  [12, 3],
-  [16, 4],
-  [20, 5],
-  [24, 6],
-  [28, 7],
-]);
-
-/** Straight scalar descent — mirror of ascend. */
-const melodyStepwiseDescend: Pattern<Note> = fromSteps([
-  [0, 7],
-  [4, 6],
-  [8, 5],
-  [12, 4],
-  [16, 3],
-  [20, 2],
-  [24, 1],
-  [28, 0],
-]);
-
-/** Climbing zig-zag — drift up the scale with one-step backward bounces. */
-const melodyStepwiseZigZag: Pattern<Note> = fromSteps(
-  [
-    [0, 0],
-    [2, 2],
-    [4, 1],
-    [6, 3],
-    [8, 2],
-    [10, 4],
-    [12, 3],
-    [14, 5],
-    [16, 4],
-    [18, 6],
-    [20, 5],
-    [22, 7],
-    [24, 6],
-    [26, 5],
-    [28, 4],
-    [30, 3],
-  ],
-  { noteLength: SIXTEENTH, velocity: 0.7 },
-);
-
-/** Climb the scale in bar 1, fall back through it in bar 2. */
-const melodyStepwiseClimbFall: Pattern<Note> = fromSteps([
-  [0, 0],
-  [4, 2],
-  [8, 4],
-  [12, 7],
-  [16, 7],
-  [20, 4],
-  [24, 2],
-  [28, 0],
-]);
-
-// --- Wide Interval phrases ---------------------------------------------------
-
-/** Two-bar arpeggio rotating around tonic / 3rd / 5th of the scale. */
-const melodyArpeggio: Pattern<Note> = fromSteps([
-  [0, 0],
-  [4, 2],
-  [8, 4],
-  [12, 0],
-  [16, 4],
-  [20, 2],
-  [24, 0],
-  [28, 4],
-]);
-
-/** Alternating wide jumps — low / high / low / higher across the phrase. */
-const melodyWideJump: Pattern<Note> = fromSteps([
-  [0, 0],
-  [4, 7],
-  [8, 2],
-  [12, 9],
-  [16, 4],
-  [20, 11],
-  [24, 0],
-  [28, 7],
-]);
-
-/** Broken chord climbing across octaves, then unwinding back down. */
-const melodyArpClimb: Pattern<Note> = fromSteps(
-  [
-    [0, 0],
-    [2, 2],
-    [4, 4],
-    [8, 7],
-    [10, 9],
-    [12, 11],
-    [16, 14],
-    [18, 11],
-    [20, 9],
-    [24, 7],
-    [26, 4],
-    [28, 2],
-  ],
-  { noteLength: SIXTEENTH, velocity: 0.7 },
-);
-
-/** Octave-leap motif — octave jump with a passing 6th below. */
-const melodyOctaveLeap: Pattern<Note> = fromSteps([
-  [0, 0],
-  [4, 7],
-  [8, 0],
-  [12, 6],
-  [16, 0],
-  [20, 7],
-  [24, 6],
-  [28, 0],
-]);
-
-// --- Bright phrases ----------------------------------------------------------
-
-/** Major-pentatonic-friendly stab cycling 0/2/4. */
-const melodyBrightStab: Pattern<Note> = fromSteps([
-  [0, 0],
-  [4, 4],
-  [8, 2],
-  [12, 0],
-  [16, 2],
-  [20, 4],
-  [24, 2],
-  [28, 0],
-]);
-
-/** Sparse bright cadence: 1 → 5 → 8 → 1 across the two bars. */
-const melodyBrightCadence: Pattern<Note> = fromSteps(
-  [
-    [0, 0],
-    [8, 4],
-    [16, 7],
-    [24, 0],
-  ],
-  { noteLength: BEAT, velocity: 0.7 },
-);
-
-/** Triad arpeggio rolling through tonic / 3rd / 5th and the octave above. */
-const melodyBrightTriad: Pattern<Note> = fromSteps([
-  [0, 4],
-  [2, 2],
-  [4, 0],
-  [8, 4],
-  [10, 2],
-  [12, 0],
-  [16, 7],
-  [18, 4],
-  [20, 2],
-  [24, 9],
-  [26, 7],
-  [28, 4],
-]);
-
-// --- High Register phrases ---------------------------------------------------
-
-/** Sparse stabs in the next octave for shimmer over a busy lower mix. */
-const melodyHighStab: Pattern<Note> = fromSteps(
-  [
-    [0, 0],
-    [4, 4],
-    [8, 0],
-    [12, 7],
-    [16, 0],
-    [20, 4],
-    [24, 7],
-    [28, 0],
-  ],
-  { octave: 2, velocity: 0.6 },
-);
-
-/** Cascading scalar descent in the upper register. */
-const melodyHighCascade: Pattern<Note> = fromSteps(
-  [
-    [0, 7],
-    [2, 6],
-    [4, 5],
-    [6, 4],
-    [8, 3],
-    [10, 2],
-    [12, 1],
-    [14, 0],
-    [16, 7],
-    [18, 6],
-    [20, 5],
-    [22, 4],
-    [24, 3],
-    [26, 2],
-    [28, 1],
-    [30, 0],
-  ],
-  { octave: 2, noteLength: SIXTEENTH, velocity: 0.6 },
-);
-
-/** Quick high-register sparkles weaving 0 / 2 / 4 / 7 across the upper octave. */
-const melodyHighSparkle: Pattern<Note> = fromSteps(
-  [
-    [0, 0],
-    [1, 2],
-    [2, 4],
-    [4, 0],
-    [6, 4],
-    [8, 7],
-    [10, 4],
-    [12, 2],
-    [16, 0],
-    [17, 2],
-    [18, 4],
-    [20, 7],
-    [22, 9],
-    [24, 7],
-    [26, 4],
-    [28, 2],
-    [30, 0],
-  ],
-  { octave: 2, noteLength: SIXTEENTH, velocity: 0.55 },
-);
-
-// --- Dark Tension phrases ----------------------------------------------------
-
-/** Phrygian-leaning shape leaning on the b2 (degree 1) and below-tonic neighbour. */
-const melodyDarkPhrygian: Pattern<Note> = fromSteps([
-  [0, 0],
-  [4, 1],
-  [8, 3],
-  [12, 5],
-  [16, 1],
-  [20, 3],
-  [24, 0],
-  [28, -2],
-]);
-
-/** Tritone-flavoured tension that resolves on the tonic each bar. */
-const melodyTritoneTension: Pattern<Note> = fromSteps([
-  [0, 0],
-  [4, 3],
-  [8, 0],
-  [12, 6],
-  [16, 0],
-  [20, 3],
-  [24, 0],
-  [28, -3],
-]);
-
-/** Hypnotic repeated tone that lifts to the octave halfway through. */
-const melodyRepeatedTone: Pattern<Note> = fromSteps(
-  [
-    [0, 0],
-    [2, 0],
-    [4, 0],
-    [8, 0],
-    [10, 0],
-    [12, 0],
-    [16, 7],
-    [18, 7],
-    [20, 7],
-    [24, 7],
-    [26, 0],
-    [28, 0],
-  ],
-  { noteLength: SIXTEENTH, velocity: 0.65 },
-);
-
-// --- registry ---------------------------------------------------------------
-
-/** Built-in melody phrases — each variant is individually selectable. */
+/** Built-in melody phrases — rhythm templates that the auto generator walks the scale over. */
 export const melodyPhrases: readonly PitchedPhrase[] = [
   {
-    id: "melody.stab.offbeat",
+    id: "melody.pulse.quarter",
     kind: "pitched",
     role: "melody",
-    category: "Off-beat Stab",
-    name: "Off-beat",
-    pattern: melodyOffbeatStab,
+    category: "Pulse",
+    name: "Quarter Pulse",
+    template: melodyQuarter,
   },
   {
-    id: "melody.stab.modal",
+    id: "melody.pulse.eighth",
     kind: "pitched",
     role: "melody",
-    category: "Off-beat Stab",
-    name: "Modal Riff",
-    pattern: melodyModalRiff,
+    category: "Pulse",
+    name: "Eighth Stream",
+    template: melodyEighth,
   },
   {
     id: "melody.stab.synco",
     kind: "pitched",
     role: "melody",
-    category: "Off-beat Stab",
-    name: "Syncopated",
-    pattern: melodySyncoStab,
+    category: "Stab",
+    name: "Syncopation",
+    template: melodySynco,
   },
   {
     id: "melody.stab.front-loaded",
     kind: "pitched",
     role: "melody",
-    category: "Off-beat Stab",
+    category: "Stab",
     name: "Front-loaded",
-    pattern: melodyFrontLoaded,
+    template: melodyFrontLoaded,
   },
   {
     id: "melody.stab.alternating",
     kind: "pitched",
     role: "melody",
-    category: "Off-beat Stab",
+    category: "Stab",
     name: "Alternating",
-    pattern: melodyAlternating,
+    template: melodyAlternating,
+  },
+  {
+    id: "melody.stab.triplet",
+    kind: "pitched",
+    role: "melody",
+    category: "Stab",
+    name: "Triplet Feel",
+    template: melodyTriplet,
   },
   {
     id: "melody.stab.three-feel",
     kind: "pitched",
     role: "melody",
-    category: "Off-beat Stab",
+    category: "Stab",
     name: "Three Feel",
-    pattern: melodyThreeFeel,
+    template: melodyThreeFeel,
   },
   {
-    id: "melody.sparse.hover",
+    id: "melody.stab.backbeat",
     kind: "pitched",
     role: "melody",
-    category: "Sparse",
-    name: "Hover",
-    pattern: melodyHover,
+    category: "Stab",
+    name: "Backbeat",
+    template: melodyBackbeat,
   },
   {
     id: "melody.sparse.classic",
     kind: "pitched",
     role: "melody",
     category: "Sparse",
-    name: "Sparse Riff",
-    pattern: melodySparse,
-  },
-  {
-    id: "melody.sparse.bell",
-    kind: "pitched",
-    role: "melody",
-    category: "Sparse",
-    name: "Bell Stab",
-    pattern: melodyBellStab,
-  },
-  {
-    id: "melody.sparse.pointillist",
-    kind: "pitched",
-    role: "melody",
-    category: "Sparse",
-    name: "Pointillist",
-    pattern: melodyPointillist,
+    name: "Sparse",
+    template: melodySparse,
   },
   {
     id: "melody.sparse.minimal",
@@ -731,230 +211,78 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     role: "melody",
     category: "Sparse",
     name: "Minimal",
-    pattern: melodyMinimal,
+    template: melodyMinimal,
   },
   {
-    id: "melody.sparse.call-response",
+    id: "melody.sparse.pointillist",
     kind: "pitched",
     role: "melody",
     category: "Sparse",
-    name: "Call & Response",
-    pattern: melodyCallResponse,
-  },
-  {
-    id: "melody.sparse.backbeat",
-    kind: "pitched",
-    role: "melody",
-    category: "Sparse",
-    name: "Backbeat",
-    pattern: melodyBackbeat,
-  },
-  {
-    id: "melody.sparse.high-bell",
-    kind: "pitched",
-    role: "melody",
-    category: "Sparse",
-    name: "High Bell",
-    pattern: melodyHighBell,
+    name: "Pointillist",
+    template: melodyPointillist,
   },
   {
     id: "melody.pair.classic",
     kind: "pitched",
     role: "melody",
-    category: "Pair Riff",
+    category: "Pair",
     name: "Pair",
-    pattern: melodyPair,
+    template: melodyPair,
   },
   {
     id: "melody.pair.delayed",
     kind: "pitched",
     role: "melody",
-    category: "Pair Riff",
-    name: "Delayed",
-    pattern: melodyDelayed,
+    category: "Pair",
+    name: "Delayed Entry",
+    template: melodyDelayed,
   },
   {
     id: "melody.pair.double-tap",
     kind: "pitched",
     role: "melody",
-    category: "Pair Riff",
+    category: "Pair",
     name: "Double Tap",
-    pattern: melodyDoubleTap,
+    template: melodyDoubleTap,
   },
   {
-    id: "melody.pair.irregular",
+    id: "melody.dense.burst",
     kind: "pitched",
     role: "melody",
-    category: "Pair Riff",
-    name: "Irregular",
-    pattern: melodyIrregular,
-  },
-  {
-    id: "melody.acid.lead",
-    kind: "pitched",
-    role: "melody",
-    category: "Acid Lead",
-    name: "Acid Lead",
-    pattern: melodyAcidLead,
-  },
-  {
-    id: "melody.acid.burst",
-    kind: "pitched",
-    role: "melody",
-    category: "Acid Lead",
+    category: "Dense",
     name: "Burst",
-    pattern: melodyBurst,
+    template: melodyBurst,
   },
   {
-    id: "melody.acid.triplet",
+    id: "melody.dense.call-response",
     kind: "pitched",
     role: "melody",
-    category: "Acid Lead",
-    name: "Triplet Feel",
-    pattern: melodyTriplet,
+    category: "Dense",
+    name: "Call & Response",
+    template: melodyCallResponse,
   },
   {
-    id: "melody.acid.random",
+    id: "melody.dense.acid",
     kind: "pitched",
     role: "melody",
-    category: "Acid Lead",
+    category: "Dense",
+    name: "Acid Lead",
+    template: melodyAcid,
+  },
+  {
+    id: "melody.dense.random",
+    kind: "pitched",
+    role: "melody",
+    category: "Dense",
     name: "Random Feel",
-    pattern: melodyRandomFeel,
+    template: melodyRandom,
   },
   {
-    id: "melody.stepwise.ascend",
+    id: "melody.dense.irregular",
     kind: "pitched",
     role: "melody",
-    category: "Stepwise",
-    name: "Ascend",
-    pattern: melodyStepwiseAscend,
-  },
-  {
-    id: "melody.stepwise.descend",
-    kind: "pitched",
-    role: "melody",
-    category: "Stepwise",
-    name: "Descend",
-    pattern: melodyStepwiseDescend,
-  },
-  {
-    id: "melody.stepwise.zigzag",
-    kind: "pitched",
-    role: "melody",
-    category: "Stepwise",
-    name: "Zig-zag",
-    pattern: melodyStepwiseZigZag,
-  },
-  {
-    id: "melody.stepwise.climb-fall",
-    kind: "pitched",
-    role: "melody",
-    category: "Stepwise",
-    name: "Climb & Fall",
-    pattern: melodyStepwiseClimbFall,
-  },
-  {
-    id: "melody.wide.arpeggio",
-    kind: "pitched",
-    role: "melody",
-    category: "Wide Interval",
-    name: "Arpeggio",
-    pattern: melodyArpeggio,
-  },
-  {
-    id: "melody.wide.jump",
-    kind: "pitched",
-    role: "melody",
-    category: "Wide Interval",
-    name: "Wide Jump",
-    pattern: melodyWideJump,
-  },
-  {
-    id: "melody.wide.arp-climb",
-    kind: "pitched",
-    role: "melody",
-    category: "Wide Interval",
-    name: "Arp Climb",
-    pattern: melodyArpClimb,
-  },
-  {
-    id: "melody.wide.octave-leap",
-    kind: "pitched",
-    role: "melody",
-    category: "Wide Interval",
-    name: "Octave Leap",
-    pattern: melodyOctaveLeap,
-  },
-  {
-    id: "melody.bright.stab",
-    kind: "pitched",
-    role: "melody",
-    category: "Bright",
-    name: "Bright Stab",
-    pattern: melodyBrightStab,
-  },
-  {
-    id: "melody.bright.cadence",
-    kind: "pitched",
-    role: "melody",
-    category: "Bright",
-    name: "Cadence",
-    pattern: melodyBrightCadence,
-  },
-  {
-    id: "melody.bright.triad",
-    kind: "pitched",
-    role: "melody",
-    category: "Bright",
-    name: "Triad Roll",
-    pattern: melodyBrightTriad,
-  },
-  {
-    id: "melody.high.stab",
-    kind: "pitched",
-    role: "melody",
-    category: "High Register",
-    name: "High Stab",
-    pattern: melodyHighStab,
-  },
-  {
-    id: "melody.high.cascade",
-    kind: "pitched",
-    role: "melody",
-    category: "High Register",
-    name: "Cascade",
-    pattern: melodyHighCascade,
-  },
-  {
-    id: "melody.high.sparkle",
-    kind: "pitched",
-    role: "melody",
-    category: "High Register",
-    name: "Sparkle",
-    pattern: melodyHighSparkle,
-  },
-  {
-    id: "melody.dark.phrygian",
-    kind: "pitched",
-    role: "melody",
-    category: "Dark Tension",
-    name: "Phrygian Lean",
-    pattern: melodyDarkPhrygian,
-  },
-  {
-    id: "melody.dark.tritone",
-    kind: "pitched",
-    role: "melody",
-    category: "Dark Tension",
-    name: "Tritone Tension",
-    pattern: melodyTritoneTension,
-  },
-  {
-    id: "melody.dark.repeated",
-    kind: "pitched",
-    role: "melody",
-    category: "Dark Tension",
-    name: "Repeated Tone",
-    pattern: melodyRepeatedTone,
+    category: "Dense",
+    name: "Irregular",
+    template: melodyIrregular,
   },
 ];

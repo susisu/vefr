@@ -91,9 +91,9 @@ function defaultInitial(): EngineInitial {
     source: "auto",
     phraseIds: [
       "melody.sparse.classic",
-      "melody.sparse.pointillist",
       "melody.sparse.minimal",
-      "melody.sparse.high-bell",
+      "melody.sparse.pointillist",
+      "melody.pair.classic",
     ],
     seed: 2,
     params: defaultAutoParamsFor("pitched", "melody"),

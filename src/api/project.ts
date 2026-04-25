@@ -47,7 +47,7 @@ export type PhraseResolver = (id: PhraseId) => boolean;
 
 /** A positive integer. */
 const PositiveInteger = v.pipe(v.number(), v.integer(), v.minValue(1));
-/** A non-negative integer (used for ticks etc.). */
+/** A non-negative integer (used for ticks, period bars, etc.). */
 const NonNegativeInteger = v.pipe(v.number(), v.integer(), v.minValue(0));
 /** Velocity / volume / etc. — a normalized 0..1. */
 const NormalizedNumber = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
@@ -129,12 +129,10 @@ function patternSchema<P>(payload: v.GenericSchema<P>): v.GenericSchema<Pattern<
   );
 }
 
-/** Schema for {@link AutoParams}. */
+/** Schema for {@link AutoParams}. Periods of 0 mean "infinity" (slot frozen at 0). */
 const AutoParamsSchema = v.object({
-  microVariance: NormalizedNumber,
-  pitchVariance: NormalizedNumber,
-  rotationBars: PositiveInteger,
-  lockVariant: v.boolean(),
+  microPeriodBars: NonNegativeInteger,
+  macroPeriodBars: NonNegativeInteger,
 });
 
 /** Fields shared by every track. */

@@ -1,5 +1,11 @@
-import { useSyncExternalStore } from "react";
-import type { GlobalMusicState, Track, TransportState } from "../engine/types.js";
+import { useCallback, useSyncExternalStore } from "react";
+import type {
+  GlobalMusicState,
+  PhraseId,
+  Track,
+  TrackRef,
+  TransportState,
+} from "../engine/types.js";
 import { useControlApi } from "./context.js";
 
 /**
@@ -22,4 +28,19 @@ export function useGlobal(): GlobalMusicState {
 export function useTracks(): readonly Track[] {
   const api = useControlApi();
   return useSyncExternalStore(api.track.onChange, api.track.list);
+}
+
+/**
+ * Phrase id currently selected for the macro slot of an auto track. Updates
+ * live when the engine crosses a phrase boundary, when the track's config
+ * is edited, or when the transport seeks.
+ */
+export function useActivePhraseId(ref: TrackRef): PhraseId | undefined {
+  const api = useControlApi();
+  const subscribe = useCallback(
+    (cb: () => void) => api.track.subscribeActivePhrase(ref, cb),
+    [api, ref],
+  );
+  const getSnapshot = useCallback(() => api.track.getActivePhraseId(ref), [api, ref]);
+  return useSyncExternalStore(subscribe, getSnapshot);
 }

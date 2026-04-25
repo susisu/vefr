@@ -121,6 +121,27 @@ function makeTrackApi(engine: Engine): TrackApi {
       runTrackOp(() => engine.setAutoConfig(ref, { seed: randomSeed() }), ref, () => ""),
     onChange: (handler: (tracks: readonly Track[]) => void): (() => void) =>
       engine.tracksChanged.on(handler),
+    getActivePhraseId: (ref: TrackRef) => engine.getActiveAutoPhraseId(ref),
+    subscribeActivePhrase: (ref: TrackRef, handler: () => void): (() => void) => {
+      // Fire on live phrase boundary crossings filtered to this track,
+      // plus on track-config and transport changes since both shift the
+      // derived value `getActivePhraseId` returns.
+      const offPhrase = engine.activePhraseChanged.on((e) => {
+        const target = engine.resolveTrack(ref);
+        if (target && e.trackId === target.id) handler();
+      });
+      const offTracks = engine.tracksChanged.on(() => {
+        handler();
+      });
+      const offTransport = engine.transportChanged.on(() => {
+        handler();
+      });
+      return () => {
+        offPhrase();
+        offTracks();
+        offTransport();
+      };
+    },
   };
 }
 

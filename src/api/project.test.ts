@@ -63,7 +63,7 @@ function makeAutoBassTrack(): PitchedTrack {
     source: "auto",
     phraseIds: ["bass.phrase"],
     seed: 42,
-    params: { microVariance: 0.2, pitchVariance: 0.3, rotationBars: 8, lockVariant: false },
+    params: { microPeriodBars: 2, macroPeriodBars: 8 },
   };
 }
 

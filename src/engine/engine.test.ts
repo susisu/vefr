@@ -94,9 +94,11 @@ describe("Engine", () => {
       kind: "drum",
       category: "Test",
       name: "Kick",
-      pattern: {
-        lengthTicks: 4 * TICKS_PER_BEAT,
-        events: [{ tick: 0, payload: { pad: "kick", velocity: 1 } }],
+      template: {
+        kick: [
+          1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+          1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+        ],
       },
     };
     const resolvePhrase = (id: PhraseId): Phrase | undefined =>
@@ -110,7 +112,7 @@ describe("Engine", () => {
       source: "auto",
       phraseIds: [phrase.id],
       seed: 0,
-      params: { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: false },
+      params: { microPeriodBars: 0, macroPeriodBars: 0 },
     };
     const initial: EngineInitial = {
       transport: {

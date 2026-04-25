@@ -1,16 +1,26 @@
-import type {
-  AutoParams,
-  DrumHit,
-  Note,
-  Pattern,
-  PhraseId,
-  PitchedRole,
-} from "../engine/types.js";
+import type { AutoParams, DrumPad, PhraseId, PitchedRole } from "../engine/types.js";
+
+/** Number of sixteenth-note steps in a phrase (32 = 2 bars in 4/4). */
+export const PHRASE_STEPS = 32;
 
 /**
- * One drum phrase: a 2-bar pattern with a unique id plus UI metadata.
- * Phrases are the unit the user picks individually; they are no longer
- * grouped under a "preset" structurally — `category` is a UI label only.
+ * A 32-step rhythm template at sixteenth-note resolution.
+ * Each entry: `0` = rest, `0..1` = velocity at that step. lengthTicks is
+ * uniform (one sixteenth) at sound time; only the step grid + velocity
+ * carries authored information.
+ */
+export type RhythmTemplate = readonly number[];
+
+/**
+ * Drum template = an independent step row per pad in the kit. Pads not
+ * present in the record never fire. Velocity is per-step (0 = rest).
+ */
+export type DrumTemplate = Partial<Record<DrumPad, RhythmTemplate>>;
+
+/**
+ * One drum phrase: a kit-aware rhythm template plus UI metadata.
+ * The auto generator rotates among the user's selected DrumPhrase set and
+ * applies a uniform drop-jitter at the current micro slot's seed.
  */
 export type DrumPhrase = {
   id: PhraseId;
@@ -19,42 +29,37 @@ export type DrumPhrase = {
   category: string;
   /** Human-readable name shown next to the phrase's checkbox. */
   name: string;
-  pattern: Pattern<DrumHit>;
+  template: DrumTemplate;
 };
 
 /**
- * One pitched phrase. `role` constrains which tracks may pick it
- * (melody phrases for melody tracks, bass for bass tracks).
+ * One pitched phrase: a single rhythm row. The auto generator fills in
+ * pitch at materialize time — bass holds the root, melody walks the scale.
  */
 export type PitchedPhrase = {
   id: PhraseId;
   kind: "pitched";
   role: PitchedRole;
-  /** UI grouping label, e.g. "Lo-fi Boom Bap". Has no engine semantics. */
   category: string;
-  /** Human-readable name shown next to the phrase's checkbox. */
   name: string;
-  pattern: Pattern<Note>;
+  template: RhythmTemplate;
 };
 
 /** Union of every phrase shape recognised by the registry. */
 export type Phrase = DrumPhrase | PitchedPhrase;
 
 /**
- * Default {@link AutoParams} per pitched role. Bass defaults to lock so the
- * groove stays steady; melody runs unlocked so phrases rotate. Bass's
- * pitchVariance is pinned to 0 because the bass library is single-pitch by
- * design — the UI doesn't expose the slider for bass tracks.
+ * Default {@link AutoParams} per pitched role. Bass stays steady on a
+ * single phrase by default (macroPeriodBars=0 = no rotation, microPeriodBars=0
+ * = no variation re-roll). Melody rotates and re-rolls so phrases evolve.
  */
 export const DEFAULT_AUTO_PARAMS_PITCHED: Record<PitchedRole, AutoParams> = {
-  melody: { microVariance: 0.2, pitchVariance: 0.3, rotationBars: 8, lockVariant: false },
-  bass: { microVariance: 0.1, pitchVariance: 0, rotationBars: 16, lockVariant: true },
+  melody: { microPeriodBars: 2, macroPeriodBars: 8 },
+  bass: { microPeriodBars: 0, macroPeriodBars: 0 },
 };
 
 /** Default {@link AutoParams} for an auto drum track. Locked by default. */
 export const DEFAULT_AUTO_PARAMS_DRUM: AutoParams = {
-  microVariance: 0.12,
-  pitchVariance: 0,
-  rotationBars: 16,
-  lockVariant: true,
+  microPeriodBars: 0,
+  macroPeriodBars: 0,
 };

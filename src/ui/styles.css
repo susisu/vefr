@@ -203,19 +203,81 @@ input[type="range"] {
   padding: 0 0.3rem;
 }
 
-.auto-phrase-checks {
+.auto-phrase-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem 0.8rem;
+  gap: 0.3rem 0.8rem;
 }
 
-.auto-phrase-check {
+.auto-phrase-row {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   font-size: 0.85em;
   color: #ddd;
   cursor: pointer;
+}
+
+.auto-preview {
+  margin-bottom: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: #1f1f1f;
+  border: 1px solid #333;
+  border-radius: 4px;
+}
+
+.auto-preview-empty {
+  color: #777;
+  font-size: 0.85em;
+  font-style: italic;
+}
+
+.auto-preview-name {
+  font-size: 0.8em;
+  color: var(--accent);
+  margin-bottom: 0.3rem;
+}
+
+.auto-preview-grid {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.auto-preview-row {
+  display: grid;
+  grid-template-columns: 80px repeat(32, 1fr);
+  gap: 2px;
+  align-items: center;
+}
+
+/* When the row has no leading pad-label (pitched preview), let the steps fill the row. */
+.auto-preview-row:not(:has(.pad-label)) {
+  grid-template-columns: repeat(32, 1fr);
+}
+
+/* Read-only preview cells reuse the manual editor's step look but ignore pointer events. */
+.auto-preview .step {
+  cursor: default;
+  pointer-events: none;
+}
+
+/*
+ * Beat / half-phrase dividers. Index differs between drum (pad-label is the
+ * leading sibling) and pitched (no label, step 1 is the first child), so each
+ * row variant gets its own scoped rule rather than a shared selector.
+ */
+.auto-preview-row:has(.pad-label) .step:nth-child(4n + 2) {
+  border-left-width: 2px;
+}
+.auto-preview-row:not(:has(.pad-label)) .step:nth-child(4n + 1) {
+  border-left-width: 2px;
+}
+
+.auto-preview-row:has(.pad-label) .step:nth-child(18) {
+  border-left: 2px solid #777;
+}
+.auto-preview-row:not(:has(.pad-label)) .step:nth-child(17) {
+  border-left: 2px solid #777;
 }
 
 .auto-params {
@@ -245,13 +307,4 @@ input[type="range"] {
   font-size: 0.8em;
   padding: 0.2rem 0.6rem;
   margin-left: 0.4rem;
-}
-
-.auto-lock {
-  font-size: 0.85em;
-  color: #bbb;
-}
-
-.auto-param.disabled {
-  opacity: 0.5;
 }

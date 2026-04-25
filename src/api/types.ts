@@ -4,6 +4,7 @@ import type {
   GlobalMusicState,
   Note,
   Pattern,
+  PhraseId,
   Tick,
   Track,
   TrackRef,
@@ -92,6 +93,18 @@ export interface TrackApi {
   rerollPhrase: (ref: TrackRef) => Result<void, TrackUpdateError>;
   /** Subscribe to track-list changes. */
   onChange: (handler: (tracks: readonly Track[]) => void) => () => void;
+  /**
+   * Phrase id currently selected for the macro slot of an auto track at the
+   * current transport position. Returns `undefined` for manual tracks, for
+   * unresolvable refs, or when the track has no usable phrases.
+   */
+  getActivePhraseId: (ref: TrackRef) => PhraseId | undefined;
+  /**
+   * Subscribe to "the active phrase id for `ref` may have changed" events.
+   * Fires for live macro-tier rotation, transport seeks, and auto-config
+   * edits. Use with `getActivePhraseId` for `useSyncExternalStore`.
+   */
+  subscribeActivePhrase: (ref: TrackRef, handler: () => void) => () => void;
 }
 
 /** Project sub-API: snapshot, replace, and listen for changes. */

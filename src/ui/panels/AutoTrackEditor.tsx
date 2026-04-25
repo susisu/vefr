@@ -1,20 +1,22 @@
 import type { ChangeEvent, ReactElement } from "react";
 import {
   refById,
-  type DrumTrack,
+  type DrumPad,
   type PhraseId,
-  type PitchedTrack,
   type Track,
 } from "../../engine/types.js";
 import {
+  getPhrase,
   listDrumPhrases,
   listPitchedPhrases,
   type Phrase,
 } from "../../phrases/index.js";
+import type { DrumTemplate, RhythmTemplate } from "../../phrases/types.js";
 import { useControlApi } from "../context.js";
+import { useActivePhraseId } from "../hooks.js";
 
 /** AutoParams fields that map to a numeric slider. */
-type NumericParamKey = "microVariance" | "pitchVariance" | "rotationBars";
+type NumericParamKey = "microPeriodBars" | "macroPeriodBars";
 
 /** Tunable slider description used to render each numeric AutoParams field. */
 type ParamSpec = {
@@ -25,31 +27,32 @@ type ParamSpec = {
   step: number;
 };
 
-/** Sliders shown on every auto-track editor. */
-const COMMON_PARAM_SPECS: readonly ParamSpec[] = [
-  { key: "microVariance", label: "Micro variance", min: 0, max: 1, step: 0.05 },
-  { key: "rotationBars", label: "Rotation period (bars)", min: 1, max: 64, step: 1 },
+/** Sliders shown on every auto-track editor — both periods at the same scale. */
+const PARAM_SPECS: readonly ParamSpec[] = [
+  { key: "microPeriodBars", label: "Micro period (bars)", min: 0, max: 32, step: 1 },
+  { key: "macroPeriodBars", label: "Macro period (bars)", min: 0, max: 64, step: 1 },
 ];
 
-/** Extra slider shown only for melody tracks (bass is single-pitch by design). */
-const MELODY_PARAM_SPEC: ParamSpec = {
-  key: "pitchVariance",
-  label: "Pitch variance",
-  min: 0,
-  max: 1,
-  step: 0.05,
-};
+/** Pads laid out in preview rows (top → bottom) for drum auto tracks. */
+const PREVIEW_PAD_ORDER: readonly DrumPad[] = ["kick", "snare", "closed-hat", "open-hat"];
 
-/** Editor for an auto track: phrase multi-select grouped by category + sliders + seed. */
+/** Number of sixteenth-note steps in a phrase preview (= 32). */
+const PREVIEW_STEPS = 32;
+
+/** Track variants the inner editor accepts (auto-source already narrowed). */
+type AutoTrack = Extract<Track, { source: "auto" }>;
+
+/** Editor for an auto track: live preview + phrase multi-select + 2 sliders + seed. */
 export function AutoTrackEditor({ track }: { track: Track }): ReactElement | null {
   if (track.source !== "auto") return null;
   return <Inner track={track} />;
 }
 
-/** Inner view once `source === "auto"` has been narrowed. */
-function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | null {
+/** Inner view once `source === "auto"` has been narrowed at the call site. */
+function Inner({ track }: { track: AutoTrack }): ReactElement {
   const api = useControlApi();
-  if (track.source !== "auto") return null;
+  const activeId = useActivePhraseId(refById(track.id));
+  const activePhrase = activeId !== undefined ? getPhrase(activeId) : undefined;
   const phrases: readonly Phrase[] =
     track.kind === "drum" ? listDrumPhrases() : listPitchedPhrases(track.role);
   const selected = new Set<PhraseId>(track.phraseIds);
@@ -70,13 +73,6 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
     });
   };
 
-  /** Toggle the lockVariant flag — freeze on a single phrase. */
-  const toggleLock = (): void => {
-    api.track.setAutoConfig(refById(track.id), {
-      params: { ...track.params, lockVariant: !track.params.lockVariant },
-    });
-  };
-
   /** Replace the seed (integer); ignores empty / non-numeric input. */
   const setSeed = (e: ChangeEvent<HTMLInputElement>): void => {
     const value = e.target.value;
@@ -86,7 +82,7 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
     api.track.setAutoConfig(refById(track.id), { seed: Math.trunc(n) });
   };
 
-  /** Re-roll the seed via the API so the (locked or rotating) phrase changes. */
+  /** Re-roll the seed via the API so the picked template + walk both change. */
   const rerollPhrase = (): void => {
     api.track.rerollPhrase(refById(track.id));
   };
@@ -94,13 +90,14 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
   return (
     <div className="editor">
       <div className="editor-header">{track.name}</div>
+      <ActivePhrasePreview phrase={activePhrase} />
       <div className="auto-phrases">
         {groups.map(({ category, items }) => (
           <fieldset key={category} className="auto-phrase-group">
             <legend>{category}</legend>
-            <div className="auto-phrase-checks">
+            <div className="auto-phrase-list">
               {items.map((p) => (
-                <label key={p.id} className="auto-phrase-check">
+                <label key={p.id} className="auto-phrase-row">
                   <input
                     type="checkbox"
                     checked={selected.has(p.id)}
@@ -108,7 +105,7 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
                       togglePhrase(p.id);
                     }}
                   />
-                  <span>{p.name}</span>
+                  <span className="auto-phrase-name">{p.name}</span>
                 </label>
               ))}
             </div>
@@ -116,7 +113,7 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
         ))}
       </div>
       <div className="auto-params">
-        {paramSpecsFor(track).map((spec) => (
+        {PARAM_SPECS.map((spec) => (
           <ParamSlider
             key={spec.key}
             spec={spec}
@@ -124,9 +121,6 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
             onChange={(v) => {
               setParam(spec.key, v);
             }}
-            // Rotation period is the only knob that has no effect while
-            // the variant is locked; jitter sliders stay live.
-            disabled={track.params.lockVariant && spec.key === "rotationBars"}
           />
         ))}
         <label className="auto-seed">
@@ -136,24 +130,9 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
             Reroll
           </button>
         </label>
-        <label className="auto-lock">
-          <input type="checkbox" checked={track.params.lockVariant} onChange={toggleLock} />
-          Lock variant (no rotation)
-        </label>
       </div>
     </div>
   );
-}
-
-/**
- * Pick the slider list for a given track. Melody tracks get the extra
- * pitchVariance slider; drum/bass tracks see the common set only.
- */
-function paramSpecsFor(track: DrumTrack | PitchedTrack): readonly ParamSpec[] {
-  if (track.kind === "pitched" && track.role === "melody") {
-    return [...COMMON_PARAM_SPECS, MELODY_PARAM_SPEC];
-  }
-  return COMMON_PARAM_SPECS;
 }
 
 /** Group phrases by their `category` field, preserving registry order. */
@@ -175,22 +154,87 @@ function groupByCategory(phrases: readonly Phrase[]): ReadonlyArray<{
   return order.map((category) => ({ category, items: buckets.get(category) ?? [] }));
 }
 
+/**
+ * Read-only step-grid preview of the phrase the engine is currently playing
+ * for this track. Uses the same row-and-cell layout as the manual editors so
+ * the visual language is consistent.
+ */
+function ActivePhrasePreview({ phrase }: { phrase: Phrase | undefined }): ReactElement {
+  if (phrase === undefined) {
+    return <div className="auto-preview auto-preview-empty">No phrase selected</div>;
+  }
+  return (
+    <div className="auto-preview">
+      <div className="auto-preview-name">{phrase.name}</div>
+      {phrase.kind === "drum" ? (
+        <DrumPreview template={phrase.template} />
+      ) : (
+        <RhythmPreview template={phrase.template} />
+      )}
+    </div>
+  );
+}
+
+/** Single-row preview for a melody / bass rhythm template. */
+function RhythmPreview({ template }: { template: RhythmTemplate }): ReactElement {
+  return (
+    <div className="auto-preview-grid">
+      <div className="auto-preview-row">
+        {Array.from({ length: PREVIEW_STEPS }, (_, i) => (
+          <PreviewCell key={i} velocity={template[i] ?? 0} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Multi-row preview for a drum kit — every pad in `PREVIEW_PAD_ORDER`. */
+function DrumPreview({ template }: { template: DrumTemplate }): ReactElement {
+  return (
+    <div className="auto-preview-grid">
+      {PREVIEW_PAD_ORDER.map((pad) => {
+        const row = template[pad];
+        return (
+          <div key={pad} className="auto-preview-row">
+            <span className="pad-label">{pad}</span>
+            {Array.from({ length: PREVIEW_STEPS }, (_, i) => (
+              <PreviewCell key={i} velocity={row?.[i] ?? 0} />
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * One read-only step cell: lit when velocity > 0, with opacity scaling on
+ * velocity so accents stand out against ghost notes.
+ */
+function PreviewCell({ velocity }: { velocity: number }): ReactElement {
+  const filled = velocity > 0;
+  const className = `step ${filled ? "on" : ""}`;
+  // 0..1 velocity → 0.4..1 opacity. Empty cells stay flat (no opacity tweak).
+  const style = filled ? { opacity: 0.4 + velocity * 0.6 } : undefined;
+  return <span className={className} style={style} />;
+}
+
 /** Single labelled slider for one AutoParams field. */
 function ParamSlider({
   spec,
   value,
   onChange,
-  disabled,
 }: {
   spec: ParamSpec;
   value: number;
   onChange: (v: number) => void;
-  disabled: boolean;
 }): ReactElement {
+  // 0 means "infinity" — render the symbol so the user knows rotation/variation is frozen.
+  const display = value === 0 ? "∞" : String(value);
   return (
-    <label className={`auto-param ${disabled ? "disabled" : ""}`}>
+    <label className="auto-param">
       <span>
-        {spec.label}: {value}
+        {spec.label}: {display}
       </span>
       <input
         type="range"
@@ -198,7 +242,6 @@ function ParamSlider({
         max={spec.max}
         step={spec.step}
         value={value}
-        disabled={disabled}
         onChange={(e) => {
           onChange(Number(e.target.value));
         }}

@@ -104,34 +104,23 @@ export type Pattern<T> = {
 };
 
 /**
- * Tunables for an auto track. Same shape for all roles; defaults vary by role.
+ * Tunables for an auto track. Two periods drive the entire variation model:
+ *
+ * - `microPeriodBars`: how often the per-event variation re-rolls (drum/bass
+ *   drop pattern, melody walk + ghost insertions). Within one micro slot
+ *   the same variation seed applies, so phrase repeats sound identical.
+ *
+ * - `macroPeriodBars`: how often the rotation slot advances and a new
+ *   template is picked from `phraseIds`.
+ *
+ * Either field set to `0` means "infinity" — the slot stays at 0 forever.
+ * (Use macroPeriodBars=0 to lock onto a single phrase.)
+ *
+ * Variation strengths are baked into the generator and are not user-tunable.
  */
 export type AutoParams = {
-  /**
-   * Strength of per-event timbral jitter (octave shift / velocity / drop
-   * probability). 0..1. Independent of {@link AutoParams.pitchVariance} so
-   * a track can have rhythm wobble without scale-degree drift, or vice versa.
-   */
-  microVariance: number;
-  /**
-   * Strength of per-event scale-degree jitter for pitched tracks. 0..1. At
-   * 0 the phrase plays the authored degrees verbatim; higher values shift
-   * each event ±N within the scale (weighted toward smaller shifts), giving
-   * the same phrase a slightly different melodic shape on every play. The
-   * UI exposes this only on melody tracks; bass keeps it at 0 to preserve
-   * the single-pitch root design.
-   */
-  pitchVariance: number;
-  /** How often the auto track rotates to a different phrase from `phraseIds`. */
-  rotationBars: number;
-  /**
-   * When true the auto track freezes on a single phrase (slot 0) and stays
-   * there until the user touches the config. Useful for drums and bass where
-   * rotation tends to distract from a steady groove; melody usually wants
-   * this off so phrases evolve over time. The seed still drives *which*
-   * phrase the track is locked to, so re-rolling the seed picks a new lock.
-   */
-  lockVariant: boolean;
+  microPeriodBars: number;
+  macroPeriodBars: number;
 };
 
 /** Fields common to every track. */

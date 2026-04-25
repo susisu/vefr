@@ -1,170 +1,161 @@
 import { describe, expect, it } from "vitest";
-import { TICKS_PER_BEAT, type DrumHit, type Note, type Pattern } from "../engine/types.js";
-import { generateDrumBar, generatePitchedBar } from "./generator.js";
+import type { DrumTemplate, RhythmTemplate } from "../phrases/types.js";
+import { generateBassBar, generateDrumBar, generateMelodyBar } from "./generator.js";
 
-/** Tiny drum pattern: one kick on every beat. */
-function fourBeatKick(): Pattern<DrumHit> {
-  return {
-    lengthTicks: 4 * TICKS_PER_BEAT,
-    events: [0, 1, 2, 3].map((b) => ({
-      tick: b * TICKS_PER_BEAT,
-      payload: { pad: "kick", velocity: 1 },
-    })),
-  };
-}
+/** Drum kit with kick on every beat — a stable reference for rotation tests. */
+const kickKit: DrumTemplate = {
+  kick: [
+    1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
+    1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
+  ],
+};
 
-/** Tiny drum pattern: one snare on every beat. Used to detect rotation. */
-function fourBeatSnare(): Pattern<DrumHit> {
-  return {
-    lengthTicks: 4 * TICKS_PER_BEAT,
-    events: [0, 1, 2, 3].map((b) => ({
-      tick: b * TICKS_PER_BEAT,
-      payload: { pad: "snare", velocity: 1 },
-    })),
-  };
-}
+/** Drum kit with closed-hat on every beat — used to detect rotation. */
+const hatKit: DrumTemplate = {
+  "closed-hat": [
+    1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
+    1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
+  ],
+};
 
-/** Tiny drum pattern: one hat on every beat (used as a third rotation choice). */
-function fourBeatHat(): Pattern<DrumHit> {
-  return {
-    lengthTicks: 4 * TICKS_PER_BEAT,
-    events: [0, 1, 2, 3].map((b) => ({
-      tick: b * TICKS_PER_BEAT,
-      payload: { pad: "closed-hat", velocity: 1 },
-    })),
-  };
-}
+/** Bass / melody template: a hit on every beat. */
+const beatTemplate: RhythmTemplate = [
+  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
+  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
+];
 
-/** Pitched pattern: scale degree 0 on every beat. */
-function fourBeatRoot(): Pattern<Note> {
-  return {
-    lengthTicks: 4 * TICKS_PER_BEAT,
-    events: [0, 1, 2, 3].map((b) => ({
-      tick: b * TICKS_PER_BEAT,
-      payload: { degree: 0, octave: 0, velocity: 1, lengthTicks: TICKS_PER_BEAT },
-    })),
-  };
-}
+/** Sparse template — used to exercise melody ghost insertion. */
+const sparseTemplate: RhythmTemplate = [
+  1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+  1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+];
 
 describe("generateDrumBar", () => {
-  it("is deterministic for the same (seed, bar)", () => {
+  it("is deterministic for the same input", () => {
     const args = {
       bar: 0,
       seed: 42,
-      patterns: [fourBeatKick(), fourBeatSnare()],
-      params: { microVariance: 0.5, pitchVariance: 0, rotationBars: 1, lockVariant: false },
+      templates: [kickKit, hatKit],
+      params: { microPeriodBars: 1, macroPeriodBars: 1 },
     };
-    const a = generateDrumBar(args);
-    const b = generateDrumBar(args);
-    expect(a).toEqual(b);
+    expect(generateDrumBar(args)).toEqual(generateDrumBar(args));
   });
 
-  it("returns the picked pattern verbatim when microVariance is 0", () => {
+  it("emits the picked template's events when periods are 1", () => {
     const out = generateDrumBar({
       bar: 0,
       seed: 7,
-      patterns: [fourBeatKick()],
-      params: { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: false },
+      templates: [kickKit],
+      params: { microPeriodBars: 0, macroPeriodBars: 0 },
     });
-    expect(out.events).toEqual(fourBeatKick().events);
+    expect(out.events.length).toBeGreaterThan(0);
+    expect(out.events.every((ev) => ev.payload.pad === "kick")).toBe(true);
   });
 
-  it("rotates phrases at the rotation boundary", () => {
-    const params = { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: false };
-    const patterns = [fourBeatKick(), fourBeatHat()];
+  it("rotates among templates as the macro slot advances", () => {
+    const params = { microPeriodBars: 0, macroPeriodBars: 1 };
     const pads = new Set<string>();
     for (let bar = 0; bar < 16; bar++) {
-      const out = generateDrumBar({ bar, seed: 11, patterns, params });
+      const out = generateDrumBar({ bar, seed: 11, templates: [kickKit, hatKit], params });
       for (const ev of out.events) pads.add(ev.payload.pad);
     }
     expect(pads.has("kick")).toBe(true);
     expect(pads.has("closed-hat")).toBe(true);
   });
 
-  it("freezes on a single phrase when lockVariant is on", () => {
-    const params = { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: true };
-    const patterns = [fourBeatKick(), fourBeatHat()];
+  it("freezes on a single template when macroPeriodBars is 0", () => {
+    const params = { microPeriodBars: 0, macroPeriodBars: 0 };
     const pads = new Set<string>();
     for (let bar = 0; bar < 16; bar++) {
-      const out = generateDrumBar({ bar, seed: 11, patterns, params });
+      const out = generateDrumBar({ bar, seed: 11, templates: [kickKit, hatKit], params });
       for (const ev of out.events) pads.add(ev.payload.pad);
     }
-    // With the same seed locked, only one phrase ever plays.
     expect(pads.size).toBe(1);
   });
 
-  it("returns an empty bar when the pattern list is empty", () => {
+  it("returns an empty bar when the template list is empty", () => {
     const out = generateDrumBar({
       bar: 0,
       seed: 0,
-      patterns: [],
-      params: { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: false },
+      templates: [],
+      params: { microPeriodBars: 0, macroPeriodBars: 0 },
     });
     expect(out.events).toEqual([]);
   });
 });
 
-describe("generatePitchedBar", () => {
-  it("is deterministic for the same (seed, bar)", () => {
-    const args = {
-      bar: 3,
+describe("generateBassBar", () => {
+  it("emits root degree-0 events at sub-bass octave", () => {
+    const out = generateBassBar({
+      bar: 0,
       seed: 99,
-      patterns: [fourBeatRoot()],
-      params: { microVariance: 0.4, pitchVariance: 0, rotationBars: 4, lockVariant: false },
+      templates: [beatTemplate],
+      params: { microPeriodBars: 0, macroPeriodBars: 0 },
+    });
+    for (const ev of out.events) {
+      expect(ev.payload.degree).toBe(0);
+      expect(ev.payload.octave).toBe(-2);
+    }
+  });
+
+  it("is deterministic for the same input", () => {
+    const args = {
+      bar: 5,
+      seed: 17,
+      templates: [beatTemplate],
+      params: { microPeriodBars: 2, macroPeriodBars: 4 },
     };
-    expect(generatePitchedBar(args)).toEqual(generatePitchedBar(args));
+    expect(generateBassBar(args)).toEqual(generateBassBar(args));
   });
+});
 
-  it("can shift octaves when microVariance is high", () => {
-    const octaves = new Set<number>();
-    for (let bar = 0; bar < 16; bar++) {
-      const out = generatePitchedBar({
-        bar,
-        seed: 21,
-        patterns: [fourBeatRoot()],
-        params: { microVariance: 1, pitchVariance: 0, rotationBars: 1, lockVariant: false },
-      });
-      for (const ev of out.events) octaves.add(ev.payload.octave);
-    }
-    expect(octaves.size).toBeGreaterThan(1);
-  });
-
-  it("never shifts octaves when microVariance is 0", () => {
-    for (let bar = 0; bar < 8; bar++) {
-      const out = generatePitchedBar({
-        bar,
-        seed: 21,
-        patterns: [fourBeatRoot()],
-        params: { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: false },
-      });
-      for (const ev of out.events) expect(ev.payload.octave).toBe(0);
-    }
-  });
-
-  it("shifts scale degrees when pitchVariance is high", () => {
+describe("generateMelodyBar", () => {
+  it("walks the scale rather than emitting degree 0", () => {
     const degrees = new Set<number>();
-    for (let bar = 0; bar < 16; bar++) {
-      const out = generatePitchedBar({
+    for (let bar = 0; bar < 32; bar++) {
+      const out = generateMelodyBar({
         bar,
         seed: 33,
-        patterns: [fourBeatRoot()],
-        params: { microVariance: 0, pitchVariance: 1, rotationBars: 1, lockVariant: false },
+        templates: [beatTemplate],
+        params: { microPeriodBars: 2, macroPeriodBars: 0 },
       });
       for (const ev of out.events) degrees.add(ev.payload.degree);
     }
-    // High pitch variance over 64 events: expect at least one degree shift.
+    // Over many bars the walk should land on multiple distinct degrees.
     expect(degrees.size).toBeGreaterThan(1);
   });
 
-  it("never shifts degrees when pitchVariance is 0", () => {
-    for (let bar = 0; bar < 8; bar++) {
-      const out = generatePitchedBar({
+  it("is deterministic for the same input", () => {
+    const args = {
+      bar: 3,
+      seed: 99,
+      templates: [beatTemplate],
+      params: { microPeriodBars: 2, macroPeriodBars: 4 },
+    };
+    expect(generateMelodyBar(args)).toEqual(generateMelodyBar(args));
+  });
+
+  it("produces the same walk within one micro slot", () => {
+    const params = { microPeriodBars: 4, macroPeriodBars: 0 };
+    const a = generateMelodyBar({ bar: 0, seed: 5, templates: [beatTemplate], params });
+    const b = generateMelodyBar({ bar: 2, seed: 5, templates: [beatTemplate], params });
+    // bar 0 and bar 2 share micro slot 0 → identical events.
+    expect(a).toEqual(b);
+  });
+
+  it("inserts ghost notes on empty steps over many bars", () => {
+    let totalEvents = 0;
+    for (let bar = 0; bar < 64; bar++) {
+      const out = generateMelodyBar({
         bar,
-        seed: 33,
-        patterns: [fourBeatRoot()],
-        params: { microVariance: 1, pitchVariance: 0, rotationBars: 1, lockVariant: false },
+        seed: 13,
+        templates: [sparseTemplate],
+        params: { microPeriodBars: 2, macroPeriodBars: 0 },
       });
-      for (const ev of out.events) expect(ev.payload.degree).toBe(0);
+      totalEvents += out.events.length;
     }
+    // Sparse template has 2 authored events per bar = 128 over 64 bars; insertion
+    // should push the total above that even after drops.
+    expect(totalEvents).toBeGreaterThan(128);
   });
 });
