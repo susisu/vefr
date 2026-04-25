@@ -9,10 +9,10 @@ import {
 } from "../../engine/types.js";
 import { useControlApi } from "../context.js";
 
-/** Number of steps shown in the pitched grid: 16 sixteenth-notes per bar. */
-const STEPS_PER_BAR = 16;
-/** Tick distance between adjacent steps in the editor. */
-const STEP_TICKS = (4 * TICKS_PER_BEAT) / STEPS_PER_BAR;
+/** Number of steps shown in the pitched grid: 32 sixteenth-notes spanning 2 bars. */
+const STEPS_PER_PHRASE = 32;
+/** Tick distance between adjacent steps in the editor (a sixteenth note). */
+const STEP_TICKS = TICKS_PER_BEAT / 4;
 /** Scale-degree rows shown vertically (top = 7, bottom = 0). */
 const DEGREES: readonly number[] = [7, 6, 5, 4, 3, 2, 1, 0];
 /** Default octave assigned to newly placed melody notes. */
@@ -72,7 +72,7 @@ function ManualPitchedEditorInner({
         {DEGREES.map((degree) => (
           <div key={degree} className="pitched-row">
             <span className="degree-label">{degree}</span>
-            {Array.from({ length: STEPS_PER_BAR }, (_, i) => {
+            {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
               const tick = i * STEP_TICKS;
               const ev = pattern.events.find((e) => e.tick === tick);
               const on = ev?.payload.degree === degree;

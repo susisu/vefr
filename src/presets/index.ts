@@ -11,7 +11,6 @@ import {
 } from "./types.js";
 
 export type { DrumPreset, PitchedPreset, Preset } from "./types.js";
-export { drumFourOnTheFloor } from "./drums.js";
 
 /** Built-in preset registry: drums + melody + bass. */
 const builtinPresets: readonly Preset[] = [...drumPresets, ...melodyPresets, ...bassPresets];

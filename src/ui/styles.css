@@ -13,7 +13,7 @@ body {
 }
 
 main {
-  max-width: 720px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 1rem;
 }
@@ -109,7 +109,7 @@ input[type="range"] {
 .drum-row,
 .pitched-row {
   display: grid;
-  grid-template-columns: 80px repeat(16, 1fr);
+  grid-template-columns: 80px repeat(32, 1fr);
   gap: 2px;
   align-items: center;
 }
@@ -127,6 +127,19 @@ input[type="range"] {
   height: 20px;
   padding: 0;
   cursor: pointer;
+  min-width: 0;
+}
+
+/* Subtle beat-grouping: thicker left border every 4 steps. */
+.drum-row .step:nth-child(4n + 2),
+.pitched-row .step:nth-child(4n + 2) {
+  border-left-width: 2px;
+}
+
+/* Bar-grouping: stronger separator at the half-phrase point (step 16). */
+.drum-row .step:nth-child(18),
+.pitched-row .step:nth-child(18) {
+  border-left: 2px solid #777;
 }
 
 .step.on {

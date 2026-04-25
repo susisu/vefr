@@ -33,15 +33,19 @@ export type PitchedPreset = {
 /** Union of every preset shape recognised by the registry. */
 export type Preset = DrumPreset | PitchedPreset;
 
-/** Default {@link AutoParams} for a given pitched role; PHASE1.md §7. */
+/**
+ * Default {@link AutoParams} for a given pitched role. Tuned conservatively
+ * so a fresh boot reads as steady BGM rather than constantly mutating noise:
+ * microVariance is low, mid/macro rotation is slow.
+ */
 export const DEFAULT_AUTO_PARAMS_PITCHED: Record<PitchedRole, AutoParams> = {
-  melody: { microVariance: 0.3, midPeriodBars: 2, macroPeriodBars: 8 },
-  bass: { microVariance: 0.15, midPeriodBars: 4, macroPeriodBars: 16 },
+  melody: { microVariance: 0.2, midPeriodBars: 4, macroPeriodBars: 16 },
+  bass: { microVariance: 0.1, midPeriodBars: 8, macroPeriodBars: 32 },
 };
 
 /** Default {@link AutoParams} for an auto drum track. */
 export const DEFAULT_AUTO_PARAMS_DRUM: AutoParams = {
-  microVariance: 0.2,
+  microVariance: 0.12,
   midPeriodBars: 4,
-  macroPeriodBars: 16,
+  macroPeriodBars: 32,
 };

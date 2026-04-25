@@ -21,6 +21,13 @@ import {
   type TransportState,
 } from "./types.js";
 
+/**
+ * How many musical bars one auto-track phrase spans. Preset variants are
+ * authored at this length (32 sixteenth-note steps = 2 bars in 4/4) so the
+ * generator output and the dispatcher cycle stay aligned.
+ */
+const PHRASE_BARS = 2;
+
 /** Initial state used to seed an {@link Engine}. */
 export type EngineInitial = {
   transport: TransportState;
@@ -274,20 +281,19 @@ export class Engine {
 
   /**
    * Resolve every track's events for `tick` and forward them to the SoundOutput.
-   * Manual tracks index their pattern modulo `lengthTicks`; auto tracks use
-   * a per-bar materialized cache produced by the {@link generator} module.
+   * Manual tracks index their pattern modulo `lengthTicks`; auto tracks use a
+   * per-phrase materialized cache produced by the {@link generator} module.
+   * A phrase is {@link PHRASE_BARS} musical bars long — the natural cycle
+   * length of the 32-step (= 2 × 16-sixteenth-notes) preset variants.
    */
   private dispatch(tick: Tick, time: number): void {
-    const barLength = TICKS_PER_BEAT * this.transport.signature.numerator;
-    const bar = Math.floor(tick / barLength);
-    const localTick = tick - bar * barLength;
     for (const track of this.tracks) {
       if (track.mute) continue;
       const gain = track.volume;
       if (track.source === "manual") {
         this.dispatchManual(track, tick, time, gain);
       } else {
-        this.dispatchAuto(track, bar, localTick, time, gain);
+        this.dispatchAuto(track, tick, time, gain);
       }
     }
   }
@@ -315,19 +321,23 @@ export class Engine {
   }
 
   /**
-   * Fire matching events from an auto track's materialized bar at the given
-   * intra-bar tick. Re-materializes when crossing a bar boundary (or when the
-   * track config has changed since the last cache write).
+   * Fire matching events from an auto track's materialized phrase at the
+   * given global tick. Re-materializes when crossing a phrase boundary (or
+   * when the track config has changed since the last cache write).
    */
   private dispatchAuto(
     track: Extract<Track, { source: "auto" }>,
-    bar: number,
-    localTick: Tick,
+    tick: Tick,
     time: number,
     gain: number,
   ): void {
+    const barLength = TICKS_PER_BEAT * this.transport.signature.numerator;
+    const phraseTicks = barLength * PHRASE_BARS;
+    const phrase = Math.floor(tick / phraseTicks);
+    const localTick = tick - phrase * phraseTicks;
     const cached = this.autoCache.get(track.id);
-    const entry = cached && cached.bar === bar ? cached : this.materializeAuto(track, bar);
+    const entry =
+      cached && cached.phrase === phrase ? cached : this.materializeAuto(track, phrase);
     if (entry !== cached) this.autoCache.set(track.id, entry);
     if (entry.lengthTicks <= 0 || localTick >= entry.lengthTicks) return;
     if (entry.kind === "drum") {
@@ -343,19 +353,25 @@ export class Engine {
     }
   }
 
-  /** Run the appropriate generator and wrap the result in a cache entry. */
+  /**
+   * Run the appropriate generator and wrap the result in a cache entry.
+   * The generator's `bar` input remains the "musical bar" index, so existing
+   * macro/midPeriodBars semantics are unchanged: we just call it once per
+   * phrase boundary using the bar at the start of that phrase.
+   */
   private materializeAuto(
     track: Extract<Track, { source: "auto" }>,
-    bar: number,
+    phrase: number,
   ): AutoCacheEntry {
+    const bar = phrase * PHRASE_BARS;
     if (track.kind === "drum") {
       const presets = this.collectDrumPresets(track.presetIds);
       const out = generateDrumBar({ bar, seed: track.seed, presets, params: track.params });
-      return { kind: "drum", bar, lengthTicks: out.lengthTicks, events: out.events };
+      return { kind: "drum", phrase, lengthTicks: out.lengthTicks, events: out.events };
     }
     const presets = this.collectPitchedPresets(track.presetIds, track.role);
     const out = generatePitchedBar({ bar, seed: track.seed, presets, params: track.params });
-    return { kind: "pitched", bar, lengthTicks: out.lengthTicks, events: out.events };
+    return { kind: "pitched", phrase, lengthTicks: out.lengthTicks, events: out.events };
   }
 
   /** Resolve preset ids into drum-preset objects, dropping unknown / wrong-kind ids. */
@@ -389,10 +405,14 @@ export class Engine {
   }
 }
 
-/** Cached materialized bar (drum or pitched) plus the bar index it was produced for. */
+/**
+ * Cached materialized phrase (drum or pitched) plus the phrase index it was
+ * produced for. `phrase` indexes whole {@link PHRASE_BARS}-bar chunks of
+ * playback, so a single materialization covers `PHRASE_BARS` musical bars.
+ */
 type AutoCacheEntry =
-  | { kind: "drum"; bar: number; lengthTicks: Tick; events: DrumBar["events"] }
-  | { kind: "pitched"; bar: number; lengthTicks: Tick; events: PitchedBar["events"] };
+  | { kind: "drum"; phrase: number; lengthTicks: Tick; events: DrumBar["events"] }
+  | { kind: "pitched"; phrase: number; lengthTicks: Tick; events: PitchedBar["events"] };
 
 /** Apply only the present fields of a {@link TrackPatch} to a track. */
 function applyPatch(t: Track, patch: TrackPatch): Track {

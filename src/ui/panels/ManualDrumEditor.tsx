@@ -10,10 +10,10 @@ import {
 } from "../../engine/types.js";
 import { useControlApi } from "../context.js";
 
-/** Number of steps shown in the drum grid: 16 sixteenth-notes per bar. */
-const STEPS_PER_BAR = 16;
-/** Tick distance between adjacent steps in the editor. */
-const STEP_TICKS = (4 * TICKS_PER_BEAT) / STEPS_PER_BAR;
+/** Number of steps shown in the drum grid: 32 sixteenth-notes spanning 2 bars. */
+const STEPS_PER_PHRASE = 32;
+/** Tick distance between adjacent steps in the editor (a sixteenth note). */
+const STEP_TICKS = TICKS_PER_BEAT / 4;
 /** Drum pads displayed as rows in the grid. */
 const DRUM_PADS: readonly DrumPad[] = ["kick", "snare", "closed-hat", "open-hat"];
 
@@ -51,7 +51,7 @@ function ManualDrumEditorInner({
         {DRUM_PADS.map((pad) => (
           <div key={pad} className="drum-row">
             <span className="pad-label">{pad}</span>
-            {Array.from({ length: STEPS_PER_BAR }, (_, i) => {
+            {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
               const tick = i * STEP_TICKS;
               const on = pattern.events.some(
                 (ev) => ev.tick === tick && ev.payload.pad === pad,
