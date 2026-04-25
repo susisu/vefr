@@ -132,6 +132,7 @@ function patternSchema<P>(payload: v.GenericSchema<P>): v.GenericSchema<Pattern<
 /** Schema for {@link AutoParams}. */
 const AutoParamsSchema = v.object({
   microVariance: NormalizedNumber,
+  pitchVariance: NormalizedNumber,
   rotationBars: PositiveInteger,
   lockVariant: v.boolean(),
 });

@@ -52,7 +52,7 @@ describe("generateDrumBar", () => {
       bar: 0,
       seed: 42,
       patterns: [fourBeatKick(), fourBeatSnare()],
-      params: { microVariance: 0.5, rotationBars: 1, lockVariant: false },
+      params: { microVariance: 0.5, pitchVariance: 0, rotationBars: 1, lockVariant: false },
     };
     const a = generateDrumBar(args);
     const b = generateDrumBar(args);
@@ -64,13 +64,13 @@ describe("generateDrumBar", () => {
       bar: 0,
       seed: 7,
       patterns: [fourBeatKick()],
-      params: { microVariance: 0, rotationBars: 1, lockVariant: false },
+      params: { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: false },
     });
     expect(out.events).toEqual(fourBeatKick().events);
   });
 
   it("rotates phrases at the rotation boundary", () => {
-    const params = { microVariance: 0, rotationBars: 1, lockVariant: false };
+    const params = { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: false };
     const patterns = [fourBeatKick(), fourBeatHat()];
     const pads = new Set<string>();
     for (let bar = 0; bar < 16; bar++) {
@@ -82,7 +82,7 @@ describe("generateDrumBar", () => {
   });
 
   it("freezes on a single phrase when lockVariant is on", () => {
-    const params = { microVariance: 0, rotationBars: 1, lockVariant: true };
+    const params = { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: true };
     const patterns = [fourBeatKick(), fourBeatHat()];
     const pads = new Set<string>();
     for (let bar = 0; bar < 16; bar++) {
@@ -98,7 +98,7 @@ describe("generateDrumBar", () => {
       bar: 0,
       seed: 0,
       patterns: [],
-      params: { microVariance: 0, rotationBars: 1, lockVariant: false },
+      params: { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: false },
     });
     expect(out.events).toEqual([]);
   });
@@ -110,7 +110,7 @@ describe("generatePitchedBar", () => {
       bar: 3,
       seed: 99,
       patterns: [fourBeatRoot()],
-      params: { microVariance: 0.4, rotationBars: 4, lockVariant: false },
+      params: { microVariance: 0.4, pitchVariance: 0, rotationBars: 4, lockVariant: false },
     };
     expect(generatePitchedBar(args)).toEqual(generatePitchedBar(args));
   });
@@ -122,7 +122,7 @@ describe("generatePitchedBar", () => {
         bar,
         seed: 21,
         patterns: [fourBeatRoot()],
-        params: { microVariance: 1, rotationBars: 1, lockVariant: false },
+        params: { microVariance: 1, pitchVariance: 0, rotationBars: 1, lockVariant: false },
       });
       for (const ev of out.events) octaves.add(ev.payload.octave);
     }
@@ -135,9 +135,36 @@ describe("generatePitchedBar", () => {
         bar,
         seed: 21,
         patterns: [fourBeatRoot()],
-        params: { microVariance: 0, rotationBars: 1, lockVariant: false },
+        params: { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: false },
       });
       for (const ev of out.events) expect(ev.payload.octave).toBe(0);
+    }
+  });
+
+  it("shifts scale degrees when pitchVariance is high", () => {
+    const degrees = new Set<number>();
+    for (let bar = 0; bar < 16; bar++) {
+      const out = generatePitchedBar({
+        bar,
+        seed: 33,
+        patterns: [fourBeatRoot()],
+        params: { microVariance: 0, pitchVariance: 1, rotationBars: 1, lockVariant: false },
+      });
+      for (const ev of out.events) degrees.add(ev.payload.degree);
+    }
+    // High pitch variance over 64 events: expect at least one degree shift.
+    expect(degrees.size).toBeGreaterThan(1);
+  });
+
+  it("never shifts degrees when pitchVariance is 0", () => {
+    for (let bar = 0; bar < 8; bar++) {
+      const out = generatePitchedBar({
+        bar,
+        seed: 33,
+        patterns: [fourBeatRoot()],
+        params: { microVariance: 1, pitchVariance: 0, rotationBars: 1, lockVariant: false },
+      });
+      for (const ev of out.events) expect(ev.payload.degree).toBe(0);
     }
   });
 });

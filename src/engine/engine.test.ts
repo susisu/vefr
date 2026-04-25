@@ -110,7 +110,7 @@ describe("Engine", () => {
       source: "auto",
       phraseIds: [phrase.id],
       seed: 0,
-      params: { microVariance: 0, rotationBars: 1, lockVariant: false },
+      params: { microVariance: 0, pitchVariance: 0, rotationBars: 1, lockVariant: false },
     };
     const initial: EngineInitial = {
       transport: {

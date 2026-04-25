@@ -14,7 +14,7 @@ import {
 import { useControlApi } from "../context.js";
 
 /** AutoParams fields that map to a numeric slider. */
-type NumericParamKey = "microVariance" | "rotationBars";
+type NumericParamKey = "microVariance" | "pitchVariance" | "rotationBars";
 
 /** Tunable slider description used to render each numeric AutoParams field. */
 type ParamSpec = {
@@ -25,11 +25,20 @@ type ParamSpec = {
   step: number;
 };
 
-/** Sliders shared by every auto-track variant. */
-const PARAM_SPECS: readonly ParamSpec[] = [
+/** Sliders shown on every auto-track editor. */
+const COMMON_PARAM_SPECS: readonly ParamSpec[] = [
   { key: "microVariance", label: "Micro variance", min: 0, max: 1, step: 0.05 },
   { key: "rotationBars", label: "Rotation period (bars)", min: 1, max: 64, step: 1 },
 ];
+
+/** Extra slider shown only for melody tracks (bass is single-pitch by design). */
+const MELODY_PARAM_SPEC: ParamSpec = {
+  key: "pitchVariance",
+  label: "Pitch variance",
+  min: 0,
+  max: 1,
+  step: 0.05,
+};
 
 /** Editor for an auto track: phrase multi-select grouped by category + sliders + seed. */
 export function AutoTrackEditor({ track }: { track: Track }): ReactElement | null {
@@ -107,7 +116,7 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
         ))}
       </div>
       <div className="auto-params">
-        {PARAM_SPECS.map((spec) => (
+        {paramSpecsFor(track).map((spec) => (
           <ParamSlider
             key={spec.key}
             spec={spec}
@@ -115,8 +124,9 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
             onChange={(v) => {
               setParam(spec.key, v);
             }}
-            // Rotation period is a no-op while the variant is locked.
-            disabled={track.params.lockVariant && spec.key !== "microVariance"}
+            // Rotation period is the only knob that has no effect while
+            // the variant is locked; jitter sliders stay live.
+            disabled={track.params.lockVariant && spec.key === "rotationBars"}
           />
         ))}
         <label className="auto-seed">
@@ -133,6 +143,17 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
       </div>
     </div>
   );
+}
+
+/**
+ * Pick the slider list for a given track. Melody tracks get the extra
+ * pitchVariance slider; drum/bass tracks see the common set only.
+ */
+function paramSpecsFor(track: DrumTrack | PitchedTrack): readonly ParamSpec[] {
+  if (track.kind === "pitched" && track.role === "melody") {
+    return [...COMMON_PARAM_SPECS, MELODY_PARAM_SPEC];
+  }
+  return COMMON_PARAM_SPECS;
 }
 
 /** Group phrases by their `category` field, preserving registry order. */

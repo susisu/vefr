@@ -107,8 +107,21 @@ export type Pattern<T> = {
  * Tunables for an auto track. Same shape for all roles; defaults vary by role.
  */
 export type AutoParams = {
-  /** Strength of per-event jitter (octave shift / velocity / drop probability). 0..1. */
+  /**
+   * Strength of per-event timbral jitter (octave shift / velocity / drop
+   * probability). 0..1. Independent of {@link AutoParams.pitchVariance} so
+   * a track can have rhythm wobble without scale-degree drift, or vice versa.
+   */
   microVariance: number;
+  /**
+   * Strength of per-event scale-degree jitter for pitched tracks. 0..1. At
+   * 0 the phrase plays the authored degrees verbatim; higher values shift
+   * each event ±N within the scale (weighted toward smaller shifts), giving
+   * the same phrase a slightly different melodic shape on every play. The
+   * UI exposes this only on melody tracks; bass keeps it at 0 to preserve
+   * the single-pitch root design.
+   */
+  pitchVariance: number;
   /** How often the auto track rotates to a different phrase from `phraseIds`. */
   rotationBars: number;
   /**

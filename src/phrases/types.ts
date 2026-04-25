@@ -42,16 +42,19 @@ export type Phrase = DrumPhrase | PitchedPhrase;
 
 /**
  * Default {@link AutoParams} per pitched role. Bass defaults to lock so the
- * groove stays steady; melody runs unlocked so phrases rotate.
+ * groove stays steady; melody runs unlocked so phrases rotate. Bass's
+ * pitchVariance is pinned to 0 because the bass library is single-pitch by
+ * design — the UI doesn't expose the slider for bass tracks.
  */
 export const DEFAULT_AUTO_PARAMS_PITCHED: Record<PitchedRole, AutoParams> = {
-  melody: { microVariance: 0.2, rotationBars: 8, lockVariant: false },
-  bass: { microVariance: 0.1, rotationBars: 16, lockVariant: true },
+  melody: { microVariance: 0.2, pitchVariance: 0.3, rotationBars: 8, lockVariant: false },
+  bass: { microVariance: 0.1, pitchVariance: 0, rotationBars: 16, lockVariant: true },
 };
 
 /** Default {@link AutoParams} for an auto drum track. Locked by default. */
 export const DEFAULT_AUTO_PARAMS_DRUM: AutoParams = {
   microVariance: 0.12,
+  pitchVariance: 0,
   rotationBars: 16,
   lockVariant: true,
 };

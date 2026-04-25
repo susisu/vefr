@@ -21,6 +21,7 @@ import type {
 const TAG_PHRASE = 0x5048 /* "PH" — phrase rotation pick */;
 const TAG_MICRO_VEL = 0x4d56 /* "MV" — velocity / drop jitter */;
 const TAG_MICRO_OCT = 0x4d4f /* "MO" — octave jitter */;
+const TAG_MICRO_DEG = 0x4d44 /* "MD" — scale-degree jitter */;
 
 /**
  * Materialize one bar of drum events for an auto drum track. Pure function:
@@ -48,7 +49,14 @@ export function generatePitchedBar(input: PitchedGeneratorInput): PitchedBar {
   const phrase = pickPhrase<Note>(input);
   if (!phrase) return emptyBar();
   const events = collectEvents(phrase.events, (ev, idx) =>
-    jitterPitched(ev, idx, input.bar, input.seed, input.params.microVariance),
+    jitterPitched(
+      ev,
+      idx,
+      input.bar,
+      input.seed,
+      input.params.microVariance,
+      input.params.pitchVariance,
+    ),
   );
   return { lengthTicks: phrase.lengthTicks, events };
 }
@@ -114,31 +122,56 @@ function jitterDrum(
   return { tick: ev.tick, payload: { ...ev.payload, velocity: jittered } };
 }
 
-/** Apply the micro tier to a single pitched event: octave shift + velocity jitter + drop. */
+/**
+ * Apply the micro tier to a single pitched event:
+ * - velocity jitter + drop, scaled by `microVariance`
+ * - octave shift, scaled by `microVariance`
+ * - scale-degree shift, scaled by `pitchVariance` (independent knob)
+ */
 function jitterPitched(
   ev: PatternEvent<Note>,
   idx: number,
   bar: number,
   seed: number,
-  variance: number,
+  microVariance: number,
+  pitchVariance: number,
 ): PatternEvent<Note> | undefined {
-  if (variance <= 0) return ev;
-  const velRng = mulberry32(hashSeeds(seed, TAG_MICRO_VEL, bar, idx));
-  if (velRng() < variance * 0.3) return undefined;
-  const jitteredVel = jitterVelocity(ev.payload.velocity, velRng(), variance);
-  const octRng = mulberry32(hashSeeds(seed, TAG_MICRO_OCT, bar, idx));
-  const r = octRng();
-  let octaveShift = 0;
-  if (r < variance * 0.25) octaveShift = -1;
-  else if (r > 1 - variance * 0.25) octaveShift = 1;
+  if (microVariance <= 0 && pitchVariance <= 0) return ev;
+  let velocity = ev.payload.velocity;
+  let octave = ev.payload.octave;
+  let degree = ev.payload.degree;
+  if (microVariance > 0) {
+    const velRng = mulberry32(hashSeeds(seed, TAG_MICRO_VEL, bar, idx));
+    if (velRng() < microVariance * 0.3) return undefined;
+    velocity = jitterVelocity(velocity, velRng(), microVariance);
+    const octRng = mulberry32(hashSeeds(seed, TAG_MICRO_OCT, bar, idx));
+    const r = octRng();
+    if (r < microVariance * 0.25) octave -= 1;
+    else if (r > 1 - microVariance * 0.25) octave += 1;
+  }
+  if (pitchVariance > 0) {
+    degree += degreeShift(seed, bar, idx, pitchVariance);
+  }
   return {
     tick: ev.tick,
-    payload: {
-      ...ev.payload,
-      velocity: jitteredVel,
-      octave: ev.payload.octave + octaveShift,
-    },
+    payload: { ...ev.payload, velocity, octave, degree },
   };
+}
+
+/**
+ * Pick an integer degree shift in [-2, +2] weighted toward 0. Magnitudes
+ * grow with `variance` so low values rarely shift, high values often do.
+ * Deterministic in `(seed, bar, idx)`.
+ */
+function degreeShift(seed: number, bar: number, idx: number, variance: number): number {
+  const rng = mulberry32(hashSeeds(seed, TAG_MICRO_DEG, bar, idx));
+  // Two rolls: rng() picks the magnitude bucket, sign() picks direction.
+  const r = rng();
+  let mag = 0;
+  if (r < variance * 0.5) mag = 1;
+  else if (r < variance * 0.7) mag = 2;
+  if (mag === 0) return 0;
+  return rng() < 0.5 ? -mag : mag;
 }
 
 /** Multiply velocity by `1 + (rng - 0.5) * variance * 0.4`, clamped to [0, 1]. */
