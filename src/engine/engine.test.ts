@@ -27,7 +27,12 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
     },
   };
   const initial: EngineInitial = {
-    transport: { playing: false, bpm: 60, signature: { numerator: 4, denominator: 4 }, positionTick: 0 },
+    transport: {
+      playing: false,
+      bpm: 60,
+      signature: { numerator: 4, denominator: 4 },
+      positionTick: 0,
+    },
     global: { key: 0, scale: "minor" },
     tracks: [drumTrack],
   };
@@ -96,8 +101,8 @@ describe("Engine", () => {
       name: "Kick",
       template: {
         kick: [
-          1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
-          1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
+          1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          0, 0,
         ],
       },
     };
@@ -129,6 +134,85 @@ describe("Engine", () => {
     clock.advanceTo(8.5);
     const drums = output.events.filter((e) => e.kind === "drum");
     expect(drums.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("addTrack appends a track and assigns a fresh id", () => {
+    const { engine } = makeEngine();
+    const before = engine.getTracks().length;
+    const created = engine.addTrack({
+      name: "New Drum",
+      kind: "drum",
+      mute: false,
+      volume: 0.5,
+      source: "manual",
+      pattern: { lengthTicks: TICKS_PER_BEAT * 4, events: [] },
+    });
+    expect(engine.getTracks()).toHaveLength(before + 1);
+    expect(created.id).toBeTruthy();
+    expect(engine.getTracks().at(-1)?.id).toBe(created.id);
+  });
+
+  it("addTrack rejects a duplicate name", () => {
+    const { engine } = makeEngine();
+    expect(() =>
+      engine.addTrack({
+        name: "Manual Drum 1",
+        kind: "drum",
+        mute: false,
+        volume: 0.5,
+        source: "manual",
+        pattern: { lengthTicks: TICKS_PER_BEAT * 4, events: [] },
+      }),
+    ).toThrow(/name/u);
+  });
+
+  it("removeTrack drops the track from the list", () => {
+    const { engine } = makeEngine();
+    engine.removeTrack(refById("drum-1"));
+    expect(engine.getTracks()).toHaveLength(0);
+  });
+
+  it("moveTrack reorders the list", () => {
+    const { engine } = makeEngine();
+    const second = engine.addTrack({
+      name: "Second",
+      kind: "drum",
+      mute: false,
+      volume: 1,
+      source: "manual",
+      pattern: { lengthTicks: TICKS_PER_BEAT * 4, events: [] },
+    });
+    engine.moveTrack(refById(second.id), 0);
+    expect(engine.getTracks().map((t) => t.id)).toEqual([second.id, "drum-1"]);
+  });
+
+  it("moveTrack rejects out-of-range indices", () => {
+    const { engine } = makeEngine();
+    expect(() => {
+      engine.moveTrack(refById("drum-1"), 5);
+    }).toThrow(/range/u);
+  });
+
+  it("proposeUniqueName appends a suffix on collision", () => {
+    const { engine } = makeEngine();
+    expect(engine.proposeUniqueName("Manual Drum 1")).toBe("Manual Drum 1 2");
+    expect(engine.proposeUniqueName("Fresh")).toBe("Fresh");
+  });
+
+  it("emits playheadStepChanged on 16th-step boundaries", () => {
+    const { clock, engine } = makeEngine();
+    const seen: Array<number | undefined> = [];
+    engine.playheadStepChanged.on((step) => {
+      seen.push(step);
+    });
+    engine.play();
+    // 60 BPM → one beat / sec → four 16th-steps / sec → ~4 advances by t=1.0
+    clock.advanceTo(1.05);
+    expect(seen.length).toBeGreaterThanOrEqual(4);
+    expect(engine.getPlayheadStep()).toBeGreaterThanOrEqual(3);
+    engine.pause();
+    expect(engine.getPlayheadStep()).toBeUndefined();
+    expect(seen.at(-1)).toBeUndefined();
   });
 
   it("resumes from paused position", () => {

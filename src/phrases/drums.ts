@@ -3,6 +3,7 @@ import type { DrumPhrase, DrumTemplate } from "./types.js";
 /**
  * Tech-house: kick on every beat, off-beat closed-hat "tss" between kicks.
  */
+// prettier-ignore
 const drumTechnoOffbeat: DrumTemplate = {
   // step:        0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15  | bar 1
   //              16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31  | bar 2
@@ -13,6 +14,7 @@ const drumTechnoOffbeat: DrumTemplate = {
 };
 
 /** Same skeleton with open-hats for the classic tech-house shimmer. */
+// prettier-ignore
 const drumTechnoOpenHat: DrumTemplate = {
   kick:       [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
                1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0],
@@ -21,6 +23,7 @@ const drumTechnoOpenHat: DrumTemplate = {
 };
 
 /** Driving techno: kick + claps on the backbeat + relentless 16th closed-hats. */
+// prettier-ignore
 const drumTechnoDriving: DrumTemplate = {
   kick:         [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
                  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0],
@@ -35,6 +38,7 @@ const drumTechnoDriving: DrumTemplate = {
  * eighth-note hats throughout. Bar 2 mirrors the figure with the ghost
  * shifted into the second half so the loop doesn't feel mechanical.
  */
+// prettier-ignore
 const drumLofiBoomBap: DrumTemplate = {
   kick:         [1, 0, 0, 0,  0, 0, 0, 0.7,  0, 0, 0, 0,  0, 0, 0, 0,
                  1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0.7,  0, 0, 0, 0],
@@ -45,6 +49,7 @@ const drumLofiBoomBap: DrumTemplate = {
 };
 
 /** Half-time lo-fi: sparse, with snare on the "3" of each bar and off-beat hats. */
+// prettier-ignore
 const drumLofiHalfTime: DrumTemplate = {
   kick:         [1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
                  1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0],
@@ -55,6 +60,7 @@ const drumLofiHalfTime: DrumTemplate = {
 };
 
 /** Minimal lo-fi: just kicks + snares with a couple of ghost kicks for a dub feel. */
+// prettier-ignore
 const drumLofiMinimal: DrumTemplate = {
   kick:  [1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,
           1, 0, 0, 0,  0.55, 0, 0, 0,  0, 0, 0, 0,  0.6, 0, 0, 0],
@@ -66,6 +72,7 @@ const drumLofiMinimal: DrumTemplate = {
  * Driving break: kick 1, snare 2, syncopated kick on the "& of 3", snare 4 —
  * the canonical breakbeat skeleton, with a small double-kick fill in bar 2.
  */
+// prettier-ignore
 const drumBreakDriving: DrumTemplate = {
   kick:         [1, 0, 0, 0,  0, 0, 0, 0,  0.8, 0, 0, 0,  0, 0, 0, 0,
                  1, 0, 0, 0,  0, 0, 0, 0,  0.85, 0, 0.7, 0,  0, 0, 0, 0],
@@ -76,6 +83,7 @@ const drumBreakDriving: DrumTemplate = {
 };
 
 /** Half-time break: spacious feel, syncopated kick stab at the very end of each bar. */
+// prettier-ignore
 const drumBreakHalfTime: DrumTemplate = {
   kick:         [1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0.7, 0,
                  1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0.7, 0],

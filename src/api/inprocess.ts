@@ -1,4 +1,10 @@
-import { TrackError, type AutoConfigPatch, type Engine, type TrackPatch } from "../engine/engine.js";
+import {
+  TrackError,
+  type AutoConfigPatch,
+  type Engine,
+  type NewTrackInput,
+  type TrackPatch,
+} from "../engine/engine.js";
 import type {
   DrumHit,
   GlobalMusicState,
@@ -76,6 +82,9 @@ function makeTransportApi(engine: Engine, hooks: InProcessHooks): TransportApi {
     getState: (): TransportState => engine.getTransport(),
     onChange: (handler: (state: TransportState) => void): (() => void) =>
       engine.transportChanged.on(handler),
+    getPlayheadStep: (): number | undefined => engine.getPlayheadStep(),
+    onPlayheadStepChange: (handler: (step: number | undefined) => void): (() => void) =>
+      engine.playheadStepChanged.on(handler),
   };
 }
 
@@ -106,19 +115,66 @@ function makeTrackApi(engine: Engine): TrackApi {
   return {
     list: (): readonly Track[] => engine.getTracks(),
     findByName: (name: string): Track | undefined => engine.findTrackByName(name),
+    add: (input: NewTrackInput): Result<Track, TrackUpdateError> => {
+      try {
+        const track = engine.addTrack(input);
+        return { ok: true, value: track };
+      } catch (e) {
+        if (e instanceof TrackError) return { ok: false, error: trackErrorToResult(e, input.name) };
+        throw e;
+      }
+    },
+    remove: (ref: TrackRef): Result<void, TrackUpdateError> =>
+      runTrackOp(
+        () => engine.removeTrack(ref),
+        ref,
+        () => "",
+      ),
+    move: (ref: TrackRef, toIndex: number): Result<void, TrackUpdateError> => {
+      try {
+        engine.moveTrack(ref, toIndex);
+        return { ok: true, value: undefined };
+      } catch (e) {
+        if (e instanceof TrackError) {
+          if (e.code === "out-of-range") {
+            return { ok: false, error: { code: "out-of-range", index: toIndex } };
+          }
+          return { ok: false, error: trackErrorToResult(e, "") };
+        }
+        throw e;
+      }
+    },
+    proposeName: (base: string): string => engine.proposeUniqueName(base),
     update: (ref: TrackRef, patch: TrackPatch): Result<void, TrackUpdateError> =>
-      runTrackOp(() => engine.updateTrack(ref, patch), ref, () => patch.name ?? ""),
+      runTrackOp(
+        () => engine.updateTrack(ref, patch),
+        ref,
+        () => patch.name ?? "",
+      ),
     setDrumPattern: (ref: TrackRef, pattern: Pattern<DrumHit>): Result<void, TrackUpdateError> =>
-      runTrackOp(() => engine.setDrumPattern(ref, pattern), ref, () => ""),
-    setPitchedPattern: (
-      ref: TrackRef,
-      pattern: Pattern<Note>,
-    ): Result<void, TrackUpdateError> =>
-      runTrackOp(() => engine.setPitchedPattern(ref, pattern), ref, () => ""),
+      runTrackOp(
+        () => engine.setDrumPattern(ref, pattern),
+        ref,
+        () => "",
+      ),
+    setPitchedPattern: (ref: TrackRef, pattern: Pattern<Note>): Result<void, TrackUpdateError> =>
+      runTrackOp(
+        () => engine.setPitchedPattern(ref, pattern),
+        ref,
+        () => "",
+      ),
     setAutoConfig: (ref: TrackRef, patch: AutoConfigPatch): Result<void, TrackUpdateError> =>
-      runTrackOp(() => engine.setAutoConfig(ref, patch), ref, () => ""),
+      runTrackOp(
+        () => engine.setAutoConfig(ref, patch),
+        ref,
+        () => "",
+      ),
     rerollPhrase: (ref: TrackRef): Result<void, TrackUpdateError> =>
-      runTrackOp(() => engine.setAutoConfig(ref, { seed: randomSeed() }), ref, () => ""),
+      runTrackOp(
+        () => engine.setAutoConfig(ref, { seed: randomSeed() }),
+        ref,
+        () => "",
+      ),
     onChange: (handler: (tracks: readonly Track[]) => void): (() => void) =>
       engine.tracksChanged.on(handler),
     getActivePhraseId: (ref: TrackRef) => engine.getActiveAutoPhraseId(ref),
@@ -211,18 +267,33 @@ function runTrackOp(
     return { ok: true, value: undefined };
   } catch (e) {
     if (e instanceof TrackError) {
-      switch (e.code) {
-        case "not-found":
-          return { ok: false, error: { code: "not-found", ref } };
-        case "name-conflict":
-          return { ok: false, error: { code: "name-conflict", name: conflictName() } };
-        case "kind-mismatch":
-          return { ok: false, error: { code: "kind-mismatch", trackName: e.message } };
-        default:
-          return { ok: false, error: { code: "not-found", ref } };
-      }
+      if (e.code === "not-found") return { ok: false, error: { code: "not-found", ref } };
+      return { ok: false, error: trackErrorToResult(e, conflictName()) };
     }
     throw e;
+  }
+}
+
+/**
+ * Map a {@link TrackError} (other than `not-found`, which needs the original
+ * ref) onto its {@link TrackUpdateError} shape. `out-of-range` carries no
+ * usable index here — callers that have one should wrap manually.
+ */
+function trackErrorToResult(e: TrackError, conflictName: string): TrackUpdateError {
+  switch (e.code) {
+    case "not-found":
+      // Caller is expected to handle this with the ref; fall through to a
+      // shape-preserving best-effort using `kind: "name"` so we never throw.
+      return { code: "not-found", ref: { kind: "name", name: conflictName } };
+    case "name-conflict":
+      return { code: "name-conflict", name: conflictName };
+    case "kind-mismatch":
+      return { code: "kind-mismatch", trackName: e.message };
+    case "out-of-range":
+      return { code: "out-of-range", index: -1 };
+    default:
+      e.code satisfies never;
+      return { code: "name-conflict", name: conflictName };
   }
 }
 

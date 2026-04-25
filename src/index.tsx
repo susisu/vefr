@@ -1,7 +1,12 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { InProcessControlApi } from "./api/inprocess.js";
-import { debounceAutosave, isIndexedDbAvailable, loadAutosave, openDatabase } from "./api/storage.js";
+import {
+  debounceAutosave,
+  isIndexedDbAvailable,
+  loadAutosave,
+  openDatabase,
+} from "./api/storage.js";
 import { WebAudioClock } from "./engine/clock.js";
 import { Engine, type EngineInitial } from "./engine/engine.js";
 import {

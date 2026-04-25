@@ -1,10 +1,4 @@
-import type {
-  AutoParams,
-  DrumHit,
-  Note,
-  PatternEvent,
-  Tick,
-} from "../engine/types.js";
+import type { AutoParams, DrumHit, Note, PatternEvent, Tick } from "../engine/types.js";
 import type { DrumTemplate, RhythmTemplate } from "../phrases/types.js";
 
 /**

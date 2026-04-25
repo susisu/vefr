@@ -46,7 +46,8 @@ export class Scheduler {
     if (this.running) return;
     this.running = true;
     this.secondsPerTick = 60 / (bpm * TICKS_PER_BEAT);
-    const startTime = this.opts.clock.now() + (this.opts.startOffsetSec ?? DEFAULT_START_OFFSET_SEC);
+    const startTime =
+      this.opts.clock.now() + (this.opts.startOffsetSec ?? DEFAULT_START_OFFSET_SEC);
     this.anchorTick = positionTick;
     this.anchorTime = startTime;
     this.nextSchedTick = positionTick;

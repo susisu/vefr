@@ -1,4 +1,8 @@
-import type { AutoConfigPatch, TrackPatch } from "../engine/engine.js";
+import type { AutoConfigPatch, NewTrackInput, TrackPatch } from "../engine/engine.js";
+
+// Re-exported so UI code can build NewTrackInput values without importing
+// directly from `engine/engine.js` (the lint boundary forbids that).
+export type { NewTrackInput };
 import type {
   DrumHit,
   GlobalMusicState,
@@ -16,7 +20,8 @@ import type { ImportError, Project } from "./project.js";
 export type TrackUpdateError =
   | { code: "not-found"; ref: TrackRef }
   | { code: "name-conflict"; name: string }
-  | { code: "kind-mismatch"; trackName: string };
+  | { code: "kind-mismatch"; trackName: string }
+  | { code: "out-of-range"; index: number };
 
 /** Standard railway-oriented result: either success value or recoverable error. */
 export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
@@ -52,6 +57,17 @@ export interface TransportApi {
   getState: () => TransportState;
   /** Subscribe to transport-state changes; returns a detach function. */
   onChange: (handler: (state: TransportState) => void) => () => void;
+  /**
+   * Most recent visual playhead step (= absolute 16th-note count since
+   * tick 0), or `undefined` while not playing. UI grids mod by their step
+   * count to highlight the live position.
+   */
+  getPlayheadStep: () => number | undefined;
+  /**
+   * Subscribe to playhead-step boundary crossings. Fires once per 16th
+   * note while playing, plus once on pause/stop with `undefined`.
+   */
+  onPlayheadStepChange: (handler: (step: number | undefined) => void) => () => void;
 }
 
 /** Global sub-API: key/scale read+write, plus convenience random-pick helpers. */
@@ -74,6 +90,23 @@ export interface TrackApi {
   list: () => readonly Track[];
   /** Resolve a track by its (unique) human-readable name. */
   findByName: (name: string) => Track | undefined;
+  /**
+   * Append a new track. Returns the stored track (with its engine-assigned id)
+   * on success; fails with `name-conflict` if `input.name` is already taken.
+   */
+  add: (input: NewTrackInput) => Result<Track, TrackUpdateError>;
+  /** Remove a track by ref. Fails with `not-found` if the ref doesn't resolve. */
+  remove: (ref: TrackRef) => Result<void, TrackUpdateError>;
+  /**
+   * Move a track to `toIndex` (post-move position, 0 = top). Fails with
+   * `out-of-range` if `toIndex` is outside the current list bounds.
+   */
+  move: (ref: TrackRef, toIndex: number) => Result<void, TrackUpdateError>;
+  /**
+   * Suggest a unique track name derived from `base`. Returns `base` itself if
+   * it's free, otherwise a numbered variant. Pure derivation; doesn't mutate.
+   */
+  proposeName: (base: string) => string;
   /**
    * Patch a track's basic attributes (name / mute / volume).
    */

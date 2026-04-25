@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useState, type ChangeEvent, type DragEvent, type ReactElement } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type ReactElement,
+} from "react";
 import type { ImportError } from "../../api/project.js";
+import { Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";
 
 /** Filename used for project exports — namespaced and timestamped. */
@@ -86,8 +94,7 @@ export function ProjectMenu(): ReactElement {
   }, [api]);
 
   return (
-    <section className="panel">
-      <h2>Project</h2>
+    <Panel title="Project">
       <div className="row">
         <button type="button" onClick={onExport}>
           Export JSON
@@ -100,8 +107,10 @@ export function ProjectMenu(): ReactElement {
       <div className="dropzone" onDrop={onDrop} onDragOver={onDragOver}>
         Drop a vefr project file here
       </div>
-      {errors && errors.length > 0 ? <ImportErrors errors={errors} /> : null}
-    </section>
+      {errors && errors.length > 0 ?
+        <ImportErrors errors={errors} />
+      : null}
+    </Panel>
   );
 }
 

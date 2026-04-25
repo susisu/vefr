@@ -1,10 +1,5 @@
 import type { ChangeEvent, ReactElement } from "react";
-import {
-  refById,
-  type DrumPad,
-  type PhraseId,
-  type Track,
-} from "../../engine/types.js";
+import { refById, type DrumPad, type PhraseId, type Track } from "../../engine/types.js";
 import {
   getPhrase,
   listDrumPhrases,
@@ -12,13 +7,15 @@ import {
   type Phrase,
 } from "../../phrases/index.js";
 import type { DrumTemplate, RhythmTemplate } from "../../phrases/types.js";
+import { Chip, Knob } from "../components/index.js";
 import { useControlApi } from "../context.js";
-import { useActivePhraseId } from "../hooks.js";
+import { useActivePhraseId, usePlayheadStep } from "../hooks.js";
+import { trackTone } from "../trackTone.js";
 
-/** AutoParams fields that map to a numeric slider. */
+/** AutoParams fields that map to a numeric knob. */
 type NumericParamKey = "microPeriodBars" | "macroPeriodBars";
 
-/** Tunable slider description used to render each numeric AutoParams field. */
+/** Tunable knob description used to render each numeric AutoParams field. */
 type ParamSpec = {
   key: NumericParamKey;
   label: string;
@@ -27,10 +24,10 @@ type ParamSpec = {
   step: number;
 };
 
-/** Sliders shown on every auto-track editor — both periods at the same scale. */
+/** Knobs shown on every auto-track editor — both periods at the same scale. */
 const PARAM_SPECS: readonly ParamSpec[] = [
-  { key: "microPeriodBars", label: "Micro period (bars)", min: 0, max: 32, step: 1 },
-  { key: "macroPeriodBars", label: "Macro period (bars)", min: 0, max: 64, step: 1 },
+  { key: "microPeriodBars", label: "MICRO", min: 0, max: 32, step: 1 },
+  { key: "macroPeriodBars", label: "MACRO", min: 0, max: 64, step: 1 },
 ];
 
 /** Pads laid out in preview rows (top → bottom) for drum auto tracks. */
@@ -53,6 +50,8 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
   const api = useControlApi();
   const activeId = useActivePhraseId(refById(track.id));
   const activePhrase = activeId !== undefined ? getPhrase(activeId) : undefined;
+  const playStep = usePlayheadStep();
+  const playingStep = playStep === undefined ? -1 : playStep % PREVIEW_STEPS;
   const phrases: readonly Phrase[] =
     track.kind === "drum" ? listDrumPhrases() : listPitchedPhrases(track.role);
   const selected = new Set<PhraseId>(track.phraseIds);
@@ -87,40 +86,61 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
     api.track.rerollPhrase(refById(track.id));
   };
 
+  const tone = trackTone(track);
+  const kindLabel = track.kind === "drum" ? "DRUM" : track.role.toUpperCase();
+
   return (
-    <div className="editor">
-      <div className="editor-header">{track.name}</div>
-      <ActivePhrasePreview phrase={activePhrase} />
-      <div className="auto-phrases">
-        {groups.map(({ category, items }) => (
-          <fieldset key={category} className="auto-phrase-group">
-            <legend>{category}</legend>
-            <div className="auto-phrase-list">
-              {items.map((p) => (
-                <label key={p.id} className="auto-phrase-row">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(p.id)}
-                    onChange={() => {
-                      togglePhrase(p.id);
-                    }}
-                  />
-                  <span className="auto-phrase-name">{p.name}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        ))}
+    <div className="editor" data-tone={tone}>
+      <div className="editor-header">
+        <span>
+          <Chip tone={tone}>{kindLabel}</Chip> <Chip>AUTO</Chip> {track.name}
+        </span>
       </div>
+      <ActivePhrasePreview phrase={activePhrase} playingStep={playingStep} />
+      <details className="auto-phrases-collapsible">
+        <summary className="auto-phrases-summary">
+          <span className="auto-phrases-summary-label">Phrases</span>
+          <span className="auto-phrases-summary-count">
+            {selected.size} / {phrases.length} selected
+          </span>
+        </summary>
+        <div className="auto-phrases">
+          {groups.map(({ category, items }) => (
+            <fieldset key={category} className="auto-phrase-group">
+              <legend>{category}</legend>
+              <div className="auto-phrase-list">
+                {items.map((p) => (
+                  <label key={p.id} className="auto-phrase-row">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(p.id)}
+                      onChange={() => {
+                        togglePhrase(p.id);
+                      }}
+                    />
+                    <span className="auto-phrase-name">{p.name}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          ))}
+        </div>
+      </details>
       <div className="auto-params">
         {PARAM_SPECS.map((spec) => (
-          <ParamSlider
+          <Knob
             key={spec.key}
-            spec={spec}
+            label={spec.label}
             value={track.params[spec.key]}
+            min={spec.min}
+            max={spec.max}
+            step={spec.step}
             onChange={(v) => {
               setParam(spec.key, v);
             }}
+            format={(v) => (v === 0 ? "∞" : String(v))}
+            tone={tone}
+            size={48}
           />
         ))}
         <label className="auto-seed">
@@ -159,29 +179,39 @@ function groupByCategory(phrases: readonly Phrase[]): ReadonlyArray<{
  * for this track. Uses the same row-and-cell layout as the manual editors so
  * the visual language is consistent.
  */
-function ActivePhrasePreview({ phrase }: { phrase: Phrase | undefined }): ReactElement {
+function ActivePhrasePreview({
+  phrase,
+  playingStep,
+}: {
+  phrase: Phrase | undefined;
+  playingStep: number;
+}): ReactElement {
   if (phrase === undefined) {
     return <div className="auto-preview auto-preview-empty">No phrase selected</div>;
   }
   return (
     <div className="auto-preview">
       <div className="auto-preview-name">{phrase.name}</div>
-      {phrase.kind === "drum" ? (
-        <DrumPreview template={phrase.template} />
-      ) : (
-        <RhythmPreview template={phrase.template} />
-      )}
+      {phrase.kind === "drum" ?
+        <DrumPreview template={phrase.template} playingStep={playingStep} />
+      : <RhythmPreview template={phrase.template} playingStep={playingStep} />}
     </div>
   );
 }
 
 /** Single-row preview for a melody / bass rhythm template. */
-function RhythmPreview({ template }: { template: RhythmTemplate }): ReactElement {
+function RhythmPreview({
+  template,
+  playingStep,
+}: {
+  template: RhythmTemplate;
+  playingStep: number;
+}): ReactElement {
   return (
     <div className="auto-preview-grid">
       <div className="auto-preview-row">
         {Array.from({ length: PREVIEW_STEPS }, (_, i) => (
-          <PreviewCell key={i} velocity={template[i] ?? 0} />
+          <PreviewCell key={i} velocity={template[i] ?? 0} playing={i === playingStep} />
         ))}
       </div>
     </div>
@@ -189,7 +219,13 @@ function RhythmPreview({ template }: { template: RhythmTemplate }): ReactElement
 }
 
 /** Multi-row preview for a drum kit — every pad in `PREVIEW_PAD_ORDER`. */
-function DrumPreview({ template }: { template: DrumTemplate }): ReactElement {
+function DrumPreview({
+  template,
+  playingStep,
+}: {
+  template: DrumTemplate;
+  playingStep: number;
+}): ReactElement {
   return (
     <div className="auto-preview-grid">
       {PREVIEW_PAD_ORDER.map((pad) => {
@@ -198,7 +234,7 @@ function DrumPreview({ template }: { template: DrumTemplate }): ReactElement {
           <div key={pad} className="auto-preview-row">
             <span className="pad-label">{pad}</span>
             {Array.from({ length: PREVIEW_STEPS }, (_, i) => (
-              <PreviewCell key={i} velocity={row?.[i] ?? 0} />
+              <PreviewCell key={i} velocity={row?.[i] ?? 0} playing={i === playingStep} />
             ))}
           </div>
         );
@@ -209,43 +245,13 @@ function DrumPreview({ template }: { template: DrumTemplate }): ReactElement {
 
 /**
  * One read-only step cell: lit when velocity > 0, with opacity scaling on
- * velocity so accents stand out against ghost notes.
+ * velocity so accents stand out against ghost notes. The `playing` flag
+ * paints the current playhead column on top of the velocity rendering.
  */
-function PreviewCell({ velocity }: { velocity: number }): ReactElement {
+function PreviewCell({ velocity, playing }: { velocity: number; playing: boolean }): ReactElement {
   const filled = velocity > 0;
-  const className = `step ${filled ? "on" : ""}`;
+  const className = `step ${filled ? "on" : ""} ${playing ? "playing" : ""}`;
   // 0..1 velocity → 0.4..1 opacity. Empty cells stay flat (no opacity tweak).
   const style = filled ? { opacity: 0.4 + velocity * 0.6 } : undefined;
   return <span className={className} style={style} />;
-}
-
-/** Single labelled slider for one AutoParams field. */
-function ParamSlider({
-  spec,
-  value,
-  onChange,
-}: {
-  spec: ParamSpec;
-  value: number;
-  onChange: (v: number) => void;
-}): ReactElement {
-  // 0 means "infinity" — render the symbol so the user knows rotation/variation is frozen.
-  const display = value === 0 ? "∞" : String(value);
-  return (
-    <label className="auto-param">
-      <span>
-        {spec.label}: {display}
-      </span>
-      <input
-        type="range"
-        min={spec.min}
-        max={spec.max}
-        step={spec.step}
-        value={value}
-        onChange={(e) => {
-          onChange(Number(e.target.value));
-        }}
-      />
-    </label>
-  );
 }

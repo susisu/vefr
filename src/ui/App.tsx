@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import type { Track } from "../engine/types.js";
+import { Panel } from "./components/index.js";
 import { useTracks } from "./hooks.js";
 import { AutoTrackEditor } from "./panels/AutoTrackEditor.js";
 import { GlobalPanel } from "./panels/GlobalPanel.js";
@@ -16,16 +17,19 @@ export function App(): ReactElement {
   return (
     <main>
       <h1>vefr</h1>
-      <TransportPanel />
-      <GlobalPanel />
-      <ProjectMenu />
+      <div className="top-row">
+        <TransportPanel />
+        <GlobalPanel />
+        <ProjectMenu />
+      </div>
       <TrackList />
-      <section className="panel">
-        <h2>Editors</h2>
-        {tracks.map((track) => (
-          <TrackEditor key={track.id} track={track} />
-        ))}
-      </section>
+      <Panel title="Editors">
+        <div className="editor-grid">
+          {tracks.map((track) => (
+            <TrackEditor key={track.id} track={track} />
+          ))}
+        </div>
+      </Panel>
     </main>
   );
 }

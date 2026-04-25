@@ -44,3 +44,13 @@ export function useActivePhraseId(ref: TrackRef): PhraseId | undefined {
   const getSnapshot = useCallback(() => api.track.getActivePhraseId(ref), [api, ref]);
   return useSyncExternalStore(subscribe, getSnapshot);
 }
+
+/**
+ * Subscribe to the visual playhead step (absolute 16th-note count since
+ * position 0). Returns `undefined` while the transport is not playing.
+ * Editors mod the value by their grid length to highlight the live cell.
+ */
+export function usePlayheadStep(): number | undefined {
+  const api = useControlApi();
+  return useSyncExternalStore(api.transport.onPlayheadStepChange, api.transport.getPlayheadStep);
+}

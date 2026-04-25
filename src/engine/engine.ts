@@ -33,6 +33,14 @@ import {
  */
 const PHRASE_BARS = 2;
 
+/**
+ * Visual playhead resolution: one "step" = one sixteenth note, matching the
+ * step grids in the UI. The dispatcher emits {@link Engine.playheadStepChanged}
+ * whenever this index advances, so React-side highlights tick once per 16th
+ * regardless of the underlying tick cadence.
+ */
+const PLAYHEAD_STEP_TICKS = TICKS_PER_BEAT / 4;
+
 /** Initial state used to seed an {@link Engine}. */
 export type EngineInitial = {
   transport: TransportState;
@@ -54,6 +62,19 @@ export type AutoConfigPatch = {
   params?: AutoParams;
 };
 
+/**
+ * Spec passed to {@link Engine.addTrack}. Identical to a {@link Track} except
+ * the engine assigns the id, so the caller cannot pre-set or collide with one.
+ *
+ * Built on a distributive `Omit` helper so the conditional fires per union
+ * variant — TS's built-in `Omit` would collapse the discriminated shape and
+ * drop variant-specific fields like `pattern` / `phraseIds`.
+ */
+export type NewTrackInput = DistributiveOmit<Track, "id">;
+
+/** {@link Omit} that distributes over a discriminated union. */
+type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
+
 /** Resolves phrase ids into the data the generator needs. */
 export type PhraseLookup = (id: PhraseId) => Phrase | undefined;
 
@@ -61,7 +82,7 @@ export type PhraseLookup = (id: PhraseId) => Phrase | undefined;
 export class TrackError extends Error {
   constructor(
     message: string,
-    readonly code: "not-found" | "name-conflict" | "kind-mismatch",
+    readonly code: "not-found" | "name-conflict" | "kind-mismatch" | "out-of-range",
   ) {
     super(message);
     this.name = "TrackError";
@@ -102,6 +123,17 @@ export class Engine {
     trackId: TrackId;
     phraseId: PhraseId | undefined;
   }> = new Signal();
+
+  /**
+   * Fires when the visual playhead crosses a {@link PLAYHEAD_STEP_TICKS}
+   * boundary (i.e. a 16th-note). Carries the absolute step index since
+   * tick 0, or `undefined` while the transport is paused / stopped. UI
+   * grids mod this by their step count to highlight the live position.
+   */
+  readonly playheadStepChanged: Signal<number | undefined> = new Signal();
+
+  /** Last value emitted on {@link playheadStepChanged}; UI snapshot source. */
+  private playheadStep: number | undefined = undefined;
 
   constructor(
     initial: EngineInitial,
@@ -146,6 +178,7 @@ export class Engine {
     this.global = { ...initial.global };
     this.tracks = [...initial.tracks];
     this.autoCache.clear();
+    this.setPlayheadStep(undefined);
     this.transportChanged.emit(this.transport);
     this.globalChanged.emit(this.global);
     this.tracksChanged.emit(this.tracks);
@@ -164,6 +197,7 @@ export class Engine {
     if (!this.transport.playing) return;
     const positionTick = this.scheduler.stop();
     this.transport = { ...this.transport, playing: false, positionTick };
+    this.setPlayheadStep(undefined);
     this.transportChanged.emit(this.transport);
   }
 
@@ -172,6 +206,7 @@ export class Engine {
     this.scheduler.stop();
     this.scheduler.seek(0);
     this.transport = { ...this.transport, playing: false, positionTick: 0 };
+    this.setPlayheadStep(undefined);
     this.transportChanged.emit(this.transport);
   }
 
@@ -215,6 +250,88 @@ export class Engine {
   /** Find a track by its (unique) name. */
   findTrackByName(name: string): Track | undefined {
     return this.tracks.find((t) => t.name === name);
+  }
+
+  /**
+   * Append a new track to the list. Throws {@link TrackError} (`name-conflict`)
+   * if `input.name` collides with an existing track. The engine generates and
+   * assigns the id; the stored track (with its id) is returned so callers can
+   * reference it immediately.
+   */
+  addTrack(input: NewTrackInput): Track {
+    if (this.tracks.some((t) => t.name === input.name)) {
+      throw new TrackError(`track name already in use: ${input.name}`, "name-conflict");
+    }
+    const id = this.generateTrackId();
+    const next: Track = { ...input, id };
+    this.tracks = [...this.tracks, next];
+    this.tracksChanged.emit(this.tracks);
+    return next;
+  }
+
+  /**
+   * Remove a track. Throws {@link TrackError} (`not-found`) if the ref doesn't
+   * resolve. Drops any cached materialized phrase so we don't leak memory if
+   * the same id is later re-used by an import.
+   */
+  removeTrack(ref: TrackRef): void {
+    const target = this.resolveTrack(ref);
+    if (!target) {
+      throw new TrackError(`track not found: ${JSON.stringify(ref)}`, "not-found");
+    }
+    this.tracks = this.tracks.filter((t) => t.id !== target.id);
+    this.autoCache.delete(target.id);
+    this.tracksChanged.emit(this.tracks);
+  }
+
+  /**
+   * Move a track to a new index in the list. `toIndex` is the target post-move
+   * position (0 = top). Throws {@link TrackError} for unresolved refs or
+   * out-of-range indices. No-op when the track is already at `toIndex`.
+   */
+  moveTrack(ref: TrackRef, toIndex: number): void {
+    const target = this.resolveTrack(ref);
+    if (!target) {
+      throw new TrackError(`track not found: ${JSON.stringify(ref)}`, "not-found");
+    }
+    if (toIndex < 0 || toIndex >= this.tracks.length) {
+      throw new TrackError(`index out of range: ${toIndex}`, "out-of-range");
+    }
+    const fromIndex = this.tracks.findIndex((t) => t.id === target.id);
+    if (fromIndex === toIndex) return;
+    const next = [...this.tracks];
+    next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, target);
+    this.tracks = next;
+    this.tracksChanged.emit(this.tracks);
+  }
+
+  /**
+   * Suggest a unique track name derived from `base`. Returns `base` itself if
+   * it's already free, otherwise appends ` 2`, ` 3`, ... until an unused
+   * variant is found. Pure derivation — does not mutate engine state.
+   */
+  proposeUniqueName(base: string): string {
+    const used = new Set(this.tracks.map((t) => t.name));
+    if (!used.has(base)) return base;
+    for (let i = 2; ; i += 1) {
+      const candidate = `${base} ${i}`;
+      if (!used.has(candidate)) return candidate;
+    }
+  }
+
+  /**
+   * Generate a fresh track id that doesn't collide with any existing track.
+   * Combines a timestamp with a random suffix; the explicit collision check
+   * keeps imports from clashing with engine-generated ids in the same session.
+   */
+  private generateTrackId(): TrackId {
+    for (;;) {
+      const id = `track-${Date.now().toString(36)}-${Math.floor(Math.random() * 0xffffff)
+        .toString(16)
+        .padStart(6, "0")}`;
+      if (!this.tracks.some((t) => t.id === id)) return id;
+    }
   }
 
   /**
@@ -300,6 +417,7 @@ export class Engine {
    * length of the 32-step (= 2 × 16-sixteenth-notes) preset variants.
    */
   private dispatch(tick: Tick, time: number): void {
+    this.setPlayheadStep(Math.floor(tick / PLAYHEAD_STEP_TICKS));
     for (const track of this.tracks) {
       if (track.mute) continue;
       const gain = track.volume;
@@ -309,6 +427,21 @@ export class Engine {
         this.dispatchAuto(track, tick, time, gain);
       }
     }
+  }
+
+  /**
+   * Snapshot of the visual playhead step, or `undefined` while not playing.
+   * UI uses this with {@link playheadStepChanged} via `useSyncExternalStore`.
+   */
+  getPlayheadStep(): number | undefined {
+    return this.playheadStep;
+  }
+
+  /** Update the cached playhead step, emitting only when the value changes. */
+  private setPlayheadStep(value: number | undefined): void {
+    if (this.playheadStep === value) return;
+    this.playheadStep = value;
+    this.playheadStepChanged.emit(value);
   }
 
   /** Fire matching events from a manual track's pattern at the given tick. */
@@ -349,8 +482,7 @@ export class Engine {
     const phrase = Math.floor(tick / phraseTicks);
     const localTick = tick - phrase * phraseTicks;
     const cached = this.autoCache.get(track.id);
-    const entry =
-      cached && cached.phrase === phrase ? cached : this.materializeAuto(track, phrase);
+    const entry = cached && cached.phrase === phrase ? cached : this.materializeAuto(track, phrase);
     if (entry !== cached) this.autoCache.set(track.id, entry);
     if (entry.lengthTicks <= 0 || localTick >= entry.lengthTicks) return;
     if (entry.kind === "drum") {
@@ -448,9 +580,9 @@ export class Engine {
     const phrase = Math.floor(this.transport.positionTick / phraseTicks);
     const bar = phrase * PHRASE_BARS;
     const phrases =
-      track.kind === "drum"
-        ? this.collectDrumPhrases(track.phraseIds)
-        : this.collectPitchedPhrases(track.phraseIds, track.role);
+      track.kind === "drum" ?
+        this.collectDrumPhrases(track.phraseIds)
+      : this.collectPitchedPhrases(track.phraseIds, track.role);
     return pickActivePhraseId(phrases, track.seed, bar, track.params.macroPeriodBars);
   }
 

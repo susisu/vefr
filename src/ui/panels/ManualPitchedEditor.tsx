@@ -7,7 +7,10 @@ import {
   type PatternEvent,
   type PitchedTrack,
 } from "../../engine/types.js";
+import { Chip } from "../components/index.js";
 import { useControlApi } from "../context.js";
+import { usePlayheadStep } from "../hooks.js";
+import { trackTone } from "../trackTone.js";
 
 /** Number of steps shown in the pitched grid: 32 sixteenth-notes spanning 2 bars. */
 const STEPS_PER_PHRASE = 32;
@@ -35,6 +38,8 @@ function ManualPitchedEditorInner({
   pattern: Pattern<Note>;
 }): ReactElement {
   const api = useControlApi();
+  const playStep = usePlayheadStep();
+  const playingStep = playStep === undefined ? -1 : playStep % STEPS_PER_PHRASE;
   const defaultOctave = track.role === "bass" ? DEFAULT_BASS_OCTAVE : DEFAULT_MELODY_OCTAVE;
 
   /**
@@ -65,9 +70,15 @@ function ManualPitchedEditorInner({
     api.track.setPitchedPattern(refById(track.id), next);
   };
 
+  const tone = trackTone(track);
+  const kindLabel = track.role.toUpperCase();
   return (
-    <div className="editor">
-      <div className="editor-header">{track.name}</div>
+    <div className="editor" data-tone={tone}>
+      <div className="editor-header">
+        <span>
+          <Chip tone={tone}>{kindLabel}</Chip> <Chip>MANUAL</Chip> {track.name}
+        </span>
+      </div>
       <div className="pitched-grid">
         {DEGREES.map((degree) => (
           <div key={degree} className="pitched-row">
@@ -76,11 +87,12 @@ function ManualPitchedEditorInner({
               const tick = i * STEP_TICKS;
               const ev = pattern.events.find((e) => e.tick === tick);
               const on = ev?.payload.degree === degree;
+              const playing = i === playingStep;
               return (
                 <button
                   key={i}
                   type="button"
-                  className={`step ${on ? "on" : ""}`}
+                  className={`step ${on ? "on" : ""} ${playing ? "playing" : ""}`}
                   onClick={() => {
                     toggle(degree, i);
                   }}

@@ -1,5 +1,6 @@
 import type { ChangeEvent, ReactElement } from "react";
-import { asScaleId, keyName, KEY_NAMES, SCALE_IDS } from "../../shared/music.js";
+import { asScaleId, KEY_NAMES, SCALE_IDS } from "../../shared/music.js";
+import { Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useGlobal } from "../hooks.js";
 
@@ -23,20 +24,15 @@ export function GlobalPanel(): ReactElement {
   };
 
   return (
-    <section className="panel">
-      <h2>Global</h2>
-      <div className="row">
-        <label>
-          Key
-          <select value={global.key} onChange={onKeyChange}>
-            {KEY_NAMES.map((name, i) => (
-              <option key={name} value={i}>
-                {name}
-              </option>
-            ))}
-          </select>
-          <span>{keyName(global.key)}</span>
-        </label>
+    <Panel title="Global">
+      <div className="global-controls">
+        <ReadoutSelect label="Key" value={String(global.key)} onChange={onKeyChange}>
+          {KEY_NAMES.map((name, i) => (
+            <option key={name} value={i}>
+              {name}
+            </option>
+          ))}
+        </ReadoutSelect>
         <button
           type="button"
           className="reroll-button"
@@ -46,16 +42,13 @@ export function GlobalPanel(): ReactElement {
         >
           Reroll
         </button>
-        <label>
-          Scale
-          <select value={global.scale} onChange={onScaleChange}>
-            {SCALE_IDS.map((id) => (
-              <option key={id} value={id}>
-                {id}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ReadoutSelect label="Scale" value={global.scale} onChange={onScaleChange}>
+          {SCALE_IDS.map((id) => (
+            <option key={id} value={id}>
+              {id}
+            </option>
+          ))}
+        </ReadoutSelect>
         <button
           type="button"
           className="reroll-button"
@@ -66,6 +59,32 @@ export function GlobalPanel(): ReactElement {
           Reroll
         </button>
       </div>
-    </section>
+    </Panel>
+  );
+}
+
+/**
+ * Stacked label + native `<select>` styled as a Display. The select itself is
+ * the readout — the chosen `<option>` is what the user sees, so a separate
+ * Display component would just duplicate the value.
+ */
+function ReadoutSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (e: ChangeEvent<HTMLSelectElement>) => void;
+  children: ReactElement | ReactElement[];
+}): ReactElement {
+  return (
+    <label className="readout-select">
+      <span className="readout-select-label">{label}</span>
+      <select className="readout-select-control" value={value} onChange={onChange}>
+        {children}
+      </select>
+    </label>
   );
 }

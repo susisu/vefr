@@ -1,39 +1,164 @@
+/* =============================================================================
+ * vefr — Polyend Tracker / MC-707 inspired chassis
+ *
+ * Visual model: dark anodised metal panels, recessed LED-lit cells, monospace
+ * displays. Single primary accent (LED green) with secondary tones for state.
+ * ============================================================================= */
+
 :root {
-  --fg: #eaeaea;
-  --bg: #1c1c1c;
-  --panel-bg: #262626;
-  --accent: #6cf;
+  /* Chassis tones, from outermost shell to deepest inset. */
+  --shell: #0a0a0a;
+  --chassis: #141414;
+  --panel: #1a1a1a;
+  --panel-rim: #2a2a2a;
+  --inset: #0d0d0d;
+  --inset-rim: #1f1f1f;
+
+  /* Text. */
+  --fg: #e8e8e8;
+  --fg-dim: #8a8a8a;
+  --fg-faint: #555;
+
+  /* Accents. */
+  --accent: #6df56d; /* LED green */
+  --accent-dim: #2d6b2d;
+  --warm: #f5a623; /* amber */
+  --warm-dim: #6b4912;
+  --cool: #6cf;
+  --cool-dim: #234c66;
+  --danger: #d33b3b;
+  --danger-dim: #5b1f1f;
+
+  /* Typography. */
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono:
+    "SF Mono", "JetBrains Mono", "Fira Code", "Roboto Mono", ui-monospace, Menlo, Consolas,
+    monospace;
+
+  /* Sizing rhythm. Tighter than a typical web form — chassis density. */
+  --pad: 0.55rem;
+  --gap: 0.4rem;
+  --radius: 3px;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--shell);
   color: var(--fg);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
 }
 
 main {
-  max-width: 1080px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 0.85rem;
+  background: var(--chassis);
+  min-height: 100vh;
+  border-left: 1px solid var(--panel-rim);
+  border-right: 1px solid var(--panel-rim);
+}
+
+/* Top row: Transport + Global + Project share one horizontal band. Each child
+ * panel grows to fill its slot, but Transport / Project stay tight while
+ * Global takes the slack since it has the most controls. */
+.top-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  align-items: stretch;
+}
+.top-row > .panel {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+/* Editors laid out two per row on wide viewports; falls back to one column
+ * below the breakpoint where 32 step cells would get unreadably narrow. */
+.editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+@media (max-width: 1100px) {
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.editor-grid > .editor {
+  margin-bottom: 0;
 }
 
 h1 {
-  font-weight: 500;
-  letter-spacing: 0.1em;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  margin: 0 0 0.6rem;
+  padding: 0.25rem 0.5rem;
+  border-left: 3px solid var(--accent);
 }
+
+h2 {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ===== Panel ============================================================ */
 
 .panel {
-  background: var(--panel-bg);
-  border-radius: 6px;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-rim);
+  border-radius: var(--radius);
+  margin-bottom: 0.5rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 0 rgba(0, 0, 0, 0.6);
 }
 
-.panel h2 {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
-  color: var(--accent);
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  background: linear-gradient(180deg, #1f1f1f 0%, #161616 100%);
+  border-bottom: 1px solid var(--panel-rim);
+}
+
+.panel-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+.panel-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--fg-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.panel-body {
+  padding: var(--pad);
 }
 
 .row {
@@ -43,28 +168,298 @@ h1 {
   margin: 0.25rem 0;
 }
 
-button {
-  background: #444;
-  color: var(--fg);
-  border: 1px solid #666;
-  border-radius: 4px;
-  padding: 0.4rem 0.8rem;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #555;
-}
-
 label {
   display: inline-flex;
   gap: 0.5rem;
   align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--fg-dim);
 }
 
-input[type="range"] {
-  width: 160px;
+/* ===== Buttons ========================================================== */
+
+button {
+  background: linear-gradient(180deg, #2a2a2a 0%, #1d1d1d 100%);
+  color: var(--fg);
+  border: 1px solid var(--panel-rim);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.85rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  transition: background 80ms ease;
 }
+
+button:hover {
+  background: linear-gradient(180deg, #353535 0%, #232323 100%);
+  border-color: #404040;
+}
+
+button:active {
+  background: #1a1a1a;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+button.danger {
+  border-color: var(--danger-dim);
+  color: var(--danger);
+}
+button.danger:hover {
+  background: linear-gradient(180deg, #3a1818 0%, #281010 100%);
+  border-color: var(--danger);
+}
+
+button.transport-play {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  min-width: 72px;
+}
+button.transport-play.is-playing {
+  background: linear-gradient(180deg, #1f3a1f 0%, #122112 100%);
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 1px 0 rgba(109, 245, 109, 0.25),
+    0 0 8px rgba(109, 245, 109, 0.12);
+}
+
+select {
+  background: var(--inset);
+  color: var(--fg);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+input[type="text"],
+input[type="number"] {
+  background: var(--inset);
+  color: var(--fg);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  padding: 0.35rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+}
+
+/* Default range styling — used in places where a Knob is overkill. */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 160px;
+  height: 4px;
+  background: var(--inset);
+  border: 1px solid var(--inset-rim);
+  border-radius: 2px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border: 1px solid #1a1a1a;
+  border-radius: 1px;
+  cursor: ew-resize;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+  border: 1px solid #1a1a1a;
+  border-radius: 1px;
+  cursor: ew-resize;
+}
+
+/* ===== LED ============================================================== */
+
+.led {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+.led-md {
+  width: 12px;
+  height: 12px;
+}
+.led.led-on.led-tone-accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 6px rgba(109, 245, 109, 0.7);
+}
+.led.led-on.led-tone-warm {
+  background: var(--warm);
+  border-color: var(--warm);
+  box-shadow: 0 0 6px rgba(245, 166, 35, 0.7);
+}
+.led.led-on.led-tone-cool {
+  background: var(--cool);
+  border-color: var(--cool);
+  box-shadow: 0 0 6px rgba(102, 204, 255, 0.7);
+}
+.led.led-on.led-tone-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  box-shadow: 0 0 6px rgba(211, 59, 59, 0.7);
+}
+
+/* ===== Display ========================================================== */
+
+.display {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--inset);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.6rem;
+  min-width: 64px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.display-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  margin-bottom: 0.15rem;
+}
+.display-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--fg);
+  letter-spacing: 0.04em;
+}
+.display-sm .display-value {
+  font-size: 0.85rem;
+}
+.display-md .display-value {
+  font-size: 1rem;
+}
+.display-lg .display-value {
+  font-size: 1.4rem;
+}
+.display-tone-accent .display-value {
+  color: var(--accent);
+  text-shadow: 0 0 6px rgba(109, 245, 109, 0.4);
+}
+.display-tone-warm .display-value {
+  color: var(--warm);
+}
+.display-tone-cool .display-value {
+  color: var(--cool);
+}
+
+/* ===== Chip ============================================================= */
+
+.chip {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  background: #222;
+  border: 1px solid #303030;
+  color: var(--fg-dim);
+}
+.chip-tone-accent {
+  background: rgba(109, 245, 109, 0.08);
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+.chip-tone-warm {
+  background: rgba(245, 166, 35, 0.08);
+  border-color: var(--warm-dim);
+  color: var(--warm);
+}
+.chip-tone-cool {
+  background: rgba(102, 204, 255, 0.08);
+  border-color: var(--cool-dim);
+  color: var(--cool);
+}
+
+/* ===== Knob ============================================================= */
+
+.knob {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  user-select: none;
+}
+.knob-label {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  line-height: 1;
+}
+.knob-svg {
+  cursor: ns-resize;
+  touch-action: none;
+}
+.knob-body {
+  fill: url(#knob-gradient);
+  fill: radial-gradient(circle at 35% 30%, #303030, #141414 80%);
+}
+.knob-rim {
+  fill: none;
+  stroke: #2c2c2c;
+  stroke-width: 1.5;
+}
+.knob-indicator {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px rgba(109, 245, 109, 0.5));
+}
+.knob-tone-warm .knob-indicator {
+  stroke: var(--warm);
+  filter: drop-shadow(0 0 3px rgba(245, 166, 35, 0.5));
+}
+.knob-tone-cool .knob-indicator {
+  stroke: var(--cool);
+  filter: drop-shadow(0 0 3px rgba(102, 204, 255, 0.5));
+}
+.knob-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.7rem;
+  color: var(--fg);
+  line-height: 1.1;
+}
+.knob-dragging .knob-indicator {
+  stroke-width: 2.5;
+}
+
+/* SVG circle without a real <radialGradient> definition uses a fallback color. */
+.knob-body {
+  fill: #1f1f1f;
+}
+
+/* ===== Track list ======================================================= */
 
 .track-list {
   list-style: none;
@@ -74,95 +469,453 @@ input[type="range"] {
 
 .track-row {
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  gap: 0.75rem;
+  grid-template-columns: 14px 1fr auto auto auto auto;
+  gap: 0.4rem;
   align-items: center;
-  padding: 0.4rem 0;
-  border-bottom: 1px solid #333;
+  padding: 0.2rem 0.35rem;
+  background: var(--inset);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  margin-bottom: 0.18rem;
 }
 
-.track-name {
-  font-weight: 500;
+.drag-handle {
+  background: transparent;
+  border: none;
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: 0;
+  cursor: grab;
+  letter-spacing: 0;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+.drag-handle:hover {
+  color: var(--fg);
+  background: transparent;
+}
+
+.track-name-field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.track-name-input {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: var(--radius);
+  width: 100%;
+  min-width: 0;
+}
+.track-name-input:hover {
+  border-color: var(--inset-rim);
+}
+.track-name-input:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+  background: #0a0a0a;
+}
+.track-name-error {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--danger);
 }
 
 .track-kind {
-  font-size: 0.85em;
-  color: #999;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
 }
 
+.track-mute {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: 1px solid var(--inset-rim);
+  padding: 0.2rem 0.45rem;
+  min-width: 54px;
+  justify-content: center;
+  font-size: 0.66rem;
+}
+.track-mute.is-muted {
+  color: var(--fg-faint);
+  border-color: #2a2a2a;
+}
+
+.track-delete {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-faint);
+  padding: 0.15rem 0.35rem;
+  font-size: 0.8rem;
+}
+.track-delete:hover {
+  color: var(--danger);
+  border-color: var(--danger-dim);
+  background: rgba(211, 59, 59, 0.05);
+}
+.track-delete-confirm {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+.track-delete-confirm button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.65rem;
+}
+
+.track-add-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px dashed var(--panel-rim);
+}
+
+/* ===== Editors ========================================================== */
+
 .editor {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  padding: 0.45rem;
+  background: var(--inset);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
 }
 
 .editor-header {
-  font-size: 0.9em;
-  color: #999;
-  margin-bottom: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
 }
 
 .drum-grid,
-.pitched-grid {
+.pitched-grid,
+.auto-preview-grid {
   display: grid;
-  gap: 0.2rem;
+  gap: 0.18rem;
 }
 
 .drum-row,
-.pitched-row {
+.pitched-row,
+.auto-preview-row {
   display: grid;
-  grid-template-columns: 80px repeat(32, 1fr);
-  gap: 2px;
+  grid-template-columns: 56px repeat(32, 1fr);
+  gap: 1px;
   align-items: center;
+}
+
+.auto-preview-row:not(:has(.pad-label)) {
+  grid-template-columns: repeat(32, 1fr);
 }
 
 .pad-label,
 .degree-label {
-  font-size: 0.85em;
-  color: #aaa;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  padding-right: 0.4rem;
 }
 
+/* Step cell — recessed LED-lit pad. */
 .step {
-  background: #333;
-  border: 1px solid #444;
-  border-radius: 3px;
-  height: 20px;
+  background: #0a0a0a;
+  border: 1px solid #1d1d1d;
+  border-radius: 1px;
+  height: 18px;
   padding: 0;
   cursor: pointer;
   min-width: 0;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
 }
 
-/* Subtle beat-grouping: thicker left border every 4 steps. */
+/* Beat-grouping marker every 4 steps. Uses nth-child accounting for the
+ * label column on rows that have one (manual editors + drum preview), and
+ * skipping it on label-less rows (pitched preview). */
 .drum-row .step:nth-child(4n + 2),
-.pitched-row .step:nth-child(4n + 2) {
+.pitched-row .step:nth-child(4n + 2),
+.auto-preview-row:has(.pad-label) .step:nth-child(4n + 2) {
   border-left-width: 2px;
+  border-left-color: #2a2a2a;
+}
+.auto-preview-row:not(:has(.pad-label)) .step:nth-child(4n + 1) {
+  border-left-width: 2px;
+  border-left-color: #2a2a2a;
 }
 
-/* Bar-grouping: stronger separator at the half-phrase point (step 16). */
+/* Stronger divider at the bar / half-phrase boundary. */
 .drum-row .step:nth-child(18),
-.pitched-row .step:nth-child(18) {
-  border-left: 2px solid #777;
+.pitched-row .step:nth-child(18),
+.auto-preview-row:has(.pad-label) .step:nth-child(18) {
+  border-left: 2px solid #404040;
+}
+.auto-preview-row:not(:has(.pad-label)) .step:nth-child(17) {
+  border-left: 2px solid #404040;
 }
 
 .step.on {
   background: var(--accent);
   border-color: var(--accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 0 4px rgba(109, 245, 109, 0.4);
 }
-
 .step:hover {
-  background: #555;
+  background: #1c1c1c;
+}
+.step.on:hover {
+  filter: brightness(1.15);
 }
 
-.step.on:hover {
-  background: #4ad;
+/* Live playhead column — bright top accent on top of the on/off render. */
+.step.playing {
+  box-shadow:
+    inset 0 2px 0 0 #fff,
+    inset 0 -1px 0 rgba(0, 0, 0, 0.6);
 }
+.step.on.playing {
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.85),
+    0 0 8px rgba(109, 245, 109, 0.6);
+}
+
+/* Tone-coloured step variants. The editor's `data-tone` attribute drives the
+ * lit-cell colour and playhead glow so each track role reads at a glance. */
+[data-tone="warm"] .step.on {
+  background: var(--warm);
+  border-color: var(--warm);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 0 4px rgba(245, 166, 35, 0.45);
+}
+[data-tone="warm"] .step.on.playing {
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.85),
+    0 0 8px rgba(245, 166, 35, 0.65);
+}
+[data-tone="cool"] .step.on {
+  background: var(--cool);
+  border-color: var(--cool);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 0 4px rgba(102, 204, 255, 0.45);
+}
+[data-tone="cool"] .step.on.playing {
+  box-shadow:
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.85),
+    0 0 8px rgba(102, 204, 255, 0.65);
+}
+
+/* Phrase-list checkboxes: the native accent-color paints the tick mark, so a
+ * tone-aware override here makes the editor's controls feel of-a-piece. */
+[data-tone="warm"] input[type="checkbox"] {
+  accent-color: var(--warm);
+}
+[data-tone="cool"] input[type="checkbox"] {
+  accent-color: var(--cool);
+}
+
+/* Active-phrase title in the auto preview also picks up the tone. */
+[data-tone="warm"] .auto-preview-name {
+  color: var(--warm);
+}
+[data-tone="cool"] .auto-preview-name {
+  color: var(--cool);
+}
+
+/* Read-only preview cells: same look, no pointer affordance. */
+.auto-preview .step {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ===== Auto-track editor ================================================ */
+
+/*
+ * Phrase selector is collapsed by default — once a track is configured it
+ * rarely gets re-edited, but the list is long enough that always-open
+ * dominates the editor visually.
+ */
+.auto-phrases-collapsible {
+  margin: 0.4rem 0;
+}
+.auto-phrases-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.45rem;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--panel-rim);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  list-style: none;
+}
+.auto-phrases-summary::-webkit-details-marker {
+  display: none;
+}
+/* Custom marker that flips when the disclosure opens — replaces the default
+ * triangle, which doesn't fit the chassis vibe. */
+.auto-phrases-summary::before {
+  content: "▸";
+  color: var(--fg-faint);
+  font-size: 0.7rem;
+  letter-spacing: 0;
+  transition: transform 100ms ease;
+}
+details[open] > .auto-phrases-summary::before {
+  transform: rotate(90deg);
+}
+.auto-phrases-summary-count {
+  margin-left: auto;
+  color: var(--fg-faint);
+  letter-spacing: 0.1em;
+}
+
+.auto-phrases {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.auto-phrase-group {
+  border: 1px solid var(--panel-rim);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.55rem 0.4rem;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.auto-phrase-group legend {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  padding: 0 0.3rem;
+}
+
+.auto-phrase-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.7rem;
+}
+
+.auto-phrase-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.auto-preview {
+  margin-bottom: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  background: #060606;
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.auto-preview-empty {
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.auto-preview-name {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+}
+
+.auto-params {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--panel-rim);
+}
+
+.auto-param {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--fg-dim);
+}
+
+.auto-seed {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--fg-dim);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.auto-seed input {
+  width: 96px;
+  margin-top: 0.2rem;
+}
+.reroll-button {
+  font-size: 0.65rem;
+  padding: 0.3rem 0.6rem;
+  margin-top: 0.35rem;
+}
+
+/* ===== Project menu / drop zone ========================================= */
 
 .dropzone {
   margin-top: 0.5rem;
-  padding: 0.75rem;
-  border: 1px dashed #555;
-  border-radius: 4px;
+  padding: 0.85rem;
+  border: 1px dashed var(--panel-rim);
+  border-radius: var(--radius);
   text-align: center;
-  color: #888;
-  font-size: 0.9em;
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .import-label {
@@ -171,140 +924,68 @@ input[type="range"] {
 
 .import-errors {
   margin-top: 0.5rem;
-  padding: 0.5rem;
-  background: #3a2222;
-  border-radius: 4px;
+  padding: 0.55rem;
+  background: rgba(211, 59, 59, 0.06);
+  border: 1px solid var(--danger-dim);
+  border-radius: var(--radius);
   color: #fbb;
-  font-size: 0.85em;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
 }
-
 .import-errors ul {
   margin: 0.25rem 0 0;
-  padding-left: 1.25rem;
+  padding-left: 1.2rem;
 }
 
-.auto-phrases {
+/* ===== Transport / Global panels ======================================== */
+
+.transport-controls {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin-bottom: 0.5rem;
+  gap: 0.6rem;
+  align-items: center;
 }
 
-.auto-phrase-group {
-  border: 1px solid #444;
-  border-radius: 4px;
-  padding: 0.3rem 0.6rem 0.4rem;
-  margin: 0;
-}
-
-.auto-phrase-group legend {
-  font-size: 0.8em;
-  color: #aaa;
-  padding: 0 0.3rem;
-}
-
-.auto-phrase-list {
+.global-controls {
   display: flex;
+  gap: 0.6rem;
+  align-items: flex-end;
   flex-wrap: wrap;
-  gap: 0.3rem 0.8rem;
-}
-
-.auto-phrase-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.85em;
-  color: #ddd;
-  cursor: pointer;
-}
-
-.auto-preview {
-  margin-bottom: 0.5rem;
-  padding: 0.4rem 0.6rem;
-  background: #1f1f1f;
-  border: 1px solid #333;
-  border-radius: 4px;
-}
-
-.auto-preview-empty {
-  color: #777;
-  font-size: 0.85em;
-  font-style: italic;
-}
-
-.auto-preview-name {
-  font-size: 0.8em;
-  color: var(--accent);
-  margin-bottom: 0.3rem;
-}
-
-.auto-preview-grid {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.auto-preview-row {
-  display: grid;
-  grid-template-columns: 80px repeat(32, 1fr);
-  gap: 2px;
-  align-items: center;
-}
-
-/* When the row has no leading pad-label (pitched preview), let the steps fill the row. */
-.auto-preview-row:not(:has(.pad-label)) {
-  grid-template-columns: repeat(32, 1fr);
-}
-
-/* Read-only preview cells reuse the manual editor's step look but ignore pointer events. */
-.auto-preview .step {
-  cursor: default;
-  pointer-events: none;
 }
 
 /*
- * Beat / half-phrase dividers. Index differs between drum (pad-label is the
- * leading sibling) and pitched (no label, step 1 is the first child), so each
- * row variant gets its own scoped rule rather than a shared selector.
+ * Native <select> styled as a Display: dark inset, accent-coloured value,
+ * small label sitting above. Replaces the previous Display + select pair so
+ * the value isn't shown twice.
  */
-.auto-preview-row:has(.pad-label) .step:nth-child(4n + 2) {
-  border-left-width: 2px;
-}
-.auto-preview-row:not(:has(.pad-label)) .step:nth-child(4n + 1) {
-  border-left-width: 2px;
-}
-
-.auto-preview-row:has(.pad-label) .step:nth-child(18) {
-  border-left: 2px solid #777;
-}
-.auto-preview-row:not(:has(.pad-label)) .step:nth-child(17) {
-  border-left: 2px solid #777;
-}
-
-.auto-params {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.4rem 1rem;
-}
-
-.auto-param {
-  display: flex;
+.readout-select {
+  display: inline-flex;
   flex-direction: column;
-  align-items: stretch;
-  font-size: 0.85em;
-  color: #bbb;
-}
-
-.auto-seed input {
-  width: 80px;
-  background: #333;
+  gap: 0.15rem;
+  text-transform: none;
+  letter-spacing: normal;
   color: var(--fg);
-  border: 1px solid #555;
-  border-radius: 3px;
-  padding: 0.2rem 0.4rem;
 }
-
-.reroll-button {
-  font-size: 0.8em;
-  padding: 0.2rem 0.6rem;
-  margin-left: 0.4rem;
+.readout-select-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.readout-select-control {
+  background: var(--inset);
+  color: var(--fg);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  min-width: 100px;
+}
+.readout-select-control:focus {
+  outline: none;
+  border-color: var(--panel-rim);
 }

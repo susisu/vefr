@@ -7,12 +7,7 @@ import {
   type PatternEvent,
 } from "../engine/types.js";
 import { PHRASE_STEPS, type DrumTemplate, type RhythmTemplate } from "../phrases/types.js";
-import type {
-  DrumBar,
-  DrumGeneratorInput,
-  PitchedBar,
-  PitchedGeneratorInput,
-} from "./types.js";
+import type { DrumBar, DrumGeneratorInput, PitchedBar, PitchedGeneratorInput } from "./types.js";
 
 /** One sixteenth-note in ticks; templates are authored at this resolution. */
 const SIXTEENTH = TICKS_PER_BEAT / 4;
@@ -46,11 +41,11 @@ const WALK_MAX = 7;
 const DRUM_PADS: readonly DrumPad[] = ["kick", "snare", "closed-hat", "open-hat"];
 
 /** Salt values that keep each RNG stream independent. */
-const TAG_TEMPLATE = 0x5450 /* "TP" — template pick at macro slot */;
-const TAG_DROP = 0x4452 /* "DR" — drop dice per event */;
-const TAG_INSERT = 0x494e /* "IN" — ghost-note insertion dice */;
-const TAG_WALK = 0x574b /* "WK" — melody walk step */;
-const TAG_WALK_START = 0x5753 /* "WS" — melody walk starting degree */;
+const TAG_TEMPLATE = 0x5450; /* "TP" — template pick at macro slot */
+const TAG_DROP = 0x4452; /* "DR" — drop dice per event */
+const TAG_INSERT = 0x494e; /* "IN" — ghost-note insertion dice */
+const TAG_WALK = 0x574b; /* "WK" — melody walk step */
+const TAG_WALK_START = 0x5753; /* "WS" — melody walk starting degree */
 
 /**
  * Materialize one bar of drum events. The macro slot picks a template from
