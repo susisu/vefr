@@ -215,6 +215,20 @@ describe("Engine", () => {
     expect(seen.at(-1)).toBeUndefined();
   });
 
+  it("advances transport.positionTick during playback so derived state stays live", () => {
+    const { clock, engine } = makeEngine();
+    expect(engine.getTransport().positionTick).toBe(0);
+    engine.play();
+    const initial = engine.getTransport().positionTick;
+    clock.advanceTo(1.0);
+    // 1 sec at 60 BPM ≈ 1 beat (TICKS_PER_BEAT ticks). Allow a few ticks
+    // of slack for the scheduler's lookahead/polling cadence — what we're
+    // really asserting is that the dispatched position is no longer
+    // pinned to the play-start tick.
+    const advanced = engine.getTransport().positionTick - initial;
+    expect(advanced).toBeGreaterThan(TICKS_PER_BEAT * 0.8);
+  });
+
   it("resumes from paused position", () => {
     const { clock, output, engine } = makeEngine();
     engine.play();

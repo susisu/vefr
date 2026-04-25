@@ -417,6 +417,12 @@ export class Engine {
    * length of the 32-step (= 2 × 16-sixteenth-notes) preset variants.
    */
   private dispatch(tick: Tick, time: number): void {
+    // Advance the saved position so derived state (e.g. the auto-track
+    // active phrase id, which floors the position into a phrase index)
+    // reflects the live tick. We deliberately don't emit transportChanged
+    // — that's reserved for play / pause / stop / seek / setBpm and would
+    // re-render every transport-watching component on every tick.
+    this.transport = { ...this.transport, positionTick: tick };
     this.setPlayheadStep(Math.floor(tick / PLAYHEAD_STEP_TICKS));
     for (const track of this.tracks) {
       if (track.mute) continue;
