@@ -7,9 +7,9 @@ import {
   type Phrase,
 } from "../../phrases/index.js";
 import type { DrumTemplate, RhythmTemplate } from "../../phrases/types.js";
-import { Chip, Knob } from "../components/index.js";
+import { Chip, Knob, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
-import { useActivePhraseId, usePlayheadStep } from "../hooks.js";
+import { useActivePhraseId } from "../hooks.js";
 import { trackTone } from "../trackTone.js";
 
 /** AutoParams fields that map to a numeric knob. */
@@ -50,8 +50,6 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
   const api = useControlApi();
   const activeId = useActivePhraseId(refById(track.id));
   const activePhrase = activeId !== undefined ? getPhrase(activeId) : undefined;
-  const playStep = usePlayheadStep();
-  const playingStep = playStep === undefined ? -1 : playStep % PREVIEW_STEPS;
   const phrases: readonly Phrase[] =
     track.kind === "drum" ? listDrumPhrases() : listPitchedPhrases(track.role);
   const selected = new Set<PhraseId>(track.phraseIds);
@@ -96,7 +94,7 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
           <Chip tone={tone}>{kindLabel}</Chip> <Chip>AUTO</Chip> {track.name}
         </span>
       </div>
-      <ActivePhrasePreview phrase={activePhrase} playingStep={playingStep} />
+      <ActivePhrasePreview phrase={activePhrase} />
       <details className="auto-phrases-collapsible">
         <summary className="auto-phrases-summary">
           <span className="auto-phrases-summary-label">Phrases</span>
@@ -177,41 +175,35 @@ function groupByCategory(phrases: readonly Phrase[]): ReadonlyArray<{
 /**
  * Read-only step-grid preview of the phrase the engine is currently playing
  * for this track. Uses the same row-and-cell layout as the manual editors so
- * the visual language is consistent.
+ * the visual language is consistent. The live playhead column is painted by
+ * a sibling {@link PlayheadOverlay} so this preview doesn't have to re-render
+ * once per 16th note.
  */
-function ActivePhrasePreview({
-  phrase,
-  playingStep,
-}: {
-  phrase: Phrase | undefined;
-  playingStep: number;
-}): ReactElement {
+function ActivePhrasePreview({ phrase }: { phrase: Phrase | undefined }): ReactElement {
   if (phrase === undefined) {
     return <div className="auto-preview auto-preview-empty">No phrase selected</div>;
   }
+  const isDrum = phrase.kind === "drum";
   return (
     <div className="auto-preview">
       <div className="auto-preview-name">{phrase.name}</div>
-      {phrase.kind === "drum" ?
-        <DrumPreview template={phrase.template} playingStep={playingStep} />
-      : <RhythmPreview template={phrase.template} playingStep={playingStep} />}
+      <div className="grid-stack">
+        {isDrum ?
+          <DrumPreview template={phrase.template} />
+        : <RhythmPreview template={phrase.template} />}
+        <PlayheadOverlay totalSteps={PREVIEW_STEPS} hasLabelColumn={isDrum} />
+      </div>
     </div>
   );
 }
 
 /** Single-row preview for a melody / bass rhythm template. */
-function RhythmPreview({
-  template,
-  playingStep,
-}: {
-  template: RhythmTemplate;
-  playingStep: number;
-}): ReactElement {
+function RhythmPreview({ template }: { template: RhythmTemplate }): ReactElement {
   return (
     <div className="auto-preview-grid">
       <div className="auto-preview-row">
         {Array.from({ length: PREVIEW_STEPS }, (_, i) => (
-          <PreviewCell key={i} velocity={template[i] ?? 0} playing={i === playingStep} />
+          <PreviewCell key={i} velocity={template[i] ?? 0} />
         ))}
       </div>
     </div>
@@ -219,13 +211,7 @@ function RhythmPreview({
 }
 
 /** Multi-row preview for a drum kit — every pad in `PREVIEW_PAD_ORDER`. */
-function DrumPreview({
-  template,
-  playingStep,
-}: {
-  template: DrumTemplate;
-  playingStep: number;
-}): ReactElement {
+function DrumPreview({ template }: { template: DrumTemplate }): ReactElement {
   return (
     <div className="auto-preview-grid">
       {PREVIEW_PAD_ORDER.map((pad) => {
@@ -234,7 +220,7 @@ function DrumPreview({
           <div key={pad} className="auto-preview-row">
             <span className="pad-label">{pad}</span>
             {Array.from({ length: PREVIEW_STEPS }, (_, i) => (
-              <PreviewCell key={i} velocity={row?.[i] ?? 0} playing={i === playingStep} />
+              <PreviewCell key={i} velocity={row?.[i] ?? 0} />
             ))}
           </div>
         );
@@ -245,12 +231,11 @@ function DrumPreview({
 
 /**
  * One read-only step cell: lit when velocity > 0, with opacity scaling on
- * velocity so accents stand out against ghost notes. The `playing` flag
- * paints the current playhead column on top of the velocity rendering.
+ * velocity so accents stand out against ghost notes.
  */
-function PreviewCell({ velocity, playing }: { velocity: number; playing: boolean }): ReactElement {
+function PreviewCell({ velocity }: { velocity: number }): ReactElement {
   const filled = velocity > 0;
-  const className = `step ${filled ? "on" : ""} ${playing ? "playing" : ""}`;
+  const className = `step ${filled ? "on" : ""}`;
   // 0..1 velocity → 0.4..1 opacity. Empty cells stay flat (no opacity tweak).
   const style = filled ? { opacity: 0.4 + velocity * 0.6 } : undefined;
   return <span className={className} style={style} />;

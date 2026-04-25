@@ -7,9 +7,8 @@ import {
   type PatternEvent,
   type PitchedTrack,
 } from "../../engine/types.js";
-import { Chip } from "../components/index.js";
+import { Chip, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
-import { usePlayheadStep } from "../hooks.js";
 import { trackTone } from "../trackTone.js";
 
 /** Number of steps shown in the pitched grid: 32 sixteenth-notes spanning 2 bars. */
@@ -38,8 +37,6 @@ function ManualPitchedEditorInner({
   pattern: Pattern<Note>;
 }): ReactElement {
   const api = useControlApi();
-  const playStep = usePlayheadStep();
-  const playingStep = playStep === undefined ? -1 : playStep % STEPS_PER_PHRASE;
   const defaultOctave = track.role === "bass" ? DEFAULT_BASS_OCTAVE : DEFAULT_MELODY_OCTAVE;
 
   /**
@@ -79,29 +76,31 @@ function ManualPitchedEditorInner({
           <Chip tone={tone}>{kindLabel}</Chip> <Chip>MANUAL</Chip> {track.name}
         </span>
       </div>
-      <div className="pitched-grid">
-        {DEGREES.map((degree) => (
-          <div key={degree} className="pitched-row">
-            <span className="degree-label">{degree}</span>
-            {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
-              const tick = i * STEP_TICKS;
-              const ev = pattern.events.find((e) => e.tick === tick);
-              const on = ev?.payload.degree === degree;
-              const playing = i === playingStep;
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  className={`step ${on ? "on" : ""} ${playing ? "playing" : ""}`}
-                  onClick={() => {
-                    toggle(degree, i);
-                  }}
-                  aria-label={`degree ${degree} step ${i + 1}`}
-                />
-              );
-            })}
-          </div>
-        ))}
+      <div className="grid-stack">
+        <div className="pitched-grid">
+          {DEGREES.map((degree) => (
+            <div key={degree} className="pitched-row">
+              <span className="degree-label">{degree}</span>
+              {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
+                const tick = i * STEP_TICKS;
+                const ev = pattern.events.find((e) => e.tick === tick);
+                const on = ev?.payload.degree === degree;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`step ${on ? "on" : ""}`}
+                    onClick={() => {
+                      toggle(degree, i);
+                    }}
+                    aria-label={`degree ${degree} step ${i + 1}`}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <PlayheadOverlay totalSteps={STEPS_PER_PHRASE} hasLabelColumn />
       </div>
     </div>
   );

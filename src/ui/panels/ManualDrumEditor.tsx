@@ -8,9 +8,8 @@ import {
   type Pattern,
   type PatternEvent,
 } from "../../engine/types.js";
-import { Chip } from "../components/index.js";
+import { Chip, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
-import { usePlayheadStep } from "../hooks.js";
 import { trackTone } from "../trackTone.js";
 
 /** Number of steps shown in the drum grid: 32 sixteenth-notes spanning 2 bars. */
@@ -35,8 +34,6 @@ function ManualDrumEditorInner({
   pattern: Pattern<DrumHit>;
 }): ReactElement {
   const api = useControlApi();
-  const playStep = usePlayheadStep();
-  const playingStep = playStep === undefined ? -1 : playStep % STEPS_PER_PHRASE;
 
   /** Toggle a (pad, step) cell on/off and push the new pattern to the engine. */
   const toggle = (pad: DrumPad, stepIdx: number): void => {
@@ -58,28 +55,32 @@ function ManualDrumEditorInner({
           <Chip tone={tone}>DRUM</Chip> <Chip>MANUAL</Chip> {track.name}
         </span>
       </div>
-      <div className="drum-grid">
-        {DRUM_PADS.map((pad) => (
-          <div key={pad} className="drum-row">
-            <span className="pad-label">{pad}</span>
-            {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
-              const tick = i * STEP_TICKS;
-              const on = pattern.events.some((ev) => ev.tick === tick && ev.payload.pad === pad);
-              const playing = i === playingStep;
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  className={`step ${on ? "on" : ""} ${playing ? "playing" : ""}`}
-                  onClick={() => {
-                    toggle(pad, i);
-                  }}
-                  aria-label={`${pad} step ${i + 1}`}
-                />
-              );
-            })}
-          </div>
-        ))}
+      <div className="grid-stack">
+        <div className="drum-grid">
+          {DRUM_PADS.map((pad) => (
+            <div key={pad} className="drum-row">
+              <span className="pad-label">{pad}</span>
+              {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
+                const tick = i * STEP_TICKS;
+                const on = pattern.events.some(
+                  (ev) => ev.tick === tick && ev.payload.pad === pad,
+                );
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`step ${on ? "on" : ""}`}
+                    onClick={() => {
+                      toggle(pad, i);
+                    }}
+                    aria-label={`${pad} step ${i + 1}`}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <PlayheadOverlay totalSteps={STEPS_PER_PHRASE} hasLabelColumn />
       </div>
     </div>
   );
