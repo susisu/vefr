@@ -307,13 +307,19 @@ export class Engine {
   }
 
   /**
-   * Suggest a unique track name derived from `base`. Returns `base` itself if
-   * it's already free, otherwise appends ` 2`, ` 3`, ... until an unused
-   * variant is found. Pure derivation — does not mutate engine state.
+   * Suggest a unique track name derived from `base`. Returns `base` unsuffixed
+   * only when neither `base` nor any numbered sibling `${base} N` is in use;
+   * otherwise appends ` 2`, ` 3`, ... until an unused variant is found, so a
+   * default-named series (e.g. `Auto Drum 1`) extends naturally rather than
+   * spawning a bare-named sibling. Pure derivation — does not mutate state.
    */
   proposeUniqueName(base: string): string {
     const used = new Set(this.tracks.map((t) => t.name));
-    if (!used.has(base)) return base;
+    const prefix = `${base} `;
+    const hasNumberedSibling = this.tracks.some(
+      (t) => t.name.startsWith(prefix) && /^\d+$/u.test(t.name.slice(prefix.length)),
+    );
+    if (!used.has(base) && !hasNumberedSibling) return base;
     for (let i = 2; ; i += 1) {
       const candidate = `${base} ${i}`;
       if (!used.has(candidate)) return candidate;

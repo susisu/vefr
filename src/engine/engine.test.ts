@@ -199,6 +199,13 @@ describe("Engine", () => {
     expect(engine.proposeUniqueName("Fresh")).toBe("Fresh");
   });
 
+  it("proposeUniqueName extends an existing numbered series instead of going bare", () => {
+    const { engine } = makeEngine();
+    // makeEngine seeds `Manual Drum 1`; `Manual Drum` itself is free, but the
+    // numbered sibling means a new track should continue the series at 2.
+    expect(engine.proposeUniqueName("Manual Drum")).toBe("Manual Drum 2");
+  });
+
   it("emits playheadStepChanged on 16th-step boundaries", () => {
     const { clock, engine } = makeEngine();
     const seen: Array<number | undefined> = [];
