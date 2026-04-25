@@ -28,7 +28,12 @@ function defaultInitial(): EngineInitial {
     mute: false,
     volume: 0.8,
     source: "auto",
-    phraseIds: ["drum.techno.offbeat-hat", "drum.techno.driving", "drum.lofi.boom-bap"],
+    phraseIds: [
+      "drum.lofi.boom-bap",
+      "drum.lofi.half-time",
+      "drum.lofi.minimal",
+      "drum.lofi.dusty-swing",
+    ],
     seed: 0,
     params: defaultAutoParamsFor("drum"),
   };
@@ -41,10 +46,10 @@ function defaultInitial(): EngineInitial {
     volume: 0.8,
     source: "auto",
     phraseIds: [
-      "melody.pop.sparse",
       "melody.lofi.minimal",
       "melody.lofi.pointillist",
-      "melody.pop.hook",
+      "melody.lofi.three-feel",
+      "melody.lofi.dusty-pair",
     ],
     seed: 0,
     params: defaultAutoParamsFor("pitched", "melody"),
@@ -57,7 +62,7 @@ function defaultInitial(): EngineInitial {
     mute: false,
     volume: 0.8,
     source: "auto",
-    phraseIds: ["bass.pop.quarter-pulse", "bass.techno.eighth-pulse"],
+    phraseIds: ["bass.lofi.synco", "bass.lofi.dub", "bass.lofi.half-stab", "bass.lofi.pickup"],
     seed: 0,
     params: defaultAutoParamsFor("pitched", "bass"),
   };
