@@ -4,7 +4,7 @@ import type {
   GlobalMusicState,
   Note,
   Pattern,
-  PresetId,
+  PhraseId,
   Tick,
   TimeSignature,
   Track,
@@ -15,11 +15,8 @@ export const CURRENT_SCHEMA_VERSION = 1;
 
 /**
  * The portable shape of a vefr project. Everything needed to round-trip the
- * full session — manual patterns, auto preset/seed/params, mute/volume/name,
+ * full session — manual patterns, auto phrase ids/seed/params, mute/volume/name,
  * global key/scale, transport tempo/signature — fits in this object.
- *
- * The schema deliberately accepts both manual and auto track variants from
- * day one so that M3 doesn't bump {@link CURRENT_SCHEMA_VERSION}.
  */
 export type Project = {
   schemaVersion: typeof CURRENT_SCHEMA_VERSION;
@@ -36,15 +33,15 @@ export type ImportError =
   | { code: "not-an-object" }
   | { code: "unknown-schema-version"; got: unknown }
   | { code: "shape"; path: string; message: string }
-  | { code: "missing-preset"; trackName: string; presetId: PresetId }
+  | { code: "missing-phrase"; trackName: string; phraseId: PhraseId }
   | { code: "duplicate-id"; id: string }
   | { code: "duplicate-name"; name: string };
 
 /** Railway-style result for parsing untrusted input. */
 export type ParseResult = { ok: true; value: Project } | { ok: false; errors: ImportError[] };
 
-/** Resolver function for preset id existence checks during import. */
-export type PresetResolver = (id: PresetId) => boolean;
+/** Resolver function for phrase id existence checks during import. */
+export type PhraseResolver = (id: PhraseId) => boolean;
 
 // --- valibot schemas ---------------------------------------------------------
 
@@ -135,8 +132,7 @@ function patternSchema<P>(payload: v.GenericSchema<P>): v.GenericSchema<Pattern<
 /** Schema for {@link AutoParams}. */
 const AutoParamsSchema = v.object({
   microVariance: NormalizedNumber,
-  midPeriodBars: PositiveInteger,
-  macroPeriodBars: PositiveInteger,
+  rotationBars: PositiveInteger,
   lockVariant: v.boolean(),
 });
 
@@ -152,7 +148,7 @@ const TrackBaseShape = {
 const AutoTrackBaseShape = {
   ...TrackBaseShape,
   source: v.literal("auto"),
-  presetIds: v.array(v.string()),
+  phraseIds: v.array(v.string()),
   seed: v.pipe(v.number(), v.integer()),
   params: AutoParamsSchema,
 };
@@ -222,7 +218,7 @@ const ProjectV1BodySchema = v.object({
  * error found rather than throwing on the first one, so the UI can show all
  * problems at once.
  */
-export function parseProject(input: unknown, presetExists: PresetResolver): ParseResult {
+export function parseProject(input: unknown, phraseExists: PhraseResolver): ParseResult {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     return { ok: false, errors: [{ code: "not-an-object" }] };
   }
@@ -231,7 +227,7 @@ export function parseProject(input: unknown, presetExists: PresetResolver): Pars
   if (typeof version !== "number") {
     return { ok: false, errors: [{ code: "unknown-schema-version", got: version }] };
   }
-  return parseAtVersion(input, version, presetExists);
+  return parseAtVersion(input, version, phraseExists);
 }
 
 /**
@@ -241,25 +237,25 @@ export function parseProject(input: unknown, presetExists: PresetResolver): Pars
 function parseAtVersion(
   input: unknown,
   version: number,
-  presetExists: PresetResolver,
+  phraseExists: PhraseResolver,
 ): ParseResult {
   switch (version) {
     case CURRENT_SCHEMA_VERSION:
-      return parseV1(input, presetExists);
+      return parseV1(input, phraseExists);
     default:
       return { ok: false, errors: [{ code: "unknown-schema-version", got: version }] };
   }
 }
 
-/** Schema-validate against v1 and run cross-cutting checks (presets, dupes). */
-function parseV1(input: unknown, presetExists: PresetResolver): ParseResult {
+/** Schema-validate against v1 and run cross-cutting checks (phrases, dupes). */
+function parseV1(input: unknown, phraseExists: PhraseResolver): ParseResult {
   const result = v.safeParse(ProjectV1BodySchema, input);
   if (!result.success) {
     return { ok: false, errors: result.issues.map(issueToError) };
   }
   const errors: ImportError[] = [];
   errors.push(...checkUniqueness(result.output.tracks));
-  errors.push(...checkPresets(result.output.tracks, presetExists));
+  errors.push(...checkPhrases(result.output.tracks, phraseExists));
   if (errors.length > 0) return { ok: false, errors };
 
   const project: Project = {
@@ -294,14 +290,14 @@ function checkUniqueness(tracks: readonly Track[]): ImportError[] {
   return errors;
 }
 
-/** Reject auto tracks whose `presetIds` reference unknown presets. */
-function checkPresets(tracks: readonly Track[], presetExists: PresetResolver): ImportError[] {
+/** Reject auto tracks whose `phraseIds` reference unknown phrases. */
+function checkPhrases(tracks: readonly Track[], phraseExists: PhraseResolver): ImportError[] {
   const errors: ImportError[] = [];
   for (const t of tracks) {
     if (t.source !== "auto") continue;
-    for (const id of t.presetIds) {
-      if (!presetExists(id)) {
-        errors.push({ code: "missing-preset", trackName: t.name, presetId: id });
+    for (const id of t.phraseIds) {
+      if (!phraseExists(id)) {
+        errors.push({ code: "missing-phrase", trackName: t.name, phraseId: id });
       }
     }
   }

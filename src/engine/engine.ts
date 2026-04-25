@@ -1,6 +1,6 @@
 import { generateDrumBar, generatePitchedBar } from "../auto/generator.js";
 import type { DrumBar, PitchedBar } from "../auto/types.js";
-import type { DrumPreset, PitchedPreset, Preset } from "../presets/types.js";
+import type { Phrase } from "../phrases/types.js";
 import { degreeToMidi } from "../shared/music.js";
 import { Signal } from "../shared/signal.js";
 import type { Clock } from "./clock.js";
@@ -13,7 +13,7 @@ import {
   type GlobalMusicState,
   type Note,
   type Pattern,
-  type PresetId,
+  type PhraseId,
   type Tick,
   type Track,
   type TrackId,
@@ -22,7 +22,7 @@ import {
 } from "./types.js";
 
 /**
- * How many musical bars one auto-track phrase spans. Preset variants are
+ * How many musical bars one auto-track phrase spans. Phrase patterns are
  * authored at this length (32 sixteenth-note steps = 2 bars in 4/4) so the
  * generator output and the dispatcher cycle stay aligned.
  */
@@ -44,13 +44,13 @@ export type TrackPatch = {
 
 /** Mutation applied via {@link Engine.setAutoConfig}; absent fields are left alone. */
 export type AutoConfigPatch = {
-  presetIds?: readonly PresetId[];
+  phraseIds?: readonly PhraseId[];
   seed?: number;
   params?: AutoParams;
 };
 
-/** Resolves preset ids into the data the generator needs. */
-export type PresetLookup = (id: PresetId) => Preset | undefined;
+/** Resolves phrase ids into the data the generator needs. */
+export type PhraseLookup = (id: PhraseId) => Phrase | undefined;
 
 /** Engine-level error for track operations the caller can recover from. */
 export class TrackError extends Error {
@@ -75,7 +75,7 @@ export class Engine {
   private tracks: readonly Track[];
   private readonly scheduler: Scheduler;
   private readonly output: SoundOutput;
-  private readonly resolvePreset: PresetLookup;
+  private readonly resolvePhrase: PhraseLookup;
   /**
    * Cache of materialized auto-track bars keyed by track id. The dispatcher
    * fires per tick; without this the 3-tier generator would re-run several
@@ -92,13 +92,13 @@ export class Engine {
 
   constructor(
     initial: EngineInitial,
-    opts: { clock: Clock; output: SoundOutput; resolvePreset: PresetLookup },
+    opts: { clock: Clock; output: SoundOutput; resolvePhrase: PhraseLookup },
   ) {
     this.transport = { ...initial.transport, playing: false };
     this.global = { ...initial.global };
     this.tracks = [...initial.tracks];
     this.output = opts.output;
-    this.resolvePreset = opts.resolvePreset;
+    this.resolvePhrase = opts.resolvePhrase;
     this.scheduler = new Scheduler({
       clock: opts.clock,
       onTick: (tick, time) => {
@@ -270,7 +270,7 @@ export class Engine {
     }
     const next: Track = {
       ...target,
-      presetIds: patch.presetIds ?? target.presetIds,
+      phraseIds: patch.phraseIds ?? target.phraseIds,
       seed: patch.seed ?? target.seed,
       params: patch.params ?? target.params,
     };
@@ -355,9 +355,9 @@ export class Engine {
 
   /**
    * Run the appropriate generator and wrap the result in a cache entry.
-   * The generator's `bar` input remains the "musical bar" index, so existing
-   * macro/midPeriodBars semantics are unchanged: we just call it once per
-   * phrase boundary using the bar at the start of that phrase.
+   * The generator is called once per phrase boundary with the bar index at
+   * the start of that phrase. Phrase patterns are pre-resolved from the
+   * track's `phraseIds` and passed in directly.
    */
   private materializeAuto(
     track: Extract<Track, { source: "auto" }>,
@@ -365,34 +365,34 @@ export class Engine {
   ): AutoCacheEntry {
     const bar = phrase * PHRASE_BARS;
     if (track.kind === "drum") {
-      const presets = this.collectDrumPresets(track.presetIds);
-      const out = generateDrumBar({ bar, seed: track.seed, presets, params: track.params });
+      const patterns = this.collectDrumPatterns(track.phraseIds);
+      const out = generateDrumBar({ bar, seed: track.seed, patterns, params: track.params });
       return { kind: "drum", phrase, lengthTicks: out.lengthTicks, events: out.events };
     }
-    const presets = this.collectPitchedPresets(track.presetIds, track.role);
-    const out = generatePitchedBar({ bar, seed: track.seed, presets, params: track.params });
+    const patterns = this.collectPitchedPatterns(track.phraseIds, track.role);
+    const out = generatePitchedBar({ bar, seed: track.seed, patterns, params: track.params });
     return { kind: "pitched", phrase, lengthTicks: out.lengthTicks, events: out.events };
   }
 
-  /** Resolve preset ids into drum-preset objects, dropping unknown / wrong-kind ids. */
-  private collectDrumPresets(ids: readonly PresetId[]): readonly DrumPreset[] {
-    const out: DrumPreset[] = [];
+  /** Resolve phrase ids into drum patterns, dropping unknown / wrong-kind ids. */
+  private collectDrumPatterns(ids: readonly PhraseId[]): ReadonlyArray<Pattern<DrumHit>> {
+    const out: Array<Pattern<DrumHit>> = [];
     for (const id of ids) {
-      const p = this.resolvePreset(id);
-      if (p && p.kind === "drum") out.push(p);
+      const p = this.resolvePhrase(id);
+      if (p?.kind === "drum") out.push(p.pattern);
     }
     return out;
   }
 
-  /** Resolve preset ids into pitched-preset objects matching `role`. */
-  private collectPitchedPresets(
-    ids: readonly PresetId[],
+  /** Resolve phrase ids into pitched patterns matching `role`. */
+  private collectPitchedPatterns(
+    ids: readonly PhraseId[],
     role: "melody" | "bass",
-  ): readonly PitchedPreset[] {
-    const out: PitchedPreset[] = [];
+  ): ReadonlyArray<Pattern<Note>> {
+    const out: Array<Pattern<Note>> = [];
     for (const id of ids) {
-      const p = this.resolvePreset(id);
-      if (p && p.kind === "pitched" && p.role === role) out.push(p);
+      const p = this.resolvePhrase(id);
+      if (p?.kind === "pitched" && p.role === role) out.push(p.pattern);
     }
     return out;
   }

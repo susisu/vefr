@@ -12,7 +12,7 @@ import {
   type Pattern,
   type PitchedTrack,
 } from "./engine/types.js";
-import { defaultAutoParamsFor, getPreset, presetExists } from "./presets/index.js";
+import { defaultAutoParamsFor, getPhrase, phraseExists } from "./phrases/index.js";
 import { WebAudioSoundOutput } from "./sound/webaudio.js";
 import { App } from "./ui/App.js";
 import { ControlApiProvider } from "./ui/context.js";
@@ -73,7 +73,11 @@ function defaultInitial(): EngineInitial {
     mute: false,
     volume: 0.85,
     source: "auto",
-    presetIds: ["drum.techno.four"],
+    phraseIds: [
+      "drum.techno.four.offbeat",
+      "drum.techno.four.driving",
+      "drum.lofi.boom-bap.classic",
+    ],
     seed: 1,
     params: defaultAutoParamsFor("drum"),
   };
@@ -85,7 +89,12 @@ function defaultInitial(): EngineInitial {
     mute: false,
     volume: 0.55,
     source: "auto",
-    presetIds: ["melody.lofi.sparse"],
+    phraseIds: [
+      "melody.sparse.classic",
+      "melody.sparse.pointillist",
+      "melody.sparse.minimal",
+      "melody.sparse.high-bell",
+    ],
     seed: 2,
     params: defaultAutoParamsFor("pitched", "melody"),
   };
@@ -97,7 +106,7 @@ function defaultInitial(): EngineInitial {
     mute: false,
     volume: 0.75,
     source: "auto",
-    presetIds: ["bass.techno.pulse"],
+    phraseIds: ["bass.pulse.quarter", "bass.pulse.eighth"],
     seed: 3,
     params: defaultAutoParamsFor("pitched", "bass"),
   };
@@ -126,11 +135,11 @@ async function bootstrap(): Promise<void> {
   const engine = new Engine(defaultInitial(), {
     clock,
     output,
-    resolvePreset: getPreset,
+    resolvePhrase: getPhrase,
   });
   // AudioContext starts suspended in most browsers; resume it on the first
   // user gesture (the Play button click) per the autoplay policy.
-  const api = new InProcessControlApi(engine, presetExists, {
+  const api = new InProcessControlApi(engine, phraseExists, {
     beforePlay: () => {
       if (audioCtx.state === "suspended") {
         audioCtx.resume().catch(() => {

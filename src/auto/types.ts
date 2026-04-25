@@ -2,19 +2,23 @@ import type {
   AutoParams,
   DrumHit,
   Note,
+  Pattern,
   PatternEvent,
   Tick,
 } from "../engine/types.js";
-import type { DrumPreset, PitchedPreset } from "../presets/types.js";
 
-/** Inputs to a per-bar generator: which presets to choose from + tunables + the bar index. */
-export type GeneratorInput<P> = {
-  /** 0-based bar index. The 3 tiers all use this. */
+/**
+ * Inputs to a per-bar generator: which patterns to choose from + tunables +
+ * the bar index. Patterns are pre-resolved by the engine from the track's
+ * `phraseIds` list, so the generator is decoupled from the phrase library.
+ */
+export type GeneratorInput<T> = {
+  /** 0-based bar index. Combined with `params.rotationBars` to pick the slot. */
   bar: number;
   /** Per-track seed; same value reproduces the same generated stream. */
   seed: number;
-  /** Candidate presets — the macro tier rotates among these. */
-  presets: readonly P[];
+  /** Candidate patterns — the rotation tier picks one of these per slot. */
+  patterns: ReadonlyArray<Pattern<T>>;
   /** User-tunable parameters. */
   params: AutoParams;
 };
@@ -31,6 +35,6 @@ export type DrumBar = MaterializedBar<DrumHit>;
 export type PitchedBar = MaterializedBar<Note>;
 
 /** Drum-track input alias. */
-export type DrumGeneratorInput = GeneratorInput<DrumPreset>;
+export type DrumGeneratorInput = GeneratorInput<DrumHit>;
 /** Pitched-track input alias. */
-export type PitchedGeneratorInput = GeneratorInput<PitchedPreset>;
+export type PitchedGeneratorInput = GeneratorInput<Note>;

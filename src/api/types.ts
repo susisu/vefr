@@ -81,15 +81,15 @@ export interface TrackApi {
   setDrumPattern: (ref: TrackRef, pattern: Pattern<DrumHit>) => Result<void, TrackUpdateError>;
   /** Replace the manual pattern of a pitched track. */
   setPitchedPattern: (ref: TrackRef, pattern: Pattern<Note>) => Result<void, TrackUpdateError>;
-  /** Patch the auto-generation config (presetIds / seed / params) of an auto track. */
+  /** Patch the auto-generation config (phraseIds / seed / params) of an auto track. */
   setAutoConfig: (ref: TrackRef, patch: AutoConfigPatch) => Result<void, TrackUpdateError>;
   /**
    * Replace an auto track's seed with a fresh random integer. With
-   * `lockVariant` on this picks a new locked variant; with it off it just
+   * `lockVariant` on this picks a new locked phrase; with it off it just
    * shuffles where the rotation cycle lands. Manual tracks return
    * kind-mismatch (they have no seed).
    */
-  rerollSeed: (ref: TrackRef) => Result<void, TrackUpdateError>;
+  rerollPhrase: (ref: TrackRef) => Result<void, TrackUpdateError>;
   /** Subscribe to track-list changes. */
   onChange: (handler: (tracks: readonly Track[]) => void) => () => void;
 }

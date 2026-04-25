@@ -8,9 +8,9 @@ import {
 } from "../engine/types.js";
 import { CURRENT_SCHEMA_VERSION, parseProject, type Project } from "./project.js";
 
-/** Always-true preset resolver used in tests when preset references are valid. */
+/** Always-true phrase resolver used in tests when phrase references are valid. */
 const allKnown = (): boolean => true;
-/** Always-false preset resolver used in tests that assert missing-preset errors. */
+/** Always-false phrase resolver used in tests that assert missing-phrase errors. */
 const noneKnown = (): boolean => false;
 
 /** Build a minimal manual drum track for round-tripping tests. */
@@ -61,9 +61,9 @@ function makeAutoBassTrack(): PitchedTrack {
     mute: false,
     volume: 0.9,
     source: "auto",
-    presetIds: ["bass.preset"],
+    phraseIds: ["bass.phrase"],
     seed: 42,
-    params: { microVariance: 0.2, midPeriodBars: 4, macroPeriodBars: 16, lockVariant: false },
+    params: { microVariance: 0.2, rotationBars: 8, lockVariant: false },
   };
 }
 
@@ -116,13 +116,13 @@ describe("parseProject", () => {
     }
   });
 
-  it("flags missing presets on auto tracks", () => {
+  it("flags missing phrases on auto tracks", () => {
     const original = makeProject([makeAutoBassTrack()]);
     const json: unknown = JSON.parse(JSON.stringify(original));
     const r = parseProject(json, noneKnown);
     expect(r.ok).toBe(false);
     if (!r.ok) {
-      const missing = r.errors.find((e) => e.code === "missing-preset");
+      const missing = r.errors.find((e) => e.code === "missing-phrase");
       expect(missing).toBeDefined();
     }
   });

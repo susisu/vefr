@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { DrumPreset, Preset } from "../presets/types.js";
+import type { DrumPhrase, Phrase } from "../phrases/types.js";
 import { RecordingSoundOutput } from "../sound/mock.js";
 import { TestClock } from "./clock.js";
 import { Engine } from "./engine.js";
 import type { EngineInitial } from "./engine.js";
-import { refById, TICKS_PER_BEAT, type DrumTrack, type PresetId } from "./types.js";
+import { refById, TICKS_PER_BEAT, type DrumTrack, type PhraseId } from "./types.js";
 
 function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine: Engine } {
   const clock = new TestClock();
@@ -34,7 +34,7 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
   return {
     clock,
     output,
-    engine: new Engine(initial, { clock, output, resolvePreset: () => undefined }),
+    engine: new Engine(initial, { clock, output, resolvePhrase: () => undefined }),
   };
 }
 
@@ -65,10 +65,9 @@ describe("Engine", () => {
 
   it("dispatches drum events on beat at 60 BPM", () => {
     const { clock, output, engine } = makeEngine();
-    engine.play(); // 4-on-the-floor at 60 BPM = 1 kick per second
-    clock.advanceTo(2.5); // ~2 full bars worth of beats
+    engine.play();
+    clock.advanceTo(2.5);
     const drums = output.events.filter((e) => e.kind === "drum");
-    // At 60 BPM with offset ~0, expect kicks at t≈0, 1, 2 within the 2.5s window
     expect(drums.length).toBeGreaterThanOrEqual(3);
   });
 
@@ -85,25 +84,23 @@ describe("Engine", () => {
     expect(() => {
       engine.updateTrack(refById("drum-1"), { name: "Manual Drum 1" });
     }).not.toThrow();
-    // The only track exists; renaming it to its own name is a no-op success.
   });
 
-  it("dispatches auto-drum events from a single-variant preset", () => {
+  it("dispatches auto-drum events from a single phrase", () => {
     const clock = new TestClock();
     const output = new RecordingSoundOutput();
-    const preset: DrumPreset = {
+    const phrase: DrumPhrase = {
       id: "p.kick",
       kind: "drum",
+      category: "Test",
       name: "Kick",
-      variants: [
-        {
-          lengthTicks: 4 * TICKS_PER_BEAT,
-          events: [{ tick: 0, payload: { pad: "kick", velocity: 1 } }],
-        },
-      ],
+      pattern: {
+        lengthTicks: 4 * TICKS_PER_BEAT,
+        events: [{ tick: 0, payload: { pad: "kick", velocity: 1 } }],
+      },
     };
-    const resolvePreset = (id: PresetId): Preset | undefined =>
-      id === preset.id ? preset : undefined;
+    const resolvePhrase = (id: PhraseId): Phrase | undefined =>
+      id === phrase.id ? phrase : undefined;
     const drum: DrumTrack = {
       id: "auto-1",
       name: "Auto Drum",
@@ -111,9 +108,9 @@ describe("Engine", () => {
       mute: false,
       volume: 1,
       source: "auto",
-      presetIds: [preset.id],
+      phraseIds: [phrase.id],
       seed: 0,
-      params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
+      params: { microVariance: 0, rotationBars: 1, lockVariant: false },
     };
     const initial: EngineInitial = {
       transport: {
@@ -125,26 +122,25 @@ describe("Engine", () => {
       global: { key: 0, scale: "minor" },
       tracks: [drum],
     };
-    const engine = new Engine(initial, { clock, output, resolvePreset });
+    const engine = new Engine(initial, { clock, output, resolvePhrase });
     engine.play();
-    clock.advanceTo(8.5); // 60 BPM, 4-beat bar = 4s/bar; ~2 bars + slack
+    clock.advanceTo(8.5);
     const drums = output.events.filter((e) => e.kind === "drum");
-    // One kick per bar (tick 0); within 8.5s at 60 BPM expect 2 hits.
     expect(drums.length).toBeGreaterThanOrEqual(2);
   });
 
   it("resumes from paused position", () => {
     const { clock, output, engine } = makeEngine();
     engine.play();
-    clock.advanceTo(0.5); // half a second in: between 1st and 2nd kick
+    clock.advanceTo(0.5);
     engine.pause();
     const pausedAt = engine.getTransport().positionTick;
     expect(pausedAt).toBeGreaterThan(0);
     expect(pausedAt).toBeLessThan(TICKS_PER_BEAT);
     output.events.length = 0;
-    clock.advanceTo(1.0); // gap while paused
+    clock.advanceTo(1.0);
     engine.play();
-    clock.advanceTo(1.6); // ~0.6s after resume; should reach the 2nd kick
+    clock.advanceTo(1.6);
     const drumsAfterResume = output.events.filter((e) => e.kind === "drum");
     expect(drumsAfterResume.length).toBeGreaterThanOrEqual(1);
   });

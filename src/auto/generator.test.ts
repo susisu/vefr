@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { TICKS_PER_BEAT, type DrumHit, type Note, type Pattern } from "../engine/types.js";
-import type { DrumPreset, PitchedPreset } from "../presets/types.js";
 import { generateDrumBar, generatePitchedBar } from "./generator.js";
 
 /** Tiny drum pattern: one kick on every beat. */
@@ -14,7 +13,7 @@ function fourBeatKick(): Pattern<DrumHit> {
   };
 }
 
-/** Tiny drum pattern: one snare on every beat. Used to detect mid/macro rotation. */
+/** Tiny drum pattern: one snare on every beat. Used to detect rotation. */
 function fourBeatSnare(): Pattern<DrumHit> {
   return {
     lengthTicks: 4 * TICKS_PER_BEAT,
@@ -25,7 +24,7 @@ function fourBeatSnare(): Pattern<DrumHit> {
   };
 }
 
-/** Tiny drum pattern: one hat on every beat (used as a third macro choice). */
+/** Tiny drum pattern: one hat on every beat (used as a third rotation choice). */
 function fourBeatHat(): Pattern<DrumHit> {
   return {
     lengthTicks: 4 * TICKS_PER_BEAT,
@@ -47,93 +46,59 @@ function fourBeatRoot(): Pattern<Note> {
   };
 }
 
-/** Drum preset with a single kick variant — minimum stable test fixture. */
-const kickPreset: DrumPreset = {
-  id: "test.drum.kick",
-  kind: "drum",
-  name: "Kick Only",
-  variants: [fourBeatKick()],
-};
-
-/** Drum preset with kick + snare variants for mid-tier rotation tests. */
-const kickSnarePreset: DrumPreset = {
-  id: "test.drum.kick-snare",
-  kind: "drum",
-  name: "Kick or Snare",
-  variants: [fourBeatKick(), fourBeatSnare()],
-};
-
-/** Hat-only drum preset used to detect macro-tier rotation across presets. */
-const hatPreset: DrumPreset = {
-  id: "test.drum.hat",
-  kind: "drum",
-  name: "Hat Only",
-  variants: [fourBeatHat()],
-};
-
-/** Pitched preset with a single root variant. */
-const rootPreset: PitchedPreset = {
-  id: "test.melody.root",
-  kind: "pitched",
-  role: "melody",
-  name: "Root",
-  variants: [fourBeatRoot()],
-};
-
 describe("generateDrumBar", () => {
   it("is deterministic for the same (seed, bar)", () => {
     const args = {
       bar: 0,
       seed: 42,
-      presets: [kickSnarePreset],
-      params: { microVariance: 0.5, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
+      patterns: [fourBeatKick(), fourBeatSnare()],
+      params: { microVariance: 0.5, rotationBars: 1, lockVariant: false },
     };
     const a = generateDrumBar(args);
     const b = generateDrumBar(args);
     expect(a).toEqual(b);
   });
 
-  it("returns the variant verbatim when microVariance is 0", () => {
+  it("returns the picked pattern verbatim when microVariance is 0", () => {
     const out = generateDrumBar({
       bar: 0,
       seed: 7,
-      presets: [kickPreset],
-      params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
+      patterns: [fourBeatKick()],
+      params: { microVariance: 0, rotationBars: 1, lockVariant: false },
     });
     expect(out.events).toEqual(fourBeatKick().events);
   });
 
-  it("rotates presets at the macro boundary", () => {
-    const params = { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 2, lockVariant: false };
-    const presets = [kickPreset, hatPreset];
+  it("rotates phrases at the rotation boundary", () => {
+    const params = { microVariance: 0, rotationBars: 1, lockVariant: false };
+    const patterns = [fourBeatKick(), fourBeatHat()];
     const pads = new Set<string>();
     for (let bar = 0; bar < 16; bar++) {
-      const out = generateDrumBar({ bar, seed: 11, presets, params });
+      const out = generateDrumBar({ bar, seed: 11, patterns, params });
       for (const ev of out.events) pads.add(ev.payload.pad);
     }
-    // With two macro choices over 16 bars (8 macro slots) at least one of
-    // each preset's pad should appear.
     expect(pads.has("kick")).toBe(true);
     expect(pads.has("closed-hat")).toBe(true);
   });
 
-  it("rotates variants at the mid boundary", () => {
-    const params = { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 64, lockVariant: false };
+  it("freezes on a single phrase when lockVariant is on", () => {
+    const params = { microVariance: 0, rotationBars: 1, lockVariant: true };
+    const patterns = [fourBeatKick(), fourBeatHat()];
     const pads = new Set<string>();
     for (let bar = 0; bar < 16; bar++) {
-      const out = generateDrumBar({ bar, seed: 13, presets: [kickSnarePreset], params });
+      const out = generateDrumBar({ bar, seed: 11, patterns, params });
       for (const ev of out.events) pads.add(ev.payload.pad);
     }
-    expect(pads.has("kick")).toBe(true);
-    expect(pads.has("snare")).toBe(true);
+    // With the same seed locked, only one phrase ever plays.
+    expect(pads.size).toBe(1);
   });
 
-  it("returns an empty bar when the preset list is empty", () => {
+  it("returns an empty bar when the pattern list is empty", () => {
     const out = generateDrumBar({
       bar: 0,
       seed: 0,
-      presets: [],
-      params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
+      patterns: [],
+      params: { microVariance: 0, rotationBars: 1, lockVariant: false },
     });
     expect(out.events).toEqual([]);
   });
@@ -144,8 +109,8 @@ describe("generatePitchedBar", () => {
     const args = {
       bar: 3,
       seed: 99,
-      presets: [rootPreset],
-      params: { microVariance: 0.4, midPeriodBars: 2, macroPeriodBars: 4, lockVariant: false },
+      patterns: [fourBeatRoot()],
+      params: { microVariance: 0.4, rotationBars: 4, lockVariant: false },
     };
     expect(generatePitchedBar(args)).toEqual(generatePitchedBar(args));
   });
@@ -156,12 +121,11 @@ describe("generatePitchedBar", () => {
       const out = generatePitchedBar({
         bar,
         seed: 21,
-        presets: [rootPreset],
-        params: { microVariance: 1, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
+        patterns: [fourBeatRoot()],
+        params: { microVariance: 1, rotationBars: 1, lockVariant: false },
       });
       for (const ev of out.events) octaves.add(ev.payload.octave);
     }
-    // High variance over 64 events: expect at least one shifted octave.
     expect(octaves.size).toBeGreaterThan(1);
   });
 
@@ -170,8 +134,8 @@ describe("generatePitchedBar", () => {
       const out = generatePitchedBar({
         bar,
         seed: 21,
-        presets: [rootPreset],
-        params: { microVariance: 0, midPeriodBars: 1, macroPeriodBars: 1, lockVariant: false },
+        patterns: [fourBeatRoot()],
+        params: { microVariance: 0, rotationBars: 1, lockVariant: false },
       });
       for (const ev of out.events) expect(ev.payload.octave).toBe(0);
     }

@@ -2,19 +2,19 @@ import type { ChangeEvent, ReactElement } from "react";
 import {
   refById,
   type DrumTrack,
+  type PhraseId,
   type PitchedTrack,
-  type PresetId,
   type Track,
 } from "../../engine/types.js";
 import {
-  listDrumPresets,
-  listPitchedPresets,
-  type Preset,
-} from "../../presets/index.js";
+  listDrumPhrases,
+  listPitchedPhrases,
+  type Phrase,
+} from "../../phrases/index.js";
 import { useControlApi } from "../context.js";
 
 /** AutoParams fields that map to a numeric slider. */
-type NumericParamKey = "microVariance" | "midPeriodBars" | "macroPeriodBars";
+type NumericParamKey = "microVariance" | "rotationBars";
 
 /** Tunable slider description used to render each numeric AutoParams field. */
 type ParamSpec = {
@@ -28,11 +28,10 @@ type ParamSpec = {
 /** Sliders shared by every auto-track variant. */
 const PARAM_SPECS: readonly ParamSpec[] = [
   { key: "microVariance", label: "Micro variance", min: 0, max: 1, step: 0.05 },
-  { key: "midPeriodBars", label: "Mid period (bars)", min: 1, max: 32, step: 1 },
-  { key: "macroPeriodBars", label: "Macro period (bars)", min: 1, max: 64, step: 1 },
+  { key: "rotationBars", label: "Rotation period (bars)", min: 1, max: 64, step: 1 },
 ];
 
-/** Editor for an auto track: preset multi-select + 3 sliders + seed input. */
+/** Editor for an auto track: phrase multi-select grouped by category + sliders + seed. */
 export function AutoTrackEditor({ track }: { track: Track }): ReactElement | null {
   if (track.source !== "auto") return null;
   return <Inner track={track} />;
@@ -42,16 +41,17 @@ export function AutoTrackEditor({ track }: { track: Track }): ReactElement | nul
 function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | null {
   const api = useControlApi();
   if (track.source !== "auto") return null;
-  const presets =
-    track.kind === "drum" ? listDrumPresets() : listPitchedPresets(track.role);
-  const selected = new Set<PresetId>(track.presetIds);
+  const phrases: readonly Phrase[] =
+    track.kind === "drum" ? listDrumPhrases() : listPitchedPhrases(track.role);
+  const selected = new Set<PhraseId>(track.phraseIds);
+  const groups = groupByCategory(phrases);
 
-  /** Toggle a preset id in/out of the track's presetIds list. */
-  const togglePreset = (id: PresetId): void => {
+  /** Toggle a phrase id in/out of the track's phraseIds list. */
+  const togglePhrase = (id: PhraseId): void => {
     const next = new Set(selected);
     if (next.has(id)) next.delete(id);
     else next.add(id);
-    api.track.setAutoConfig(refById(track.id), { presetIds: [...next] });
+    api.track.setAutoConfig(refById(track.id), { phraseIds: [...next] });
   };
 
   /** Patch a single numeric AutoParams field. */
@@ -61,7 +61,7 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
     });
   };
 
-  /** Toggle the lockVariant flag — freeze rotation across macro + mid tiers. */
+  /** Toggle the lockVariant flag — freeze on a single phrase. */
   const toggleLock = (): void => {
     api.track.setAutoConfig(refById(track.id), {
       params: { ...track.params, lockVariant: !track.params.lockVariant },
@@ -77,24 +77,33 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
     api.track.setAutoConfig(refById(track.id), { seed: Math.trunc(n) });
   };
 
-  /** Re-roll the seed via the API so the (locked or rotating) variant changes. */
-  const rerollSeed = (): void => {
-    api.track.rerollSeed(refById(track.id));
+  /** Re-roll the seed via the API so the (locked or rotating) phrase changes. */
+  const rerollPhrase = (): void => {
+    api.track.rerollPhrase(refById(track.id));
   };
 
   return (
     <div className="editor">
       <div className="editor-header">{track.name}</div>
-      <div className="auto-presets">
-        {presets.map((p) => (
-          <PresetToggle
-            key={p.id}
-            preset={p}
-            on={selected.has(p.id)}
-            onToggle={() => {
-              togglePreset(p.id);
-            }}
-          />
+      <div className="auto-phrases">
+        {groups.map(({ category, items }) => (
+          <fieldset key={category} className="auto-phrase-group">
+            <legend>{category}</legend>
+            <div className="auto-phrase-checks">
+              {items.map((p) => (
+                <label key={p.id} className="auto-phrase-check">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(p.id)}
+                    onChange={() => {
+                      togglePhrase(p.id);
+                    }}
+                  />
+                  <span>{p.name}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
         ))}
       </div>
       <div className="auto-params">
@@ -106,14 +115,14 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
             onChange={(v) => {
               setParam(spec.key, v);
             }}
-            // Macro/mid period sliders are no-ops while the variant is locked.
+            // Rotation period is a no-op while the variant is locked.
             disabled={track.params.lockVariant && spec.key !== "microVariance"}
           />
         ))}
         <label className="auto-seed">
           Seed
           <input type="number" value={track.seed} onChange={setSeed} step={1} />
-          <button type="button" className="reroll-button" onClick={rerollSeed}>
+          <button type="button" className="reroll-button" onClick={rerollPhrase}>
             Reroll
           </button>
         </label>
@@ -126,26 +135,23 @@ function Inner({ track }: { track: DrumTrack | PitchedTrack }): ReactElement | n
   );
 }
 
-/** Single preset checkbox-style button. */
-function PresetToggle({
-  preset,
-  on,
-  onToggle,
-}: {
-  preset: Preset;
-  on: boolean;
-  onToggle: () => void;
-}): ReactElement {
-  return (
-    <button
-      type="button"
-      className={`preset-toggle ${on ? "on" : ""}`}
-      onClick={onToggle}
-      aria-pressed={on}
-    >
-      {preset.name}
-    </button>
-  );
+/** Group phrases by their `category` field, preserving registry order. */
+function groupByCategory(phrases: readonly Phrase[]): ReadonlyArray<{
+  category: string;
+  items: readonly Phrase[];
+}> {
+  const order: string[] = [];
+  const buckets = new Map<string, Phrase[]>();
+  for (const p of phrases) {
+    const bucket = buckets.get(p.category);
+    if (bucket) {
+      bucket.push(p);
+    } else {
+      order.push(p.category);
+      buckets.set(p.category, [p]);
+    }
+  }
+  return order.map((category) => ({ category, items: buckets.get(category) ?? [] }));
 }
 
 /** Single labelled slider for one AutoParams field. */

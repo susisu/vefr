@@ -183,22 +183,39 @@ input[type="range"] {
   padding-left: 1.25rem;
 }
 
-.auto-presets {
+.auto-phrases {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.4rem;
   margin-bottom: 0.5rem;
 }
 
-.preset-toggle {
-  font-size: 0.85em;
-  padding: 0.3rem 0.6rem;
+.auto-phrase-group {
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 0.3rem 0.6rem 0.4rem;
+  margin: 0;
 }
 
-.preset-toggle.on {
-  background: var(--accent);
-  color: #111;
-  border-color: var(--accent);
+.auto-phrase-group legend {
+  font-size: 0.8em;
+  color: #aaa;
+  padding: 0 0.3rem;
+}
+
+.auto-phrase-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
+}
+
+.auto-phrase-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85em;
+  color: #ddd;
+  cursor: pointer;
 }
 
 .auto-params {

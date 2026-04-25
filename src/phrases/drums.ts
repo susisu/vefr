@@ -4,9 +4,9 @@ import {
   type Pattern,
   type PatternEvent,
 } from "../engine/types.js";
-import type { DrumPreset } from "./types.js";
+import type { DrumPhrase } from "./types.js";
 
-/** Phrase length used by every preset variant: 2 musical bars in 4/4 = 32 sixteenths. */
+/** Phrase length used by every drum phrase: 2 musical bars in 4/4 = 32 sixteenths. */
 const PHRASE = 8 * TICKS_PER_BEAT;
 /** One musical beat in ticks. */
 const BEAT = TICKS_PER_BEAT;
@@ -77,7 +77,6 @@ const drumTechnoDriving: Pattern<DrumHit> = {
   lengthTicks: PHRASE,
   events: [
     ...kicksOnBeats(8),
-    // Snare = clap on beats 2, 4, 6, 8 (zero-indexed 1, 3, 5, 7).
     hit(BEAT, "snare", 0.85),
     hit(3 * BEAT, "snare", 0.85),
     hit(5 * BEAT, "snare", 0.85),
@@ -94,17 +93,14 @@ const drumTechnoDriving: Pattern<DrumHit> = {
 const drumLofiBoomBap: Pattern<DrumHit> = {
   lengthTicks: PHRASE,
   events: [
-    // Bar 1
     hit(0, "kick", 1),
     hit(7 * SIXTEENTH, "kick", 0.7),
     hit(BEAT, "snare", 0.85),
     hit(3 * BEAT, "snare", 0.85),
-    // Bar 2 — ghost moves into the second half
     hit(4 * BEAT, "kick", 1),
     hit(4 * BEAT + 11 * SIXTEENTH, "kick", 0.7),
     hit(5 * BEAT, "snare", 0.85),
     hit(7 * BEAT, "snare", 0.85),
-    // 8th note closed hats with a slight backbeat lilt.
     ...Array.from(
       { length: 16 },
       (_, i): PatternEvent<DrumHit> => ({
@@ -180,24 +176,62 @@ const drumBreakHalfTime: Pattern<DrumHit> = {
   ],
 };
 
-/** Built-in drum presets — techno + lo-fi + breakbeat flavours. */
-export const drumPresets: readonly DrumPreset[] = [
+/** Built-in drum phrases — each variant is individually selectable. */
+export const drumPhrases: readonly DrumPhrase[] = [
   {
-    id: "drum.techno.four",
+    id: "drum.techno.four.offbeat",
     kind: "drum",
-    name: "Techno Four",
-    variants: [drumTechnoOffbeat, drumTechnoOpenHat, drumTechnoDriving],
+    category: "Techno Four",
+    name: "Off-beat Hats",
+    pattern: drumTechnoOffbeat,
   },
   {
-    id: "drum.lofi.boom-bap",
+    id: "drum.techno.four.open-hat",
     kind: "drum",
-    name: "Lo-fi Boom Bap",
-    variants: [drumLofiBoomBap, drumLofiHalfTime, drumLofiMinimal],
+    category: "Techno Four",
+    name: "Open Hats",
+    pattern: drumTechnoOpenHat,
   },
   {
-    id: "drum.break",
+    id: "drum.techno.four.driving",
     kind: "drum",
-    name: "Breakbeat",
-    variants: [drumBreakDriving, drumBreakHalfTime],
+    category: "Techno Four",
+    name: "Driving 16th",
+    pattern: drumTechnoDriving,
+  },
+  {
+    id: "drum.lofi.boom-bap.classic",
+    kind: "drum",
+    category: "Lo-fi Boom Bap",
+    name: "Classic",
+    pattern: drumLofiBoomBap,
+  },
+  {
+    id: "drum.lofi.boom-bap.half-time",
+    kind: "drum",
+    category: "Lo-fi Boom Bap",
+    name: "Half-time",
+    pattern: drumLofiHalfTime,
+  },
+  {
+    id: "drum.lofi.boom-bap.minimal",
+    kind: "drum",
+    category: "Lo-fi Boom Bap",
+    name: "Minimal",
+    pattern: drumLofiMinimal,
+  },
+  {
+    id: "drum.break.driving",
+    kind: "drum",
+    category: "Breakbeat",
+    name: "Driving",
+    pattern: drumBreakDriving,
+  },
+  {
+    id: "drum.break.half-time",
+    kind: "drum",
+    category: "Breakbeat",
+    name: "Half-time",
+    pattern: drumBreakHalfTime,
   },
 ];

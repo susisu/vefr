@@ -32,7 +32,7 @@ function makeApi(): { api: InProcessControlApi; engine: Engine } {
       global: { key: 0, scale: "minor" },
       tracks: [drum],
     },
-    { clock, output, resolvePreset: () => undefined },
+    { clock, output, resolvePhrase: () => undefined },
   );
   const api = new InProcessControlApi(engine, () => false);
   return { api, engine };

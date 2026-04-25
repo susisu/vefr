@@ -7,8 +7,8 @@ export type Tick = number;
 /** Stable, opaque identifier for a Track. */
 export type TrackId = string;
 
-/** Stable identifier for a built-in or user-defined Preset. */
-export type PresetId = string;
+/** Stable identifier for a phrase (one auto-rotation candidate) in the library. */
+export type PhraseId = string;
 
 /** Time signature (e.g. 4/4, 6/8). */
 export type TimeSignature = {
@@ -109,16 +109,14 @@ export type Pattern<T> = {
 export type AutoParams = {
   /** Strength of per-event jitter (octave shift / velocity / drop probability). 0..1. */
   microVariance: number;
-  /** How often the variant within the chosen preset rotates. */
-  midPeriodBars: number;
-  /** How often the preset itself rotates among `presetIds`. */
-  macroPeriodBars: number;
+  /** How often the auto track rotates to a different phrase from `phraseIds`. */
+  rotationBars: number;
   /**
-   * When true, both the macro (preset) and mid (variant) tiers freeze at slot
-   * 0 — the auto track keeps playing the same materialized pattern until the
-   * user changes the track config. Useful for drums and bass where rotation
-   * tends to distract from a steady groove; melody usually wants this off so
-   * phrases evolve over time.
+   * When true the auto track freezes on a single phrase (slot 0) and stays
+   * there until the user touches the config. Useful for drums and bass where
+   * rotation tends to distract from a steady groove; melody usually wants
+   * this off so phrases evolve over time. The seed still drives *which*
+   * phrase the track is locked to, so re-rolling the seed picks a new lock.
    */
   lockVariant: boolean;
 };
@@ -140,12 +138,13 @@ type ManualSource<T> = {
 };
 
 /**
- * Auto track body: a list of preset references plus generation parameters.
- * The list lets `macroPeriodBars` rotate among multiple presets.
+ * Auto track body: a list of phrase references plus generation parameters.
+ * The auto generator rotates among `phraseIds` according to `rotationBars`,
+ * or freezes on a single phrase when `params.lockVariant` is true.
  */
 type AutoSource = {
   source: "auto";
-  presetIds: readonly PresetId[];
+  phraseIds: readonly PhraseId[];
   /** Per-track seed; same value reproduces the same generated stream. */
   seed: number;
   params: AutoParams;

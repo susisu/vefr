@@ -6,7 +6,6 @@ import type {
   PatternEvent,
   Tick,
 } from "../engine/types.js";
-import type { DrumPreset, PitchedPreset } from "../presets/types.js";
 import type {
   DrumBar,
   DrumGeneratorInput,
@@ -16,11 +15,10 @@ import type {
 
 /**
  * Salt values that make each tier's RNG stream independent. Without these
- * the macro/mid/micro tiers would correlate (same `(seed, bar)` would feed
- * the same hash) and rotation would be visibly synchronized.
+ * the rotation and micro tiers would correlate (same `(seed, bar)` would feed
+ * the same hash) and jitter would be visibly synchronised with rotation.
  */
-const TAG_MACRO = 0x4d41 /* "MA" */;
-const TAG_MID = 0x4d49 /* "MI" */;
+const TAG_PHRASE = 0x5048 /* "PH" — phrase rotation pick */;
 const TAG_MICRO_VEL = 0x4d56 /* "MV" — velocity / drop jitter */;
 const TAG_MICRO_OCT = 0x4d4f /* "MO" — octave jitter */;
 
@@ -28,33 +26,34 @@ const TAG_MICRO_OCT = 0x4d4f /* "MO" — octave jitter */;
  * Materialize one bar of drum events for an auto drum track. Pure function:
  * the same input always returns the same output.
  *
- * Tier 1 (macro, every `macroPeriodBars` bars): pick which preset to use.
- * Tier 2 (mid,   every `midPeriodBars`   bars): pick which variant inside the preset.
- * Tier 3 (micro, per event):                    velocity jitter + drop probability.
+ * The rotation tier picks a phrase by hashing `(seed, slot)` where
+ * `slot = floor(bar / rotationBars)` (or `0` when `lockVariant` is true).
+ * The micro tier then jitters velocity per event and probabilistically drops
+ * events.
  */
 export function generateDrumBar(input: DrumGeneratorInput): DrumBar {
-  const variant = pickVariant<DrumPreset, DrumHit>(input);
-  if (!variant) return emptyBar();
-  const events = collectEvents(variant.events, (ev, idx) =>
+  const phrase = pickPhrase<DrumHit>(input);
+  if (!phrase) return emptyBar();
+  const events = collectEvents(phrase.events, (ev, idx) =>
     jitterDrum(ev, idx, input.bar, input.seed, input.params.microVariance),
   );
-  return { lengthTicks: variant.lengthTicks, events };
+  return { lengthTicks: phrase.lengthTicks, events };
 }
 
 /**
  * Materialize one bar of pitched events for an auto pitched track. Same
- * 3-tier logic as {@link generateDrumBar}, plus a per-note octave shift.
+ * rotation logic as {@link generateDrumBar}, plus a per-note octave shift.
  */
 export function generatePitchedBar(input: PitchedGeneratorInput): PitchedBar {
-  const variant = pickVariant<PitchedPreset, Note>(input);
-  if (!variant) return emptyBar();
-  const events = collectEvents(variant.events, (ev, idx) =>
+  const phrase = pickPhrase<Note>(input);
+  if (!phrase) return emptyBar();
+  const events = collectEvents(phrase.events, (ev, idx) =>
     jitterPitched(ev, idx, input.bar, input.seed, input.params.microVariance),
   );
-  return { lengthTicks: variant.lengthTicks, events };
+  return { lengthTicks: phrase.lengthTicks, events };
 }
 
-/** Empty fallback for generators called with no usable presets. */
+/** Empty fallback for generators called with no usable patterns. */
 function emptyBar<T>(): MaterializedBar<T> {
   return { lengthTicks: 0, events: [] };
 }
@@ -63,32 +62,23 @@ function emptyBar<T>(): MaterializedBar<T> {
 type MaterializedBar<T> = { lengthTicks: Tick; events: ReadonlyArray<PatternEvent<T>> };
 
 /**
- * Run the macro and mid tiers to land on a single variant.
- *
- * Both tiers are deterministic in `(seed, bar)` so the same arguments always
- * produce the same {@link Pattern}. When `params.lockVariant` is true the
- * macro/mid period is effectively infinite — slot stays at 0 — but the seed
- * still drives which preset and variant the track is locked to. That way a
- * caller can "re-roll" the locked pattern by handing over a fresh seed.
+ * Pick a single phrase from the candidate list. Deterministic in `(seed, bar)`.
+ * `lockVariant` freezes `slot` at 0 so the auto track stays on a single phrase
+ * across bars; the seed still drives *which* phrase is locked, so re-rolling
+ * the seed picks a new locked phrase.
  */
-function pickVariant<P extends { variants: ReadonlyArray<Pattern<T>> }, T>(input: {
+function pickPhrase<T>(input: {
   bar: number;
   seed: number;
-  presets: readonly P[];
-  params: { macroPeriodBars: number; midPeriodBars: number; lockVariant: boolean };
+  patterns: ReadonlyArray<Pattern<T>>;
+  params: { rotationBars: number; lockVariant: boolean };
 }): Pattern<T> | undefined {
-  if (input.presets.length === 0) return undefined;
-  const macroSlot = input.params.lockVariant
+  if (input.patterns.length === 0) return undefined;
+  const slot = input.params.lockVariant
     ? 0
-    : Math.floor(input.bar / Math.max(1, input.params.macroPeriodBars));
-  const macroIdx = pickIndex(input.seed, TAG_MACRO, macroSlot, input.presets.length);
-  const preset = input.presets[macroIdx];
-  if (!preset || preset.variants.length === 0) return undefined;
-  const midSlot = input.params.lockVariant
-    ? 0
-    : Math.floor(input.bar / Math.max(1, input.params.midPeriodBars));
-  const midIdx = pickIndex(input.seed, TAG_MID, midSlot, preset.variants.length);
-  return preset.variants[midIdx];
+    : Math.floor(input.bar / Math.max(1, input.params.rotationBars));
+  const idx = pickIndex(input.seed, TAG_PHRASE, slot, input.patterns.length);
+  return input.patterns[idx];
 }
 
 /**
@@ -119,7 +109,6 @@ function jitterDrum(
 ): PatternEvent<DrumHit> | undefined {
   if (variance <= 0) return ev;
   const rng = mulberry32(hashSeeds(seed, TAG_MICRO_VEL, bar, idx));
-  // Drop probability scales with variance up to 30%: keeps the groove identifiable.
   if (rng() < variance * 0.3) return undefined;
   const jittered = jitterVelocity(ev.payload.velocity, rng(), variance);
   return { tick: ev.tick, payload: { ...ev.payload, velocity: jittered } };
@@ -137,7 +126,6 @@ function jitterPitched(
   const velRng = mulberry32(hashSeeds(seed, TAG_MICRO_VEL, bar, idx));
   if (velRng() < variance * 0.3) return undefined;
   const jitteredVel = jitterVelocity(ev.payload.velocity, velRng(), variance);
-  // Octave shift: 0 by default, ±1 with probability proportional to variance.
   const octRng = mulberry32(hashSeeds(seed, TAG_MICRO_OCT, bar, idx));
   const r = octRng();
   let octaveShift = 0;

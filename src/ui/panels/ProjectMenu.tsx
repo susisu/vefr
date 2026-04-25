@@ -128,8 +128,8 @@ function describe(err: ImportError): string {
       return `unknown schemaVersion: ${String(err.got)}`;
     case "shape":
       return `${err.path}: ${err.message}`;
-    case "missing-preset":
-      return `track ${err.trackName} references unknown preset: ${err.presetId}`;
+    case "missing-phrase":
+      return `track ${err.trackName} references unknown phrase: ${err.phraseId}`;
     case "duplicate-id":
       return `duplicate track id: ${err.id}`;
     case "duplicate-name":

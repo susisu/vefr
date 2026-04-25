@@ -13,7 +13,7 @@ import { SCALE_IDS } from "../shared/music.js";
 import {
   parseProject,
   type ImportError,
-  type PresetResolver,
+  type PhraseResolver,
   type Project,
   CURRENT_SCHEMA_VERSION,
 } from "./project.js";
@@ -46,11 +46,11 @@ export class InProcessControlApi implements ControlApi {
   readonly track: TrackApi;
   readonly project: ProjectApi;
 
-  constructor(engine: Engine, presetExists: PresetResolver, hooks: InProcessHooks = {}) {
+  constructor(engine: Engine, phraseExists: PhraseResolver, hooks: InProcessHooks = {}) {
     this.transport = makeTransportApi(engine, hooks);
     this.global = makeGlobalApi(engine);
     this.track = makeTrackApi(engine);
-    this.project = makeProjectApi(engine, presetExists);
+    this.project = makeProjectApi(engine, phraseExists);
   }
 }
 
@@ -117,7 +117,7 @@ function makeTrackApi(engine: Engine): TrackApi {
       runTrackOp(() => engine.setPitchedPattern(ref, pattern), ref, () => ""),
     setAutoConfig: (ref: TrackRef, patch: AutoConfigPatch): Result<void, TrackUpdateError> =>
       runTrackOp(() => engine.setAutoConfig(ref, patch), ref, () => ""),
-    rerollSeed: (ref: TrackRef): Result<void, TrackUpdateError> =>
+    rerollPhrase: (ref: TrackRef): Result<void, TrackUpdateError> =>
       runTrackOp(() => engine.setAutoConfig(ref, { seed: randomSeed() }), ref, () => ""),
     onChange: (handler: (tracks: readonly Track[]) => void): (() => void) =>
       engine.tracksChanged.on(handler),
@@ -130,7 +130,7 @@ function randomSeed(): number {
 }
 
 /** Build the project sub-API: snapshot, load, import, and a coarse change feed. */
-function makeProjectApi(engine: Engine, presetExists: PresetResolver): ProjectApi {
+function makeProjectApi(engine: Engine, phraseExists: PhraseResolver): ProjectApi {
   return {
     snapshot: (): Project => snapshotProject(engine),
     load: (project: Project): void => {
@@ -146,7 +146,7 @@ function makeProjectApi(engine: Engine, presetExists: PresetResolver): ProjectAp
       });
     },
     importJson: (raw: unknown): Result<void, ImportError[]> => {
-      const parsed = parseProject(raw, presetExists);
+      const parsed = parseProject(raw, phraseExists);
       if (!parsed.ok) return { ok: false, error: parsed.errors };
       engine.loadState({
         transport: {
