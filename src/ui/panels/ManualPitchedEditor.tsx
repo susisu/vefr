@@ -20,7 +20,7 @@ const DEGREES: readonly number[] = [7, 6, 5, 4, 3, 2, 1, 0];
 /** Default octave assigned to newly placed melody notes. */
 const DEFAULT_MELODY_OCTAVE = 1;
 /** Default octave assigned to newly placed bass notes. */
-const DEFAULT_BASS_OCTAVE = -1;
+const DEFAULT_BASS_OCTAVE = -2;
 
 /** Editor for a manual pitched track: degree x step grid with at most one note per step. */
 export function ManualPitchedEditor({ track }: { track: PitchedTrack }): ReactElement | null {
