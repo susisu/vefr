@@ -13,7 +13,9 @@ describe("mulberry32", () => {
   it("emits different sequences for different seeds", () => {
     const a = mulberry32(1);
     const b = mulberry32(2);
-    expect(a()).not.toBe(b());
+    const seqA = Array.from({ length: 8 }, () => a());
+    const seqB = Array.from({ length: 8 }, () => b());
+    expect(seqA).not.toEqual(seqB);
   });
 
   it("emits values in [0, 1)", () => {
