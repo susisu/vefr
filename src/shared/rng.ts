@@ -4,7 +4,10 @@ export type Rng = () => number;
 /**
  * Mulberry32 PRNG, after Tommy Ettinger.
  * 32-bit state, fast, good distribution for game / sequencer use.
- * Reference: https://gist.github.com/tommyettinger/46a3c64b1cb13e98c19b
+ * Note: not equidistributed (~1/3 of uint32 values are unreachable, per the
+ * author's own 2022 follow-up). Fine for the variation dice this project uses,
+ * but don't reach for it where uniformity matters.
+ * Reference: https://gist.github.com/tommyettinger/46a874533244883189143505d203312c
  */
 export function mulberry32(seed: number): Rng {
   let state = seed >>> 0;
