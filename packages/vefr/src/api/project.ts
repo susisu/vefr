@@ -44,22 +44,24 @@ export type ParseResult = { ok: true; value: Project } | { ok: false; errors: Im
 export type PhraseResolver = (id: PhraseId) => boolean;
 
 // --- valibot schemas ---------------------------------------------------------
+// A handful of inner schemas are exported so the relay's RPC protocol layer can
+// reuse them when validating per-method params off the wire.
 
 /** A positive integer. */
-const PositiveInteger = v.pipe(v.number(), v.integer(), v.minValue(1));
+export const PositiveInteger = v.pipe(v.number(), v.integer(), v.minValue(1));
 /** A non-negative integer (used for ticks, period bars, etc.). */
-const NonNegativeInteger = v.pipe(v.number(), v.integer(), v.minValue(0));
+export const NonNegativeInteger = v.pipe(v.number(), v.integer(), v.minValue(0));
 /** Velocity / volume / etc. — a normalized 0..1. */
-const NormalizedNumber = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
+export const NormalizedNumber = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
 
 /** Time signature numerator / denominator. */
-const TimeSignatureSchema = v.object({
+export const TimeSignatureSchema = v.object({
   numerator: PositiveInteger,
   denominator: PositiveInteger,
 });
 
 /** Engine-recognised scale ids. */
-const ScaleIdSchema = v.picklist([
+export const ScaleIdSchema = v.picklist([
   "major",
   "minor",
   "dorian",
@@ -89,19 +91,19 @@ const ScaleIdSchema = v.picklist([
 ]);
 
 /** Engine-recognised drum pads. */
-const DrumPadSchema = v.picklist(["kick", "snare", "closed-hat", "open-hat"]);
+export const DrumPadSchema = v.picklist(["kick", "snare", "closed-hat", "open-hat"]);
 
 /** Pitched-track role: melody or bass. */
-const PitchedRoleSchema = v.picklist(["melody", "bass"]);
+export const PitchedRoleSchema = v.picklist(["melody", "bass"]);
 
 /** Schema for {@link DrumHit} payloads. */
-const DrumHitSchema = v.object({
+export const DrumHitSchema = v.object({
   pad: DrumPadSchema,
   velocity: NormalizedNumber,
 });
 
 /** Schema for {@link Note} payloads. */
-const NoteSchema = v.object({
+export const NoteSchema = v.object({
   degree: v.pipe(v.number(), v.integer()),
   octave: v.pipe(v.number(), v.integer()),
   velocity: NormalizedNumber,
@@ -112,7 +114,7 @@ const NoteSchema = v.object({
  * Build a {@link Pattern} schema parameterised over the payload shape.
  * Each event's `tick` is constrained to `[0, lengthTicks)`.
  */
-function patternSchema<P>(payload: v.GenericSchema<P>): v.GenericSchema<Pattern<P>> {
+export function patternSchema<P>(payload: v.GenericSchema<P>): v.GenericSchema<Pattern<P>> {
   const eventSchema = v.object({
     tick: NonNegativeInteger,
     payload,
@@ -130,7 +132,7 @@ function patternSchema<P>(payload: v.GenericSchema<P>): v.GenericSchema<Pattern<
 }
 
 /** Schema for {@link AutoParams}. Periods of 0 mean "infinity" (slot frozen at 0). */
-const AutoParamsSchema = v.object({
+export const AutoParamsSchema = v.object({
   microPeriodBars: NonNegativeInteger,
   macroPeriodBars: NonNegativeInteger,
 });
@@ -153,7 +155,7 @@ const AutoTrackBaseShape = {
 };
 
 /** Manual drum track. */
-const DrumManualSchema = v.object({
+export const DrumManualSchema = v.object({
   ...TrackBaseShape,
   kind: v.literal("drum"),
   source: v.literal("manual"),
@@ -161,13 +163,13 @@ const DrumManualSchema = v.object({
 });
 
 /** Auto drum track. */
-const DrumAutoSchema = v.object({
+export const DrumAutoSchema = v.object({
   ...AutoTrackBaseShape,
   kind: v.literal("drum"),
 });
 
 /** Manual pitched track. */
-const PitchedManualSchema = v.object({
+export const PitchedManualSchema = v.object({
   ...TrackBaseShape,
   kind: v.literal("pitched"),
   role: PitchedRoleSchema,
@@ -176,14 +178,14 @@ const PitchedManualSchema = v.object({
 });
 
 /** Auto pitched track. */
-const PitchedAutoSchema = v.object({
+export const PitchedAutoSchema = v.object({
   ...AutoTrackBaseShape,
   kind: v.literal("pitched"),
   role: PitchedRoleSchema,
 });
 
 /** Top-level track schema, flat union of the four leaf shapes. */
-const TrackSchema: v.GenericSchema<Track> = v.union([
+export const TrackSchema: v.GenericSchema<Track> = v.union([
   DrumManualSchema,
   DrumAutoSchema,
   PitchedManualSchema,
@@ -191,13 +193,13 @@ const TrackSchema: v.GenericSchema<Track> = v.union([
 ]);
 
 /** Schema for the saved transport sub-object. */
-const TransportSchema = v.object({
+export const TransportSchema = v.object({
   bpm: v.pipe(v.number(), v.minValue(1)),
   signature: TimeSignatureSchema,
 });
 
 /** Schema for the saved global music state. */
-const GlobalSchema = v.object({
+export const GlobalSchema = v.object({
   key: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(11)),
   scale: ScaleIdSchema,
 });
