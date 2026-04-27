@@ -105,6 +105,16 @@ async function bootstrap(): Promise<void> {
     },
   });
 
+  // Optional relay connection. Gated by `VITE_RELAY_ENABLED` so static-deploy
+  // builds drop the WS/relay-client code path entirely; the dynamic import
+  // below is dead-code-eliminated when the env flag is unset at build time.
+  if (import.meta.env.VITE_RELAY_ENABLED === "true") {
+    const { connectRelay } = await import("./api/relay-client.js");
+    connectRelay(api, {
+      url: import.meta.env.VITE_RELAY_URL ?? "ws://127.0.0.1:8787/browser",
+    });
+  }
+
   // Restore the most recent autosave (if any) and wire up debounced autosave.
   if (isIndexedDbAvailable()) {
     try {
