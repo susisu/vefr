@@ -7,7 +7,7 @@ export default config(
     tsconfigRootDir: import.meta.dirname,
   },
   {
-    ignores: ["dist/**"],
+    ignores: ["**/dist/**", "**/node_modules/**"],
   },
   {
     languageOptions: {
@@ -17,7 +17,7 @@ export default config(
     },
   },
   {
-    files: ["src/**/*.{ts,tsx}"],
+    files: ["packages/vefr/src/**/*.{ts,tsx}"],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -25,7 +25,7 @@ export default config(
     },
   },
   {
-    files: ["src/ui/**/*.{ts,tsx}"],
+    files: ["packages/vefr/src/ui/**/*.{ts,tsx}"],
     ...reactHooks.configs.flat.recommended,
   },
   {
@@ -33,7 +33,7 @@ export default config(
     // Type-only imports from engine/types are allowed; everything else
     // (Engine class, Scheduler, sound-port, auto generator, sound impls,
     // the in-process API constructor) is off-limits.
-    files: ["src/ui/**/*.{ts,tsx}"],
+    files: ["packages/vefr/src/ui/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
         "error",
