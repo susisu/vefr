@@ -1,0 +1,32 @@
+{
+  "name": "@susisu/vefr-relay",
+  "version": "0.0.0",
+  "private": true,
+  "repository": "https://github.com/susisu/vefr.git",
+  "author": "Susisu <susisu2413@yahoo.co.jp>",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:dev": "vitest dev"
+  },
+  "dependencies": {
+    "@susisu/vefr": "workspace:*",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.0",
+    "tsx": "^4.20.3",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.4"
+  }
+}

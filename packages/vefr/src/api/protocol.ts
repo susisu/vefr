@@ -219,7 +219,7 @@ export const WsFrameSchema = v.variant("kind", [
         }),
       ]),
     ),
-    fatalError: v.optional(
+    fatalError: v.exactOptional(
       v.object({ code: v.string(), message: v.string(), index: v.pipe(v.number(), v.integer()) }),
     ),
   }),
