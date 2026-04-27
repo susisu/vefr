@@ -49,16 +49,16 @@ const NewTrackInputSchema = v.union([
 
 /** `TrackPatch` on the wire (basic attributes only). */
 const TrackPatchSchema = v.object({
-  name: v.optional(v.string()),
-  mute: v.optional(v.boolean()),
-  volume: v.optional(NormalizedNumber),
+  name: v.exactOptional(v.string()),
+  mute: v.exactOptional(v.boolean()),
+  volume: v.exactOptional(NormalizedNumber),
 });
 
 /** `AutoConfigPatch` on the wire. */
 const AutoConfigPatchSchema = v.object({
-  phraseIds: v.optional(v.array(v.string())),
-  seed: v.optional(v.pipe(v.number(), v.integer())),
-  params: v.optional(AutoParamsSchema),
+  phraseIds: v.exactOptional(v.array(v.string())),
+  seed: v.exactOptional(v.pipe(v.number(), v.integer())),
+  params: v.exactOptional(AutoParamsSchema),
 });
 
 /** A method that takes no parameters (still encoded as `{}`). */
@@ -93,8 +93,8 @@ export const OpSchema = v.variant("method", [
     method: v.literal("global.set"),
     params: v.object({
       partial: v.object({
-        key: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(11))),
-        scale: v.optional(ScaleIdSchema),
+        key: v.exactOptional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(11))),
+        scale: v.exactOptional(ScaleIdSchema),
       }),
     }),
   }),
