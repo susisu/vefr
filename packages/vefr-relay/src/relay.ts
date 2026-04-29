@@ -1,6 +1,6 @@
 /**
- * Stateless HTTP→WS relay between external clients (curl/agents) and the one
- * browser running vefr.
+ * Stateless HTTP→WS relay between external HTTP callers and the one browser
+ * running vefr.
  *
  * - `POST /rpc` accepts a `{ ops: [...] }` body, forwards it as a single WS
  *   `req` frame to the browser, awaits the matching `res` frame, and returns
