@@ -8,9 +8,8 @@ import {
   type Pattern,
   type PatternEvent,
 } from "../../engine/types.js";
-import { Chip, PlayheadOverlay } from "../components/index.js";
+import { Chip, DrumPadMuteToggle, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
-import { drumPadLabel } from "../drumPadLabel.js";
 import { trackTone } from "../trackTone.js";
 
 /** Number of steps shown in the drum grid: 32 sixteenth-notes spanning 2 bars. */
@@ -63,7 +62,7 @@ function ManualDrumEditorInner({
         <div className="drum-grid">
           {DRUM_PADS.map((pad) => (
             <div key={pad} className="drum-row">
-              <span className="pad-label">{drumPadLabel(pad)}</span>
+              <DrumPadMuteToggle track={track} pad={pad} />
               {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
                 const tick = i * STEP_TICKS;
                 const on = pattern.events.some((ev) => ev.tick === tick && ev.payload.pad === pad);

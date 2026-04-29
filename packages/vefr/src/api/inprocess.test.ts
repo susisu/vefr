@@ -13,6 +13,7 @@ function makeApi(): { api: InProcessControlApi; engine: Engine } {
     id: "d1",
     name: "Drum 1",
     kind: "drum",
+    mutedPads: [],
     mute: false,
     volume: 0.5,
     source: "manual",

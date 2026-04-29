@@ -60,6 +60,7 @@ export function buildNewTrackInput(api: ControlApi, choice: TrackKindChoice): Ne
       return {
         ...base,
         kind: "drum",
+        mutedPads: [],
         source: "manual",
         pattern: emptyDrumPattern(),
       };
@@ -67,6 +68,7 @@ export function buildNewTrackInput(api: ControlApi, choice: TrackKindChoice): Ne
     return {
       ...base,
       kind: "drum",
+      mutedPads: [],
       source: "auto",
       phraseIds: [],
       seed: randomSeed(),

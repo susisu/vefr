@@ -162,7 +162,16 @@ type AutoSource = {
 };
 
 /** A drum track (manual or auto). */
-export type DrumTrack = TrackBase & { kind: "drum" } & (ManualSource<DrumHit> | AutoSource);
+export type DrumTrack = TrackBase & {
+  kind: "drum";
+  /**
+   * Pads silenced at dispatch time. Orthogonal to `mute` (which silences
+   * the whole track): a pad listed here drops its hits even when the track
+   * itself is unmuted, so the user can pull a single voice (e.g. hi-hat)
+   * for performance dynamics without losing the rest of the kit.
+   */
+  mutedPads: readonly DrumPad[];
+} & (ManualSource<DrumHit> | AutoSource);
 
 /** Discriminator for melody vs bass within the shared "pitched" implementation. */
 export type PitchedRole = "melody" | "bass";

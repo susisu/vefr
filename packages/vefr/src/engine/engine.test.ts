@@ -19,6 +19,7 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
     id: "drum-1",
     name: "Manual Drum 1",
     kind: "drum",
+    mutedPads: [],
     mute: false,
     volume: 1,
     source: "manual",
@@ -90,6 +91,44 @@ describe("Engine", () => {
     expect(output.events.filter((e) => e.kind === "drum")).toHaveLength(0);
   });
 
+  it("filters muted pads on a manual drum track", () => {
+    const { clock, output, engine } = makeEngine();
+    // Replace the seed pattern with one that hits both kick and closed-hat,
+    // then mute closed-hat. Only kick should reach the output.
+    engine.setDrumPattern(refById("drum-1"), {
+      lengthTicks: 4 * TICKS_PER_BEAT,
+      events: [
+        { tick: 0, payload: { pad: "kick", velocity: 1 } },
+        { tick: 0, payload: { pad: "closed-hat", velocity: 0.7 } },
+        { tick: TICKS_PER_BEAT, payload: { pad: "kick", velocity: 1 } },
+        { tick: TICKS_PER_BEAT, payload: { pad: "closed-hat", velocity: 0.7 } },
+      ],
+    });
+    engine.updateTrack(refById("drum-1"), { mutedPads: ["closed-hat"] });
+    engine.play();
+    clock.advanceTo(2.5);
+    const drums = output.events.filter((e) => e.kind === "drum");
+    expect(drums.length).toBeGreaterThan(0);
+    expect(drums.every((e) => e.hit.pad === "kick")).toBe(true);
+  });
+
+  it("rejects mutedPads on a pitched track with kind-mismatch", () => {
+    const { engine } = makeEngine();
+    const melody = engine.addTrack({
+      name: "Melody 1",
+      kind: "pitched",
+      role: "melody",
+      instrumentId: "pluck",
+      mute: false,
+      volume: 1,
+      source: "manual",
+      pattern: { lengthTicks: TICKS_PER_BEAT * 4, events: [] },
+    });
+    expect(() => {
+      engine.updateTrack(refById(melody.id), { mutedPads: ["kick"] });
+    }).toThrow(/mutedPads/u);
+  });
+
   it("rejects duplicate track names on rename", () => {
     const { engine } = makeEngine();
     expect(() => {
@@ -118,6 +157,7 @@ describe("Engine", () => {
       id: "auto-1",
       name: "Auto Drum",
       kind: "drum",
+      mutedPads: [],
       mute: false,
       volume: 1,
       source: "auto",
@@ -142,12 +182,60 @@ describe("Engine", () => {
     expect(drums.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("filters muted pads on an auto drum track", () => {
+    const clock = new TestClock();
+    const output = new RecordingSoundOutput();
+    // Phrase that hits kick on the downbeat and closed-hat every other step
+    // — enough that something will sound in a 2-beat window for either pad.
+    const phrase: DrumPhrase = {
+      id: "p.kick-hat",
+      kind: "drum",
+      category: "Test",
+      name: "Kick + Hat",
+      template: {
+        kick: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+        "closed-hat": [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+      },
+    };
+    const resolvePhrase = (id: PhraseId): Phrase | undefined =>
+      id === phrase.id ? phrase : undefined;
+    const drum: DrumTrack = {
+      id: "auto-mute-1",
+      name: "Auto Drum",
+      kind: "drum",
+      mutedPads: ["closed-hat"],
+      mute: false,
+      volume: 1,
+      source: "auto",
+      phraseIds: [phrase.id],
+      seed: 0,
+      params: { microPeriodBars: 0, macroPeriodBars: 0 },
+    };
+    const initial: EngineInitial = {
+      transport: {
+        playing: false,
+        bpm: 60,
+        signature: { numerator: 4, denominator: 4 },
+        positionTick: 0,
+      },
+      global: { key: 0, scale: "minor" },
+      tracks: [drum],
+    };
+    const engine = new Engine(initial, { clock, output, resolvePhrase });
+    engine.play();
+    clock.advanceTo(4);
+    const drums = output.events.filter((e) => e.kind === "drum");
+    expect(drums.length).toBeGreaterThan(0);
+    expect(drums.every((e) => e.hit.pad === "kick")).toBe(true);
+  });
+
   it("addTrack appends a track and assigns a fresh id", () => {
     const { engine } = makeEngine();
     const before = engine.getTracks().length;
     const created = engine.addTrack({
       name: "New Drum",
       kind: "drum",
+      mutedPads: [],
       mute: false,
       volume: 0.5,
       source: "manual",
@@ -164,6 +252,7 @@ describe("Engine", () => {
       engine.addTrack({
         name: "Manual Drum 1",
         kind: "drum",
+        mutedPads: [],
         mute: false,
         volume: 0.5,
         source: "manual",
@@ -183,6 +272,7 @@ describe("Engine", () => {
     const second = engine.addTrack({
       name: "Second",
       kind: "drum",
+      mutedPads: [],
       mute: false,
       volume: 1,
       source: "manual",

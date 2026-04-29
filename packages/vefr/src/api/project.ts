@@ -162,6 +162,7 @@ const AutoTrackBaseShape = {
 export const DrumManualSchema = v.object({
   ...TrackBaseShape,
   kind: v.literal("drum"),
+  mutedPads: v.array(DrumPadSchema),
   source: v.literal("manual"),
   pattern: patternSchema<DrumHit>(DrumHitSchema),
 });
@@ -170,6 +171,7 @@ export const DrumManualSchema = v.object({
 export const DrumAutoSchema = v.object({
   ...AutoTrackBaseShape,
   kind: v.literal("drum"),
+  mutedPads: v.array(DrumPadSchema),
 });
 
 /** Manual pitched track. */

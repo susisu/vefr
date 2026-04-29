@@ -82,6 +82,7 @@ describe("parseRpcRequest", () => {
             input: {
               name: "Auto Drum 2",
               kind: "drum",
+              mutedPads: [],
               source: "auto",
               mute: false,
               volume: 0.8,

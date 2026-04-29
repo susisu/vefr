@@ -25,6 +25,7 @@ function defaultInitial(): EngineInitial {
     id: "auto-drum-1",
     name: "Auto Drum 1",
     kind: "drum",
+    mutedPads: [],
     mute: false,
     volume: 0.8,
     source: "auto",

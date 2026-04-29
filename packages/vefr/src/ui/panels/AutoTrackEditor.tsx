@@ -1,5 +1,11 @@
 import type { ChangeEvent, ReactElement } from "react";
-import { refById, type DrumPad, type PhraseId, type Track } from "../../engine/types.js";
+import {
+  refById,
+  type DrumPad,
+  type DrumTrack,
+  type PhraseId,
+  type Track,
+} from "../../engine/types.js";
 import {
   getPhrase,
   listDrumPhrases,
@@ -7,7 +13,7 @@ import {
   type Phrase,
 } from "../../phrases/index.js";
 import type { DrumTemplate, RhythmTemplate } from "../../phrases/types.js";
-import { Chip, Knob, PlayheadOverlay } from "../components/index.js";
+import { Chip, DrumPadMuteToggle, Knob, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { drumPadLabel } from "../drumPadLabel.js";
 import { useActivePhraseId } from "../hooks.js";
@@ -102,6 +108,9 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
           <InstrumentSelect track={track} />
         : null}
       </div>
+      {track.kind === "drum" ?
+        <DrumKitMuteStrip track={track} />
+      : null}
       <ActivePhrasePreview phrase={activePhrase} />
       <details className="auto-phrases-collapsible">
         <summary className="auto-phrases-summary">
@@ -222,6 +231,22 @@ function RhythmPreview({ template }: { template: RhythmTemplate }): ReactElement
           <PreviewCell key={i} velocity={template[i] ?? 0} />
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Single-row strip of per-pad mute toggles, shown above the preview for a
+ * drum auto track. The phrase previews below repeat their pad-label column
+ * once per selected phrase, so a per-row toggle there would duplicate the
+ * same control N times — this strip is the single live edit surface.
+ */
+function DrumKitMuteStrip({ track }: { track: DrumTrack }): ReactElement {
+  return (
+    <div className="drum-mute-strip">
+      {PREVIEW_PAD_ORDER.map((pad) => (
+        <DrumPadMuteToggle key={pad} track={track} pad={pad} />
+      ))}
     </div>
   );
 }

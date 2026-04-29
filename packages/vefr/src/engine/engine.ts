@@ -15,6 +15,7 @@ import {
   TICKS_PER_BEAT,
   type AutoParams,
   type DrumHit,
+  type DrumPad,
   type GlobalMusicState,
   type Note,
   type Pattern,
@@ -50,14 +51,15 @@ export type EngineInitial = {
 
 /**
  * Mutation applied via {@link Engine.updateTrack}; absent fields are left alone.
- * `instrumentId` is pitched-only — applying it to a drum track raises
- * {@link TrackError} `kind-mismatch`.
+ * `instrumentId` is pitched-only and `mutedPads` is drum-only — applying
+ * either to the wrong kind raises {@link TrackError} `kind-mismatch`.
  */
 export type TrackPatch = {
   name?: string;
   mute?: boolean;
   volume?: number;
   instrumentId?: InstrumentId;
+  mutedPads?: readonly DrumPad[];
 };
 
 /** Mutation applied via {@link Engine.setAutoConfig}; absent fields are left alone. */
@@ -366,6 +368,12 @@ export class Engine {
         "kind-mismatch",
       );
     }
+    if (patch.mutedPads !== undefined && target.kind !== "drum") {
+      throw new TrackError(
+        `mutedPads is only valid on drum tracks: ${target.name}`,
+        "kind-mismatch",
+      );
+    }
     this.tracks = this.tracks.map((t) => (t.id === target.id ? applyPatch(t, patch) : t));
     this.tracksChanged.emit(this.tracks);
   }
@@ -479,6 +487,7 @@ export class Engine {
     if (track.kind === "drum") {
       for (const ev of track.pattern.events) {
         if (ev.tick !== localTick) continue;
+        if (track.mutedPads.includes(ev.payload.pad)) continue;
         this.output.playDrum(time, ev.payload, gain);
       }
     } else {
@@ -511,6 +520,10 @@ export class Engine {
     if (entry.kind === "drum") {
       for (const ev of entry.events) {
         if (ev.tick !== localTick) continue;
+        // The invariant `track.kind === entry.kind` holds for any auto track
+        // the engine itself materializes; the explicit narrow here is what
+        // unlocks `track.mutedPads`.
+        if (track.kind === "drum" && track.mutedPads.includes(ev.payload.pad)) continue;
         this.output.playDrum(time, ev.payload, gain);
       }
     } else if (track.kind === "pitched") {
@@ -657,9 +670,10 @@ function pickActivePhraseId(
 
 /**
  * Apply only the present fields of a {@link TrackPatch} to a track.
- * `instrumentId` is applied only when the target is pitched; the caller
- * (`Engine.updateTrack`) has already rejected drum + instrumentId combinations
- * with `kind-mismatch` before reaching this function.
+ * Kind-specific fields (`instrumentId` for pitched, `mutedPads` for drum)
+ * are guarded by the discriminator; the caller (`Engine.updateTrack`) has
+ * already rejected mismatched-kind combinations with `kind-mismatch` before
+ * reaching this function, so the guard is just for type narrowing.
  */
 function applyPatch(t: Track, patch: TrackPatch): Track {
   const next: Track = { ...t };
@@ -668,6 +682,9 @@ function applyPatch(t: Track, patch: TrackPatch): Track {
   if (patch.volume !== undefined) next.volume = patch.volume;
   if (patch.instrumentId !== undefined && next.kind === "pitched") {
     next.instrumentId = patch.instrumentId;
+  }
+  if (patch.mutedPads !== undefined && next.kind === "drum") {
+    next.mutedPads = patch.mutedPads;
   }
   return next;
 }
