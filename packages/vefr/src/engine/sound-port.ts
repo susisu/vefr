@@ -10,8 +10,22 @@ import type { DrumHit } from "./types.js";
  * - `bass`: low-register monophonic body (the default for "bass" role).
  * - `lead`: bright sustained lead.
  * - `pad`: soft sustained pad.
+ * - `bell`: bright sparkle with a long ring.
+ * - `keys`: softer-bodied pluck, electric-piano-ish.
+ * - `sub`: pure-sine deep bass; cleaner alternative to `bass`.
+ * - `chip`: bright square pluck reminiscent of NES Square2.
+ * - `stab`: punchy short accent — sharp attack, very fast decay.
  */
-export type InstrumentId = "pluck" | "bass" | "lead" | "pad";
+export type InstrumentId =
+  | "pluck"
+  | "bass"
+  | "lead"
+  | "pad"
+  | "bell"
+  | "keys"
+  | "sub"
+  | "chip"
+  | "stab";
 
 /**
  * The full set of built-in {@link InstrumentId}s, in canonical UI order.
@@ -24,6 +38,11 @@ export const INSTRUMENT_IDS = [
   "bass",
   "lead",
   "pad",
+  "bell",
+  "keys",
+  "sub",
+  "chip",
+  "stab",
 ] as const satisfies readonly InstrumentId[];
 
 /**

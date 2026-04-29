@@ -23,15 +23,22 @@ type WebAudioPatch = {
  * {@link InstrumentId} and (b) adding an entry here. Drum voices are
  * unaffected — they live on a parallel synthesis path inside `playDrum`.
  *
- * The `pluck` and `bass` patches reproduce the historical role-based
- * tuning so projects that defaulted to those keep sounding identical.
- * `lead` and `pad` are new options.
+ * `pluck` and `bass` reproduce the historical role-based tuning so
+ * projects that default to those keep sounding identical; the rest fill
+ * out the character grid (sustained vs. short, bright vs. dark, melody
+ * vs. bass) without leaving the single-osc + lowpass + pluck-envelope
+ * synthesis template.
  */
 const INSTRUMENT_PATCHES: Record<InstrumentId, WebAudioPatch> = {
   pluck: { oscType: "triangle", filterFreq: 2200, filterQ: 0.7, decay: 0.13 },
   bass: { oscType: "square", filterFreq: 700, filterQ: 3, decay: 0.18 },
   lead: { oscType: "sawtooth", filterFreq: 3000, filterQ: 1, decay: 0.22 },
   pad: { oscType: "sine", filterFreq: 1500, filterQ: 0.5, decay: 0.3 },
+  bell: { oscType: "sine", filterFreq: 4000, filterQ: 0.5, decay: 0.6 },
+  keys: { oscType: "triangle", filterFreq: 1400, filterQ: 0.5, decay: 0.2 },
+  sub: { oscType: "sine", filterFreq: 200, filterQ: 1, decay: 0.25 },
+  chip: { oscType: "square", filterFreq: 4000, filterQ: 0.5, decay: 0.1 },
+  stab: { oscType: "sawtooth", filterFreq: 2500, filterQ: 5, decay: 0.06 },
 };
 
 /**

@@ -16,6 +16,11 @@ const INSTRUMENT_LABELS: Record<InstrumentId, string> = {
   bass: "BASS",
   lead: "LEAD",
   pad: "PAD",
+  bell: "BELL",
+  keys: "KEYS",
+  sub: "SUB",
+  chip: "CHIP",
+  stab: "STAB",
 };
 
 /** Type guard for raw `<select>` values; rejects anything outside {@link INSTRUMENT_IDS}. */
