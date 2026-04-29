@@ -213,11 +213,11 @@ function ActivePhrasePreview({
   drumTrack: DrumTrack | undefined;
 }): ReactElement {
   if (phrase === undefined) {
-    return <div className="auto-preview auto-preview-empty">No phrase selected</div>;
+    return <div className="auto-preview auto-preview-empty grid-frame">No phrase selected</div>;
   }
   const isDrum = phrase.kind === "drum";
   return (
-    <div className="auto-preview">
+    <div className="auto-preview grid-frame">
       <div className="auto-preview-name">{phrase.name}</div>
       <div className="grid-stack">
         {phrase.kind === "drum" && drumTrack ?

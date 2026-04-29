@@ -81,31 +81,33 @@ function ManualPitchedEditorInner({
         </span>
         <InstrumentSelect track={track} />
       </div>
-      <div className="grid-stack">
-        <div className="pitched-grid">
-          {DEGREES.map((degree) => (
-            <div key={degree} className="pitched-row">
-              <span className="degree-label">{degree}</span>
-              {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
-                const tick = i * STEP_TICKS;
-                const ev = pattern.events.find((e) => e.tick === tick);
-                const on = ev?.payload.degree === degree;
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    className={`step ${on ? "on" : ""}`}
-                    onClick={() => {
-                      toggle(degree, i);
-                    }}
-                    aria-label={`degree ${degree} step ${i + 1}`}
-                  />
-                );
-              })}
-            </div>
-          ))}
+      <div className="grid-frame">
+        <div className="grid-stack">
+          <div className="pitched-grid">
+            {DEGREES.map((degree) => (
+              <div key={degree} className="pitched-row">
+                <span className="degree-label">{degree}</span>
+                {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
+                  const tick = i * STEP_TICKS;
+                  const ev = pattern.events.find((e) => e.tick === tick);
+                  const on = ev?.payload.degree === degree;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`step ${on ? "on" : ""}`}
+                      onClick={() => {
+                        toggle(degree, i);
+                      }}
+                      aria-label={`degree ${degree} step ${i + 1}`}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          <PlayheadOverlay totalSteps={STEPS_PER_PHRASE} hasLabelColumn />
         </div>
-        <PlayheadOverlay totalSteps={STEPS_PER_PHRASE} hasLabelColumn />
       </div>
     </div>
   );

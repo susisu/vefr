@@ -58,30 +58,34 @@ function ManualDrumEditorInner({
           <Chip width={72}>MANUAL</Chip> {track.name}
         </span>
       </div>
-      <div className="grid-stack">
-        <div className="drum-grid">
-          {DRUM_PADS.map((pad) => (
-            <div key={pad} className="drum-row">
-              <DrumPadMuteToggle track={track} pad={pad} />
-              {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
-                const tick = i * STEP_TICKS;
-                const on = pattern.events.some((ev) => ev.tick === tick && ev.payload.pad === pad);
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    className={`step ${on ? "on" : ""}`}
-                    onClick={() => {
-                      toggle(pad, i);
-                    }}
-                    aria-label={`${pad} step ${i + 1}`}
-                  />
-                );
-              })}
-            </div>
-          ))}
+      <div className="grid-frame">
+        <div className="grid-stack">
+          <div className="drum-grid">
+            {DRUM_PADS.map((pad) => (
+              <div key={pad} className="drum-row">
+                <DrumPadMuteToggle track={track} pad={pad} />
+                {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
+                  const tick = i * STEP_TICKS;
+                  const on = pattern.events.some(
+                    (ev) => ev.tick === tick && ev.payload.pad === pad,
+                  );
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`step ${on ? "on" : ""}`}
+                      onClick={() => {
+                        toggle(pad, i);
+                      }}
+                      aria-label={`${pad} step ${i + 1}`}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          <PlayheadOverlay totalSteps={STEPS_PER_PHRASE} hasLabelColumn />
         </div>
-        <PlayheadOverlay totalSteps={STEPS_PER_PHRASE} hasLabelColumn />
       </div>
     </div>
   );
