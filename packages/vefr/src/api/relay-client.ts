@@ -11,7 +11,13 @@
  * WebSocket / timer constructors are injectable for tests; production
  * defaults to the browser globals.
  */
-import { PROTOCOL_VERSION, parseWsFrame, type Op, type OpResult, type ResFrame } from "./protocol.js";
+import {
+  PROTOCOL_VERSION,
+  parseWsFrame,
+  type Op,
+  type OpResult,
+  type ResFrame,
+} from "./protocol.js";
 import type { ControlApi } from "./types.js";
 
 /**

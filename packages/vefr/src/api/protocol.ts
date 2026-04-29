@@ -233,9 +233,7 @@ export type ProtocolParseError = { code: "shape"; path: string; message: string 
 /** Parse + validate an HTTP request body. Returns either the typed value or a list of issues. */
 export function parseRpcRequest(
   input: unknown,
-):
-  | { ok: true; value: RpcRequest }
-  | { ok: false; errors: ProtocolParseError[] } {
+): { ok: true; value: RpcRequest } | { ok: false; errors: ProtocolParseError[] } {
   return safeParseTo(RpcRequestSchema, input);
 }
 
@@ -252,9 +250,7 @@ export function parseWsFrame(
 function safeParseTo<S extends v.GenericSchema>(
   schema: S,
   input: unknown,
-):
-  | { ok: true; value: v.InferOutput<S> }
-  | { ok: false; errors: ProtocolParseError[] } {
+): { ok: true; value: v.InferOutput<S> } | { ok: false; errors: ProtocolParseError[] } {
   const result = v.safeParse(schema, input);
   if (result.success) return { ok: true, value: result.output };
   return { ok: false, errors: result.issues.map(issueToError) };

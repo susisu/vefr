@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TICKS_PER_BEAT } from "../engine/types.js";
-import {
-  PROTOCOL_VERSION,
-  parseRpcRequest,
-  parseWsFrame,
-  type RpcRequest,
-} from "./protocol.js";
+import { PROTOCOL_VERSION, parseRpcRequest, parseWsFrame, type RpcRequest } from "./protocol.js";
 
 describe("parseRpcRequest", () => {
   it("accepts a no-params method", () => {
@@ -33,10 +28,7 @@ describe("parseRpcRequest", () => {
     const result = parseRpcRequest(body);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.ops.map((o) => o.method)).toEqual([
-        "global.set",
-        "transport.setBpm",
-      ]);
+      expect(result.value.ops.map((o) => o.method)).toEqual(["global.set", "transport.setBpm"]);
     }
   });
 

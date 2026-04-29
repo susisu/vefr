@@ -66,9 +66,7 @@ function ManualDrumEditorInner({
               <span className="pad-label">{drumPadLabel(pad)}</span>
               {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
                 const tick = i * STEP_TICKS;
-                const on = pattern.events.some(
-                  (ev) => ev.tick === tick && ev.payload.pad === pad,
-                );
+                const on = pattern.events.some((ev) => ev.tick === tick && ev.payload.pad === pad);
                 return (
                   <button
                     key={i}

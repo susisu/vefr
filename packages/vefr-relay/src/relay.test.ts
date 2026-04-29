@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { WebSocket } from "ws";
-import {
-  PROTOCOL_VERSION,
-  parseWsFrame,
-  type ReqFrame,
-} from "@susisu/vefr/protocol";
+import { PROTOCOL_VERSION, parseWsFrame, type ReqFrame } from "@susisu/vefr/protocol";
 import { startRelay, type RelayHandle } from "./relay.js";
 
 /**
@@ -37,11 +33,10 @@ async function attachBrowser(): Promise<WebSocket> {
 async function nextReqFrame(ws: WebSocket): Promise<ReqFrame> {
   return await new Promise<ReqFrame>((resolve, reject) => {
     ws.once("message", (data) => {
-      const text = Buffer.isBuffer(data)
-        ? data.toString("utf-8")
-        : Array.isArray(data)
-          ? Buffer.concat(data).toString("utf-8")
-          : Buffer.from(data).toString("utf-8");
+      const text =
+        Buffer.isBuffer(data) ? data.toString("utf-8")
+        : Array.isArray(data) ? Buffer.concat(data).toString("utf-8")
+        : Buffer.from(data).toString("utf-8");
       let json: unknown;
       try {
         json = JSON.parse(text);

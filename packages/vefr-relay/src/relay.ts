@@ -112,7 +112,9 @@ export async function startRelay(opts: RelayOptions = {}): Promise<RelayHandle> 
 
   async function handleHttp(req: IncomingMessage, res: ServerResponse): Promise<void> {
     if (req.method !== "POST" || req.url !== "/rpc") {
-      sendJson(res, 404, { error: { code: "not-found", message: `${req.method ?? ""} ${req.url ?? ""}` } });
+      sendJson(res, 404, {
+        error: { code: "not-found", message: `${req.method ?? ""} ${req.url ?? ""}` },
+      });
       return;
     }
     const body = await readBody(req);
@@ -120,7 +122,9 @@ export async function startRelay(opts: RelayOptions = {}): Promise<RelayHandle> 
     try {
       json = JSON.parse(body);
     } catch {
-      sendJson(res, 400, { error: { code: "bad-json", message: "request body is not valid JSON" } });
+      sendJson(res, 400, {
+        error: { code: "bad-json", message: "request body is not valid JSON" },
+      });
       return;
     }
     const parsed = parseRpcRequest(json);

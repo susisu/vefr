@@ -14,7 +14,9 @@ const port = parsePort(process.env["VEFR_RELAY_PORT"]);
 const host = process.env["VEFR_RELAY_HOST"] ?? "127.0.0.1";
 
 const handle = await startRelay({ port, host });
-console.log(`vefr-relay listening on http://${host}:${handle.port.toString()} (POST /rpc, GET /browser)`);
+console.log(
+  `vefr-relay listening on http://${host}:${handle.port.toString()} (POST /rpc, GET /browser)`,
+);
 
 const shutdown = (signal: NodeJS.Signals): void => {
   console.log(`received ${signal}; shutting down…`);
