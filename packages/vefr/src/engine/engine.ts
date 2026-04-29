@@ -10,7 +10,7 @@ import { degreeToMidi } from "../shared/music.js";
 import { Signal } from "../shared/signal.js";
 import type { Clock } from "./clock.js";
 import { Scheduler } from "./scheduler.js";
-import type { SoundOutput } from "./sound-port.js";
+import type { InstrumentId, SoundOutput } from "./sound-port.js";
 import {
   TICKS_PER_BEAT,
   type AutoParams,
@@ -48,11 +48,16 @@ export type EngineInitial = {
   tracks: readonly Track[];
 };
 
-/** Mutation applied via {@link Engine.updateTrack}; absent fields are left alone. */
+/**
+ * Mutation applied via {@link Engine.updateTrack}; absent fields are left alone.
+ * `instrumentId` is pitched-only — applying it to a drum track raises
+ * {@link TrackError} `kind-mismatch`.
+ */
 export type TrackPatch = {
   name?: string;
   mute?: boolean;
   volume?: number;
+  instrumentId?: InstrumentId;
 };
 
 /** Mutation applied via {@link Engine.setAutoConfig}; absent fields are left alone. */
@@ -355,6 +360,12 @@ export class Engine {
         throw new TrackError(`track name already in use: ${patch.name}`, "name-conflict");
       }
     }
+    if (patch.instrumentId !== undefined && target.kind !== "pitched") {
+      throw new TrackError(
+        `instrumentId is only valid on pitched tracks: ${target.name}`,
+        "kind-mismatch",
+      );
+    }
     this.tracks = this.tracks.map((t) => (t.id === target.id ? applyPatch(t, patch) : t));
     this.tracksChanged.emit(this.tracks);
   }
@@ -473,7 +484,7 @@ export class Engine {
     } else {
       for (const ev of track.pattern.events) {
         if (ev.tick !== localTick) continue;
-        this.playPitched(ev.payload, time, gain, track.role);
+        this.playPitched(ev.payload, time, gain, track.instrumentId);
       }
     }
   }
@@ -505,7 +516,7 @@ export class Engine {
     } else if (track.kind === "pitched") {
       for (const ev of entry.events) {
         if (ev.tick !== localTick) continue;
-        this.playPitched(ev.payload, time, gain, track.role);
+        this.playPitched(ev.payload, time, gain, track.instrumentId);
       }
     }
   }
@@ -599,10 +610,10 @@ export class Engine {
   }
 
   /** Common pitched-event dispatch path shared by manual and auto tracks. */
-  private playPitched(note: Note, time: number, gain: number, role: "melody" | "bass"): void {
+  private playPitched(note: Note, time: number, gain: number, instrumentId: InstrumentId): void {
     const midi = degreeToMidi(this.global, note.degree, note.octave);
     const lengthSec = (note.lengthTicks * 60) / (this.transport.bpm * TICKS_PER_BEAT);
-    this.output.playNote(time, midi, lengthSec, note.velocity, role, gain);
+    this.output.playNote(time, midi, lengthSec, note.velocity, instrumentId, gain);
   }
 }
 
@@ -644,12 +655,20 @@ function pickActivePhraseId(
   return phrases[idx]?.id;
 }
 
-/** Apply only the present fields of a {@link TrackPatch} to a track. */
+/**
+ * Apply only the present fields of a {@link TrackPatch} to a track.
+ * `instrumentId` is applied only when the target is pitched; the caller
+ * (`Engine.updateTrack`) has already rejected drum + instrumentId combinations
+ * with `kind-mismatch` before reaching this function.
+ */
 function applyPatch(t: Track, patch: TrackPatch): Track {
   const next: Track = { ...t };
   if (patch.name !== undefined) next.name = patch.name;
   if (patch.mute !== undefined) next.mute = patch.mute;
   if (patch.volume !== undefined) next.volume = patch.volume;
+  if (patch.instrumentId !== undefined && next.kind === "pitched") {
+    next.instrumentId = patch.instrumentId;
+  }
   return next;
 }
 

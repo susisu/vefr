@@ -4,7 +4,13 @@ import { RecordingSoundOutput } from "../sound/mock.js";
 import { TestClock } from "./clock.js";
 import { Engine } from "./engine.js";
 import type { EngineInitial } from "./engine.js";
-import { refById, TICKS_PER_BEAT, type DrumTrack, type PhraseId } from "./types.js";
+import {
+  refById,
+  TICKS_PER_BEAT,
+  type DrumTrack,
+  type PhraseId,
+  type PitchedTrack,
+} from "./types.js";
 
 function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine: Engine } {
   const clock = new TestClock();
@@ -234,6 +240,49 @@ describe("Engine", () => {
     // pinned to the play-start tick.
     const advanced = engine.getTransport().positionTick - initial;
     expect(advanced).toBeGreaterThan(TICKS_PER_BEAT * 0.8);
+  });
+
+  it("forwards a pitched track's instrumentId to playNote", () => {
+    const clock = new TestClock();
+    const output = new RecordingSoundOutput();
+    const melody: PitchedTrack = {
+      id: "lead-1",
+      name: "Lead",
+      kind: "pitched",
+      role: "melody",
+      instrumentId: "lead",
+      mute: false,
+      volume: 1,
+      source: "manual",
+      pattern: {
+        lengthTicks: TICKS_PER_BEAT * 4,
+        events: [
+          { tick: 0, payload: { degree: 0, octave: 1, velocity: 1, lengthTicks: TICKS_PER_BEAT } },
+        ],
+      },
+    };
+    const initial: EngineInitial = {
+      transport: {
+        playing: false,
+        bpm: 60,
+        signature: { numerator: 4, denominator: 4 },
+        positionTick: 0,
+      },
+      global: { key: 0, scale: "minor" },
+      tracks: [melody],
+    };
+    const engine = new Engine(initial, { clock, output, resolvePhrase: () => undefined });
+    engine.play();
+    clock.advanceTo(0.5);
+    const note = output.events.find((e) => e.kind === "note");
+    expect(note?.instrumentId).toBe("lead");
+  });
+
+  it("rejects updateTrack({ instrumentId }) on a drum track with kind-mismatch", () => {
+    const { engine } = makeEngine();
+    expect(() => {
+      engine.updateTrack(refById("drum-1"), { instrumentId: "lead" });
+    }).toThrow(/instrumentId/u);
   });
 
   it("resumes from paused position", () => {

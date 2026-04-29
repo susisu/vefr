@@ -1,7 +1,30 @@
-import type { DrumHit, PitchedRole } from "./types.js";
+import type { DrumHit } from "./types.js";
 
-/** Voice identifier passed to {@link SoundOutput.playNote}. */
-export type VoiceId = PitchedRole;
+/**
+ * Built-in instrument identifiers selectable per pitched track.
+ * Symbolic / character-oriented (not oscillator-shaped) so the same id
+ * can be mapped to a WebAudio patch today and to a GM Program number
+ * once a MIDI {@link SoundOutput} adapter ships. Values:
+ *
+ * - `pluck`: short pluck (the default for "melody" role tracks).
+ * - `bass`: low-register monophonic body (the default for "bass" role).
+ * - `lead`: bright sustained lead.
+ * - `pad`: soft sustained pad.
+ */
+export type InstrumentId = "pluck" | "bass" | "lead" | "pad";
+
+/**
+ * The full set of built-in {@link InstrumentId}s, in canonical UI order.
+ * Re-exported through `src/engine/types.ts` so UI code (which is forbidden
+ * from importing this port directly) has a value-level handle for
+ * `<select>` options without breaching the import boundary.
+ */
+export const INSTRUMENT_IDS = [
+  "pluck",
+  "bass",
+  "lead",
+  "pad",
+] as const satisfies readonly InstrumentId[];
 
 /**
  * The Engine's port to actual sound generation. Implementations are an
@@ -12,13 +35,16 @@ export type VoiceId = PitchedRole;
 export interface SoundOutput {
   /** Trigger a drum hit at absolute audio time `time`. `gain` is post-velocity. */
   playDrum(time: number, hit: DrumHit, gain: number): void;
-  /** Play a pitched note (monophonic per voice) starting at audio time `time`. */
+  /**
+   * Play a pitched note (monophonic per voice) starting at audio time
+   * `time` using the timbre selected by `instrumentId`.
+   */
   playNote(
     time: number,
     midi: number,
     lengthSeconds: number,
     velocity: number,
-    voice: VoiceId,
+    instrumentId: InstrumentId,
     gain: number,
   ): void;
   /** Set the master gain envelope (0..1). */

@@ -1,6 +1,7 @@
 import type { ControlApi, NewTrackInput } from "../../api/types.js";
 import {
   TICKS_PER_BEAT,
+  defaultInstrumentForRole,
   type DrumHit,
   type Note,
   type Pattern,
@@ -72,11 +73,13 @@ export function buildNewTrackInput(api: ControlApi, choice: TrackKindChoice): Ne
       params: defaultAutoParamsFor("drum"),
     };
   }
+  const instrumentId = defaultInstrumentForRole(choice.role);
   if (choice.source === "manual") {
     return {
       ...base,
       kind: "pitched",
       role: choice.role,
+      instrumentId,
       source: "manual",
       pattern: emptyPitchedPattern(),
     };
@@ -85,6 +88,7 @@ export function buildNewTrackInput(api: ControlApi, choice: TrackKindChoice): Ne
     ...base,
     kind: "pitched",
     role: choice.role,
+    instrumentId,
     source: "auto",
     phraseIds: [],
     seed: randomSeed(),

@@ -95,6 +95,83 @@ describe("parseRpcRequest", () => {
     });
     expect(result.ok).toBe(true);
   });
+
+  it("accepts a pitched NewTrackInput carrying instrumentId", () => {
+    const result = parseRpcRequest({
+      ops: [
+        {
+          method: "track.add",
+          params: {
+            input: {
+              name: "Auto Lead",
+              kind: "pitched",
+              role: "melody",
+              instrumentId: "lead",
+              source: "auto",
+              mute: false,
+              volume: 0.8,
+              phraseIds: ["melody.major.line"],
+              seed: 0,
+              params: { microPeriodBars: 0, macroPeriodBars: 4 },
+            },
+          },
+        },
+      ],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects a pitched NewTrackInput missing instrumentId", () => {
+    const result = parseRpcRequest({
+      ops: [
+        {
+          method: "track.add",
+          params: {
+            input: {
+              name: "Manual Melody",
+              kind: "pitched",
+              role: "melody",
+              source: "manual",
+              mute: false,
+              volume: 0.8,
+              pattern: { lengthTicks: TICKS_PER_BEAT * 4, events: [] },
+            },
+          },
+        },
+      ],
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it("accepts a TrackPatch carrying instrumentId", () => {
+    const result = parseRpcRequest({
+      ops: [
+        {
+          method: "track.update",
+          params: {
+            ref: { kind: "name", name: "Auto Lead" },
+            patch: { instrumentId: "pad" },
+          },
+        },
+      ],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects a TrackPatch with an unknown instrumentId", () => {
+    const result = parseRpcRequest({
+      ops: [
+        {
+          method: "track.update",
+          params: {
+            ref: { kind: "name", name: "Auto Lead" },
+            patch: { instrumentId: "tuba" },
+          },
+        },
+      ],
+    });
+    expect(result.ok).toBe(false);
+  });
 });
 
 describe("parseWsFrame", () => {

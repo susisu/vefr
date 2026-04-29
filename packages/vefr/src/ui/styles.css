@@ -644,6 +644,13 @@ input[type="range"]::-moz-range-thumb {
   gap: 0.4rem;
 }
 
+.editor-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
 .drum-grid,
 .pitched-grid,
 .auto-preview-grid {

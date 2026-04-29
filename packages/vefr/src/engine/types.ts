@@ -1,3 +1,12 @@
+import { INSTRUMENT_IDS, type InstrumentId } from "./sound-port.js";
+
+/**
+ * Re-exports of the engine's instrument ids so UI / API consumers (which
+ * are forbidden from importing `engine/sound-port` directly) can reach
+ * the value-level list and the type without going through the port.
+ */
+export { INSTRUMENT_IDS, type InstrumentId };
+
 /** Resolution of the internal time grid: 96 ticks per quarter note (PPQN 96). */
 export const TICKS_PER_BEAT = 96;
 
@@ -158,11 +167,27 @@ export type DrumTrack = TrackBase & { kind: "drum" } & (ManualSource<DrumHit> | 
 /** Discriminator for melody vs bass within the shared "pitched" implementation. */
 export type PitchedRole = "melody" | "bass";
 
-/** A pitched (monophonic) track — used for both melody and bass roles. */
-export type PitchedTrack = TrackBase & { kind: "pitched"; role: PitchedRole } & (
-    | ManualSource<Note>
-    | AutoSource
-  );
+/**
+ * A pitched (monophonic) track — used for both melody and bass roles.
+ * `instrumentId` selects the timbre at the {@link SoundOutput} boundary
+ * and is independent of `role`: role drives auto-generation choice,
+ * instrument drives sound.
+ */
+export type PitchedTrack = TrackBase & {
+  kind: "pitched";
+  role: PitchedRole;
+  instrumentId: InstrumentId;
+} & (ManualSource<Note> | AutoSource);
+
+/**
+ * Default instrument for a {@link PitchedRole}. Picked so the legacy
+ * role-only behaviour is preserved when a track is created without an
+ * explicit instrument: melody → `pluck` (the old triangle pluck),
+ * bass → `bass` (the old square bass).
+ */
+export function defaultInstrumentForRole(role: PitchedRole): InstrumentId {
+  return role === "bass" ? "bass" : "pluck";
+}
 
 /** Any track managed by the engine. */
 export type Track = DrumTrack | PitchedTrack;

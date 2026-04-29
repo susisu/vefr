@@ -12,6 +12,7 @@ import { useControlApi } from "../context.js";
 import { drumPadLabel } from "../drumPadLabel.js";
 import { useActivePhraseId } from "../hooks.js";
 import { trackTone } from "../trackTone.js";
+import { InstrumentSelect } from "./InstrumentSelect.js";
 
 /** AutoParams fields that map to a numeric knob. */
 type NumericParamKey = "microPeriodBars" | "macroPeriodBars";
@@ -98,6 +99,11 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
           <Chip width={72}>AUTO</Chip> {track.name}
         </span>
       </div>
+      {track.kind === "pitched" ?
+        <div className="editor-controls">
+          <InstrumentSelect track={track} />
+        </div>
+      : null}
       <ActivePhrasePreview phrase={activePhrase} />
       <details className="auto-phrases-collapsible">
         <summary className="auto-phrases-summary">

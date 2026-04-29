@@ -1,14 +1,46 @@
-import type { SoundOutput, VoiceId } from "../engine/sound-port.js";
+import type { InstrumentId, SoundOutput } from "../engine/sound-port.js";
 import type { DrumHit } from "../engine/types.js";
+
+/**
+ * WebAudio-side patch parameters keyed by {@link InstrumentId}.
+ * Each entry shapes a pluck-style voice: oscillator + lowpass + simple
+ * exp-attack/decay envelope. `lengthSeconds` from `playNote` is
+ * intentionally ignored — this stays the "pikopiko" voice family for now.
+ */
+type WebAudioPatch = {
+  /** Oscillator wave shape used for the body. */
+  oscType: OscillatorType;
+  /** Lowpass cutoff frequency (Hz). */
+  filterFreq: number;
+  /** Lowpass resonance Q. Higher values get more nasal / vocal. */
+  filterQ: number;
+  /** Exponential decay length (s) following the 4 ms attack. */
+  decay: number;
+};
+
+/**
+ * Built-in WebAudio patches. Adding a new id only requires (a) widening
+ * {@link InstrumentId} and (b) adding an entry here. Drum voices are
+ * unaffected — they live on a parallel synthesis path inside `playDrum`.
+ *
+ * The `pluck` and `bass` patches reproduce the historical role-based
+ * tuning so projects that defaulted to those keep sounding identical.
+ * `lead` and `pad` are new options.
+ */
+const INSTRUMENT_PATCHES: Record<InstrumentId, WebAudioPatch> = {
+  pluck: { oscType: "triangle", filterFreq: 2200, filterQ: 0.7, decay: 0.13 },
+  bass: { oscType: "square", filterFreq: 700, filterQ: 3, decay: 0.18 },
+  lead: { oscType: "sawtooth", filterFreq: 3000, filterQ: 1, decay: 0.22 },
+  pad: { oscType: "sine", filterFreq: 1500, filterQ: 0.5, decay: 0.3 },
+};
 
 /**
  * WebAudio implementation of {@link SoundOutput}.
  *
- * The pitched voices are pluck-style (fast attack + exponential decay) so
- * `lengthSeconds` stays decoupled from how long the note actually rings:
- * notes are always staccato chiptune-flavoured, and the pattern's
- * `lengthTicks` field controls only spacing between events. This is the
- * "pikopiko" envelope we want for BGM-style techno / lo-fi material.
+ * Pitched voices follow the {@link INSTRUMENT_PATCHES} table, looked up
+ * by `instrumentId`. The envelope is always pluck-shaped (fast attack +
+ * exponential decay) so `lengthSeconds` stays decoupled from how long
+ * the note actually rings; pattern `lengthTicks` controls only spacing.
  *
  * Drums are layered: kick = sine body + noise click; snare = noise burst +
  * triangle body; hats = high-passed noise.
@@ -52,37 +84,34 @@ export class WebAudioSoundOutput implements SoundOutput {
   }
 
   /**
-   * Play a pitched note as a pluck: short attack, exponential decay.
-   * `lengthSeconds` is intentionally ignored for envelope shaping — Phase 1
-   * targets pikopiko BGM, and held notes were the main source of harshness
-   * in the previous ADSR voice. Patterns control spacing via `lengthTicks`,
-   * not held duration.
+   * Play a pitched note as a pluck: short attack, exponential decay,
+   * with timbre selected by `instrumentId` via {@link INSTRUMENT_PATCHES}.
+   * `lengthSeconds` is intentionally ignored for envelope shaping —
+   * patterns control spacing via `lengthTicks`, not held duration.
    */
   playNote(
     time: number,
     midi: number,
     _lengthSeconds: number,
     velocity: number,
-    voice: VoiceId,
+    instrumentId: InstrumentId,
     gain: number,
   ): void {
     const t = Math.max(time, this.ctx.currentTime);
+    const patch = INSTRUMENT_PATCHES[instrumentId];
     const freq = 440 * 2 ** ((midi - 69) / 12);
     const osc = this.ctx.createOscillator();
-    // Triangle gives the melody a softer "chip" timbre; square keeps the
-    // bass punchy enough to sit under a four-on-the-floor kick.
-    osc.type = voice === "bass" ? "square" : "triangle";
+    osc.type = patch.oscType;
     osc.frequency.value = freq;
     const filter = this.ctx.createBiquadFilter();
     filter.type = "lowpass";
-    filter.frequency.value = voice === "bass" ? 700 : 2200;
-    filter.Q.value = voice === "bass" ? 3 : 0.7;
+    filter.frequency.value = patch.filterFreq;
+    filter.Q.value = patch.filterQ;
 
     const env = this.ctx.createGain();
     const peak = Math.max(gain * velocity, 0.0001);
     const attack = 0.004;
-    // Pluck decay: bass slightly longer so it sustains under the kick.
-    const decay = voice === "bass" ? 0.18 : 0.13;
+    const decay = patch.decay;
     env.gain.setValueAtTime(0.0001, t);
     env.gain.exponentialRampToValueAtTime(peak, t + attack);
     env.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);

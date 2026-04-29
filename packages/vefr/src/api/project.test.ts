@@ -36,6 +36,7 @@ function makeMelodyTrack(): PitchedTrack {
     name: "Melody 1",
     kind: "pitched",
     role: "melody",
+    instrumentId: "pluck",
     mute: false,
     volume: 0.7,
     source: "manual",
@@ -58,6 +59,7 @@ function makeAutoBassTrack(): PitchedTrack {
     name: "Auto Bass 1",
     kind: "pitched",
     role: "bass",
+    instrumentId: "bass",
     mute: false,
     volume: 0.9,
     source: "auto",
@@ -146,6 +148,18 @@ describe("parseProject", () => {
       transport: { ...original.transport, bpm: -5 },
       global: { ...original.global, key: 99 },
       tracks: original.tracks,
+    };
+    const r = parseProject(broken, allKnown);
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects a pitched track missing instrumentId", () => {
+    const { instrumentId: _instrumentId, ...trackWithoutInstrument } = makeMelodyTrack();
+    const broken: unknown = {
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      transport: { bpm: 120, signature: { numerator: 4, denominator: 4 } },
+      global: { key: 0, scale: "minor" },
+      tracks: [trackWithoutInstrument],
     };
     const r = parseProject(broken, allKnown);
     expect(r.ok).toBe(false);

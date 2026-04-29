@@ -1,4 +1,4 @@
-import type { SoundOutput, VoiceId } from "../engine/sound-port.js";
+import type { InstrumentId, SoundOutput } from "../engine/sound-port.js";
 import type { DrumHit } from "../engine/types.js";
 
 /** Recorded `playDrum` invocation. */
@@ -16,7 +16,7 @@ export type RecordedNote = {
   midi: number;
   lengthSeconds: number;
   velocity: number;
-  voice: VoiceId;
+  instrumentId: InstrumentId;
   gain: number;
 };
 
@@ -49,10 +49,10 @@ export class RecordingSoundOutput implements SoundOutput {
     midi: number,
     lengthSeconds: number,
     velocity: number,
-    voice: VoiceId,
+    instrumentId: InstrumentId,
     gain: number,
   ): void {
-    this.events.push({ kind: "note", time, midi, lengthSeconds, velocity, voice, gain });
+    this.events.push({ kind: "note", time, midi, lengthSeconds, velocity, instrumentId, gain });
   }
 
   /** Record a master volume change. */

@@ -16,6 +16,7 @@ import {
   DrumAutoSchema,
   DrumHitSchema,
   DrumManualSchema,
+  InstrumentIdSchema,
   NonNegativeInteger,
   NormalizedNumber,
   NoteSchema,
@@ -47,11 +48,17 @@ const NewTrackInputSchema = v.union([
   v.omit(PitchedAutoSchema, ["id"]),
 ]);
 
-/** `TrackPatch` on the wire (basic attributes only). */
+/**
+ * `TrackPatch` on the wire (basic attributes only). `instrumentId` is
+ * pitched-only and the engine will reject mismatched-kind patches; the
+ * schema accepts it on every track shape because the patch is applied
+ * after ref resolution.
+ */
 const TrackPatchSchema = v.object({
   name: v.exactOptional(v.string()),
   mute: v.exactOptional(v.boolean()),
   volume: v.exactOptional(NormalizedNumber),
+  instrumentId: v.exactOptional(InstrumentIdSchema),
 });
 
 /** `AutoConfigPatch` on the wire. */

@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { INSTRUMENT_IDS } from "../engine/sound-port.js";
 import type {
   DrumHit,
   GlobalMusicState,
@@ -96,6 +97,9 @@ export const DrumPadSchema = v.picklist(["kick", "snare", "closed-hat", "open-ha
 /** Pitched-track role: melody or bass. */
 export const PitchedRoleSchema = v.picklist(["melody", "bass"]);
 
+/** Built-in instrument id picklist; mirrors `INSTRUMENT_IDS` from the engine. */
+export const InstrumentIdSchema = v.picklist(INSTRUMENT_IDS);
+
 /** Schema for {@link DrumHit} payloads. */
 export const DrumHitSchema = v.object({
   pad: DrumPadSchema,
@@ -173,6 +177,7 @@ export const PitchedManualSchema = v.object({
   ...TrackBaseShape,
   kind: v.literal("pitched"),
   role: PitchedRoleSchema,
+  instrumentId: InstrumentIdSchema,
   source: v.literal("manual"),
   pattern: patternSchema<Note>(NoteSchema),
 });
@@ -182,6 +187,7 @@ export const PitchedAutoSchema = v.object({
   ...AutoTrackBaseShape,
   kind: v.literal("pitched"),
   role: PitchedRoleSchema,
+  instrumentId: InstrumentIdSchema,
 });
 
 /** Top-level track schema, flat union of the four leaf shapes. */

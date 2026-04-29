@@ -10,6 +10,7 @@ import {
 import { Chip, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { trackTone } from "../trackTone.js";
+import { InstrumentSelect } from "./InstrumentSelect.js";
 
 /** Number of steps shown in the pitched grid: 32 sixteenth-notes spanning 2 bars. */
 const STEPS_PER_PHRASE = 32;
@@ -78,6 +79,9 @@ function ManualPitchedEditorInner({
           </Chip>{" "}
           <Chip width={72}>MANUAL</Chip> {track.name}
         </span>
+      </div>
+      <div className="editor-controls">
+        <InstrumentSelect track={track} />
       </div>
       <div className="grid-stack">
         <div className="pitched-grid">
