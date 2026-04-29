@@ -707,10 +707,18 @@ input[type="range"]::-moz-range-thumb {
 
 /* Clickable pad-label variant: doubles as a per-pad mute toggle. Inherits
  * column width from `.pad-label`; flips colour + adds a strikethrough when
- * the pad is silenced so the unmuted state stays the visually neutral one. */
+ * the pad is silenced so the unmuted state stays the visually neutral one.
+ * `padding: 0` + `font: inherit` strip the browser's button defaults so the
+ * cell renders at the same height as the original `<span class="pad-label">`. */
 button.pad-mute {
   background: transparent;
   border: none;
+  /* Keep `.pad-label`'s right-padding for grid spacing; zero the rest so the
+   * cell height matches the original span. Font properties intentionally
+   * unset — let the co-applied `.pad-label` class drive font-family / size
+   * (using `font: inherit` here would override `.pad-label` by specificity
+   * and pull in the much larger parent-row font). */
+  padding: 0 0.4rem 0 0;
   text-align: left;
   cursor: pointer;
   width: 100%;
@@ -721,17 +729,6 @@ button.pad-mute:hover {
 button.pad-mute.is-muted {
   color: #444;
   text-decoration: line-through;
-}
-
-/* Horizontal strip of pad mute toggles shown above the auto drum preview.
- * Lays the same `.pad-mute` buttons out in a row instead of a column. */
-.drum-mute-strip {
-  display: flex;
-  gap: 0.6rem;
-  padding: 0.25rem 0;
-}
-.drum-mute-strip button.pad-mute {
-  width: auto;
 }
 
 /* Step cell — recessed LED-lit pad. The button base (defined elsewhere)

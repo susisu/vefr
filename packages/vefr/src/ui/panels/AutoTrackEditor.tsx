@@ -15,7 +15,6 @@ import {
 import type { DrumTemplate, RhythmTemplate } from "../../phrases/types.js";
 import { Chip, DrumPadMuteToggle, Knob, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
-import { drumPadLabel } from "../drumPadLabel.js";
 import { useActivePhraseId } from "../hooks.js";
 import { trackTone } from "../trackTone.js";
 import { InstrumentSelect } from "./InstrumentSelect.js";
@@ -108,10 +107,10 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
           <InstrumentSelect track={track} />
         : null}
       </div>
-      {track.kind === "drum" ?
-        <DrumKitMuteStrip track={track} />
-      : null}
-      <ActivePhrasePreview phrase={activePhrase} />
+      <ActivePhrasePreview
+        phrase={activePhrase}
+        drumTrack={track.kind === "drum" ? track : undefined}
+      />
       <details className="auto-phrases-collapsible">
         <summary className="auto-phrases-summary">
           <span className="auto-phrases-summary-label">Phrases</span>
@@ -204,7 +203,15 @@ function groupByCategory(phrases: readonly Phrase[]): ReadonlyArray<{
  * a sibling {@link PlayheadOverlay} so this preview doesn't have to re-render
  * once per 16th note.
  */
-function ActivePhrasePreview({ phrase }: { phrase: Phrase | undefined }): ReactElement {
+function ActivePhrasePreview({
+  phrase,
+  drumTrack,
+}: {
+  phrase: Phrase | undefined;
+  /** Owning drum track, threaded through so the preview's pad labels can
+   * double as per-pad mute toggles. `undefined` for pitched tracks. */
+  drumTrack: DrumTrack | undefined;
+}): ReactElement {
   if (phrase === undefined) {
     return <div className="auto-preview auto-preview-empty">No phrase selected</div>;
   }
@@ -213,9 +220,11 @@ function ActivePhrasePreview({ phrase }: { phrase: Phrase | undefined }): ReactE
     <div className="auto-preview">
       <div className="auto-preview-name">{phrase.name}</div>
       <div className="grid-stack">
-        {isDrum ?
-          <DrumPreview template={phrase.template} />
-        : <RhythmPreview template={phrase.template} />}
+        {phrase.kind === "drum" && drumTrack ?
+          <DrumPreview template={phrase.template} track={drumTrack} />
+        : phrase.kind === "pitched" ?
+          <RhythmPreview template={phrase.template} />
+        : null}
         <PlayheadOverlay totalSteps={PREVIEW_STEPS} hasLabelColumn={isDrum} />
       </div>
     </div>
@@ -236,30 +245,24 @@ function RhythmPreview({ template }: { template: RhythmTemplate }): ReactElement
 }
 
 /**
- * Single-row strip of per-pad mute toggles, shown above the preview for a
- * drum auto track. The phrase previews below repeat their pad-label column
- * once per selected phrase, so a per-row toggle there would duplicate the
- * same control N times — this strip is the single live edit surface.
+ * Multi-row preview for a drum kit — every pad in `PREVIEW_PAD_ORDER`. The
+ * left-column pad label doubles as a per-pad mute toggle for the owning
+ * track, so the user can pull a voice from the live mix in place.
  */
-function DrumKitMuteStrip({ track }: { track: DrumTrack }): ReactElement {
-  return (
-    <div className="drum-mute-strip">
-      {PREVIEW_PAD_ORDER.map((pad) => (
-        <DrumPadMuteToggle key={pad} track={track} pad={pad} />
-      ))}
-    </div>
-  );
-}
-
-/** Multi-row preview for a drum kit — every pad in `PREVIEW_PAD_ORDER`. */
-function DrumPreview({ template }: { template: DrumTemplate }): ReactElement {
+function DrumPreview({
+  template,
+  track,
+}: {
+  template: DrumTemplate;
+  track: DrumTrack;
+}): ReactElement {
   return (
     <div className="auto-preview-grid">
       {PREVIEW_PAD_ORDER.map((pad) => {
         const row = template[pad];
         return (
           <div key={pad} className="auto-preview-row">
-            <span className="pad-label">{drumPadLabel(pad)}</span>
+            <DrumPadMuteToggle track={track} pad={pad} />
             {Array.from({ length: PREVIEW_STEPS }, (_, i) => (
               <PreviewCell key={i} velocity={row?.[i] ?? 0} />
             ))}
