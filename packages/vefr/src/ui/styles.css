@@ -578,6 +578,12 @@ input[type="range"]::-moz-range-thumb {
   border-color: var(--accent-dim);
   background: #0a0a0a;
 }
+.track-name-input-tone-warm:focus {
+  border-color: var(--warm-dim);
+}
+.track-name-input-tone-cool:focus {
+  border-color: var(--cool-dim);
+}
 .track-name-error {
   font-family: var(--font-mono);
   font-size: 0.68rem;

@@ -246,11 +246,13 @@ function RenameField({ track }: { track: Track }): ReactElement {
     }
   };
 
+  const tone = trackTone(track);
+
   return (
     <span className="track-name-field">
       <input
         ref={inputRef}
-        className="track-name-input"
+        className={`track-name-input track-name-input-tone-${tone}`}
         value={value}
         onChange={onChange}
         onBlur={onBlur}
