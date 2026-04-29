@@ -691,10 +691,6 @@ input[type="range"]::-moz-range-thumb {
   align-items: center;
 }
 
-.auto-preview-row:not(:has(.pad-label)) {
-  grid-template-columns: repeat(32, 1fr);
-}
-
 .pad-label,
 .degree-label {
   font-family: var(--font-mono);
@@ -752,16 +748,11 @@ button.pad-mute.is-muted {
   contain: layout style paint;
 }
 
-/* Beat-grouping marker every 4 steps. Uses nth-child accounting for the
- * label column on rows that have one (manual editors + drum preview), and
- * skipping it on label-less rows (pitched preview). */
+/* Beat-grouping marker every 4 steps. nth-child counts from 2 because the
+ * leading label column occupies child 1 in every row. */
 .drum-row .step:nth-child(4n + 2),
 .pitched-row .step:nth-child(4n + 2),
-.auto-preview-row:has(.pad-label) .step:nth-child(4n + 2) {
-  border-left-width: 2px;
-  border-left-color: #2a2a2a;
-}
-.auto-preview-row:not(:has(.pad-label)) .step:nth-child(4n + 1) {
+.auto-preview-row .step:nth-child(4n + 2) {
   border-left-width: 2px;
   border-left-color: #2a2a2a;
 }
@@ -769,10 +760,7 @@ button.pad-mute.is-muted {
 /* Stronger divider at the bar / half-phrase boundary. */
 .drum-row .step:nth-child(18),
 .pitched-row .step:nth-child(18),
-.auto-preview-row:has(.pad-label) .step:nth-child(18) {
-  border-left: 2px solid #404040;
-}
-.auto-preview-row:not(:has(.pad-label)) .step:nth-child(17) {
+.auto-preview-row .step:nth-child(18) {
   border-left: 2px solid #404040;
 }
 

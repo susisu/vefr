@@ -215,7 +215,6 @@ function ActivePhrasePreview({
   if (phrase === undefined) {
     return <div className="auto-preview auto-preview-empty grid-frame">No phrase selected</div>;
   }
-  const isDrum = phrase.kind === "drum";
   return (
     <div className="auto-preview grid-frame">
       <div className="auto-preview-name">{phrase.name}</div>
@@ -225,17 +224,24 @@ function ActivePhrasePreview({
         : phrase.kind === "pitched" ?
           <RhythmPreview template={phrase.template} />
         : null}
-        <PlayheadOverlay totalSteps={PREVIEW_STEPS} hasLabelColumn={isDrum} />
+        <PlayheadOverlay totalSteps={PREVIEW_STEPS} hasLabelColumn />
       </div>
     </div>
   );
 }
 
-/** Single-row preview for a melody / bass rhythm template. */
+/**
+ * Single-row preview for a melody / bass rhythm template. The leading label
+ * cell mirrors the drum preview's pad-label column so all auto-track rows
+ * share the same left-edge alignment. A literal `?` plays off the manual
+ * pitched editor's `0`–`7` degree column: where manual rows lock in a
+ * specific scale degree, the auto generator picks one at runtime.
+ */
 function RhythmPreview({ template }: { template: RhythmTemplate }): ReactElement {
   return (
     <div className="auto-preview-grid">
       <div className="auto-preview-row">
+        <span className="pad-label">?</span>
         {Array.from({ length: PREVIEW_STEPS }, (_, i) => (
           <PreviewCell key={i} velocity={template[i] ?? 0} />
         ))}
