@@ -75,6 +75,9 @@ importers:
       '@susisu/vefr':
         specifier: workspace:*
         version: link:../vefr
+      tsx:
+        specifier: ^4.20.3
+        version: 4.21.0
       ws:
         specifier: ^8.18.0
         version: 8.20.0
@@ -85,9 +88,6 @@ importers:
       '@types/ws':
         specifier: ^8.18.0
         version: 8.18.1
-      tsx:
-        specifier: ^4.20.3
-        version: 4.21.0
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
