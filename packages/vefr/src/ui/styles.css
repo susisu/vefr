@@ -457,6 +457,9 @@ input[type="range"]::-moz-range-thumb {
   cursor: ns-resize;
   touch-action: none;
 }
+.knob-svg:focus {
+  outline: none;
+}
 .knob-body {
   fill: url(#knob-gradient);
   fill: radial-gradient(circle at 35% 30%, #303030, #141414 80%);
@@ -479,6 +482,22 @@ input[type="range"]::-moz-range-thumb {
 .knob-tone-cool .knob-indicator {
   stroke: var(--cool);
   filter: drop-shadow(0 0 3px rgba(102, 204, 255, 0.5));
+}
+.knob-focus-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  opacity: 0;
+  pointer-events: none;
+}
+.knob-tone-warm .knob-focus-ring {
+  stroke: var(--warm);
+}
+.knob-tone-cool .knob-focus-ring {
+  stroke: var(--cool);
+}
+.knob-svg:focus-visible .knob-focus-ring {
+  opacity: 1;
 }
 .knob-value {
   font-family: var(--font-mono);

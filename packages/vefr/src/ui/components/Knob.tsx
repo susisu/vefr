@@ -2,6 +2,7 @@ import {
   useCallback,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type WheelEvent as ReactWheelEvent,
@@ -39,7 +40,9 @@ const DEFAULT_SENSITIVITY = 200;
 /**
  * Rotary knob. Vertical drag scales the value linearly; mouse wheel nudges by
  * one `step`. Sticks to a 270° sweep and snaps to `step` on every update so
- * the indicator never lands between detents.
+ * the indicator never lands between detents. Keyboard-operable when focused:
+ * Arrow keys nudge by `step`, PageUp/PageDown by ~10% of range, Home/End jump
+ * to min/max.
  */
 export function Knob({
   value,
@@ -61,6 +64,7 @@ export function Knob({
   const angle = ANGLE_MIN + ratio * (ANGLE_MAX - ANGLE_MIN);
   const center = size / 2;
   const r = size * 0.4;
+  const focusRingR = size * 0.46;
   const indicatorEnd = size * 0.18;
 
   /** Capture the pointer + remember the starting (y, value) so move events are stateless. */
@@ -115,6 +119,45 @@ export function Knob({
     onChange(mid);
   }, [min, onChange, range, step]);
 
+  /**
+   * Keyboard handler for the WAI-ARIA slider pattern. Arrow keys = ±step,
+   * PageUp/PageDown = ±~10% of range, Home/End = min/max.
+   */
+  const onKeyDown = useCallback(
+    (e: ReactKeyboardEvent<SVGSVGElement>) => {
+      const big = Math.max(step, range / 10);
+      let nextRaw: number;
+      switch (e.key) {
+        case "ArrowUp":
+        case "ArrowRight":
+          nextRaw = value + step;
+          break;
+        case "ArrowDown":
+        case "ArrowLeft":
+          nextRaw = value - step;
+          break;
+        case "PageUp":
+          nextRaw = value + big;
+          break;
+        case "PageDown":
+          nextRaw = value - big;
+          break;
+        case "Home":
+          nextRaw = min;
+          break;
+        case "End":
+          nextRaw = max;
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+      const next = clamp(quantize(nextRaw, min, step), min, max);
+      if (next !== value) onChange(next);
+    },
+    [max, min, onChange, range, step, value],
+  );
+
   const display = format !== undefined ? format(value) : String(value);
 
   return (
@@ -131,14 +174,19 @@ export function Knob({
         onPointerCancel={onPointerUp}
         onWheel={onWheel}
         onDoubleClick={onDoubleClick}
+        onKeyDown={onKeyDown}
+        tabIndex={0}
         role="slider"
         aria-label={label}
+        aria-orientation="vertical"
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={value}
+        aria-valuetext={display}
       >
         <circle cx={center} cy={center} r={r} className="knob-body" />
         <circle cx={center} cy={center} r={r} className="knob-rim" />
+        <circle cx={center} cy={center} r={focusRingR} className="knob-focus-ring" />
         <line
           x1={center}
           y1={center}
