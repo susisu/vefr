@@ -55,11 +55,11 @@ export type Phrase = DrumPhrase | PitchedPhrase;
  */
 export const DEFAULT_AUTO_PARAMS_PITCHED: Record<PitchedRole, AutoParams> = {
   melody: { microPeriodBars: 2, macroPeriodBars: 8 },
-  bass: { microPeriodBars: 0, macroPeriodBars: 0 },
+  bass: { microPeriodBars: 8, macroPeriodBars: 32 },
 };
 
 /** Default {@link AutoParams} for an auto drum track. Locked by default. */
 export const DEFAULT_AUTO_PARAMS_DRUM: AutoParams = {
-  microPeriodBars: 0,
-  macroPeriodBars: 0,
+  microPeriodBars: 8,
+  macroPeriodBars: 32,
 };

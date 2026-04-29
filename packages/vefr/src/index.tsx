@@ -22,8 +22,8 @@ import { ControlApiProvider } from "./ui/context.js";
  */
 function defaultInitial(): EngineInitial {
   const autoDrum: DrumTrack = {
-    id: "auto-drum-1",
-    name: "Auto Drum 1",
+    id: "track-default-auto-drum",
+    name: "Auto Drum",
     kind: "drum",
     mutedPads: [],
     mute: false,
@@ -35,12 +35,25 @@ function defaultInitial(): EngineInitial {
       "drum.lofi.minimal",
       "drum.lofi.dusty-swing",
     ],
-    seed: 0,
+    seed: 53,
     params: defaultAutoParamsFor("drum"),
   };
+  const autoBass: PitchedTrack = {
+    id: "track-default-auto-bass",
+    name: "Auto Bass",
+    kind: "pitched",
+    role: "bass",
+    instrumentId: "bass",
+    mute: false,
+    volume: 0.8,
+    source: "auto",
+    phraseIds: ["bass.lofi.synco", "bass.lofi.dub", "bass.lofi.half-stab", "bass.lofi.pickup"],
+    seed: 80,
+    params: defaultAutoParamsFor("pitched", "bass"),
+  };
   const autoMelody: PitchedTrack = {
-    id: "auto-melody-1",
-    name: "Auto Melody 1",
+    id: "track-default-auto-melody",
+    name: "Auto Melody",
     kind: "pitched",
     role: "melody",
     instrumentId: "pluck",
@@ -53,21 +66,8 @@ function defaultInitial(): EngineInitial {
       "melody.lofi.three-feel",
       "melody.lofi.dusty-pair",
     ],
-    seed: 0,
+    seed: 443,
     params: defaultAutoParamsFor("pitched", "melody"),
-  };
-  const autoBass: PitchedTrack = {
-    id: "auto-bass-1",
-    name: "Auto Bass 1",
-    kind: "pitched",
-    role: "bass",
-    instrumentId: "bass",
-    mute: false,
-    volume: 0.8,
-    source: "auto",
-    phraseIds: ["bass.lofi.synco", "bass.lofi.dub", "bass.lofi.half-stab", "bass.lofi.pickup"],
-    seed: 0,
-    params: defaultAutoParamsFor("pitched", "bass"),
   };
   return {
     transport: {
