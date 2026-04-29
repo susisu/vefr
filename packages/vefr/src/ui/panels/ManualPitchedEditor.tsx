@@ -79,8 +79,6 @@ function ManualPitchedEditorInner({
           </Chip>{" "}
           <Chip width={72}>MANUAL</Chip> {track.name}
         </span>
-      </div>
-      <div className="editor-controls">
         <InstrumentSelect track={track} />
       </div>
       <div className="grid-stack">

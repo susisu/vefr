@@ -644,11 +644,35 @@ input[type="range"]::-moz-range-thumb {
   gap: 0.4rem;
 }
 
-.editor-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.45rem;
+/* Chip-shaped <select> used inline alongside Chip components in headers.
+ * Visually matches `.chip` but adds a caret so it reads as interactive,
+ * and resets the heavier base `select` styling. Width sized to fit the
+ * widest INSTRUMENT_LABEL plus the caret without truncation. */
+.chip-select {
+  display: inline-block;
+  padding: 0.12rem 1rem 0.12rem 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  background: #222
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 5'><path fill='%23888' d='M0 0l4 5 4-5z'/></svg>")
+    no-repeat right 0.4rem center / 6px 4px;
+  border: 1px solid #303030;
+  color: var(--fg-dim);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.chip-select:hover {
+  color: var(--fg);
+  border-color: #404040;
+}
+.chip-select:focus-visible {
+  outline: none;
+  border-color: var(--accent-dim);
+  color: var(--fg);
 }
 
 .drum-grid,

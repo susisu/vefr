@@ -98,12 +98,10 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
           </Chip>{" "}
           <Chip width={72}>AUTO</Chip> {track.name}
         </span>
-      </div>
-      {track.kind === "pitched" ?
-        <div className="editor-controls">
+        {track.kind === "pitched" ?
           <InstrumentSelect track={track} />
-        </div>
-      : null}
+        : null}
+      </div>
       <ActivePhrasePreview phrase={activePhrase} />
       <details className="auto-phrases-collapsible">
         <summary className="auto-phrases-summary">
