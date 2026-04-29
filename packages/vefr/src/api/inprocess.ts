@@ -201,9 +201,10 @@ function makeTrackApi(engine: Engine): TrackApi {
   };
 }
 
-/** Generate a fresh non-negative 31-bit integer for use as an auto-track seed. */
+/** Generate a fresh non-negative 16-bit integer for use as an auto-track seed.
+ *  Range kept short so the value stays legible in the UI seed input. */
 function randomSeed(): number {
-  return Math.floor(Math.random() * 0x7fffffff);
+  return Math.floor(Math.random() * 0x10000);
 }
 
 /** Build the project sub-API: snapshot, load, import, and a coarse change feed. */

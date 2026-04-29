@@ -34,9 +34,9 @@ function emptyPitchedPattern(): Pattern<Note> {
   return { lengthTicks: DEFAULT_PHRASE_TICKS, events: [] };
 }
 
-/** Non-negative 31-bit integer, matching the API's reroll seed range. */
+/** Non-negative 16-bit integer, matching the API's reroll seed range. */
 function randomSeed(): number {
-  return Math.floor(Math.random() * 0x7fffffff);
+  return Math.floor(Math.random() * 0x10000);
 }
 
 /** Human-readable label used as the default base name for a new track. */
