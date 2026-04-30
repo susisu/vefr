@@ -52,11 +52,6 @@ body {
   font-family: var(--font-ui);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
-  /* The brand mark in the top-row uses a negative `margin-right` to bridge
-   * main's padding; at exactly viewport = main max-width, that 0.22rem of
-   * (invisible) box overflow would otherwise summon a horizontal
-   * scrollbar. Clip it; nothing visible lives in that overflow region. */
-  overflow-x: clip;
 }
 
 main {
@@ -69,13 +64,13 @@ main {
   border-right: 1px solid var(--panel-rim);
 }
 
-/* Top row: Transport + Global + Project + brand mark share one horizontal
- * band. Global takes the 1fr slack so Project + Brand stay packed against
- * the right edge — putting the slack on the brand's column instead would
- * leave a big empty space to its left and make the brand look stranded. */
+/* Top row: brand mark + Transport + Global share one horizontal band.
+ * Global takes the 1fr slack so Brand + Transport stay packed against the
+ * left edge — putting the slack on the brand's column instead would leave
+ * a big empty space to its right and make the brand look stranded. */
 .top-row {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto auto 1fr;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
   align-items: stretch;
@@ -107,25 +102,10 @@ main {
  * mid-grey for legibility — engraved illusion rides on the shadows, not on
  * the text being darker than the chassis. No frame; just the engraving.
  *
- * Position the *visible* glyph centre of "VEFR" midway between Project's
- * right edge and the chassis's outer right edge. The brand sits in the
- * trailing `auto` grid cell, so without intervention its box's right edge
- * is flush with the top-row's right edge — i.e. one main-padding inside
- * the chassis border. We push it right with a negative `margin-right` so
- * the box bridges main's padding, then nudge an extra half letter-spacing
- * to put the *visible* centre (not the geometric box centre — trailing
- * letter-spacing lives inside the inline box and would otherwise pull the
- * visible centre to the left) on the midpoint.
- *
- *   m = G − M − T
- *     where  G = grid gap to Project        (0.5rem)
- *            M = main's right padding        (0.85rem)
- *            T = letter-spacing trail width  (0.45em ≈ 0.72rem here)
- *
- * The visible glyphs stay well inside the chassis; only the brand box's
- * invisible right padding & letter-spacing trail extend past the border. */
+ * The brand lives inside `.brand-panel`, which is itself a chassis-mounted
+ * column (no panel chrome) sharing the top row with Transport / Global. */
 h1.brand {
-  margin: 0 calc(0.5rem - 0.85rem - 0.45em) 0 0;
+  margin: 0;
   padding: 0 0.4rem;
   font-family: var(--font-mono);
   font-size: 1.6rem;
@@ -139,7 +119,6 @@ h1.brand {
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.3),
     0 -1px 1px rgba(0, 0, 0, 0.85);
-  align-self: center;
   user-select: none;
   border: none;
 }
@@ -434,6 +413,35 @@ input[type="range"]::-moz-range-thumb {
   background: rgba(102, 204, 255, 0.08);
   border-color: var(--cool-dim);
   color: var(--cool);
+}
+
+/* ===== Tooltip ========================================================== */
+
+/* Inline wrapper that hosts the trigger element and the floating-ui ref +
+ * mouse / focus handlers. `inline-flex` so its bounding box hugs the child
+ * exactly (instead of inheriting a wider line box) — this keeps mouseenter
+ * / mouseleave firing on the same area the user perceives as the trigger. */
+.tooltip-anchor {
+  display: inline-flex;
+}
+
+/* Floating panel rendered into a portal by `Tooltip`. Mirrors the project's
+ * panel chrome (rim + faint highlight + drop shadow) so it reads as part of
+ * the same chassis even though it lives outside the main DOM tree. */
+.tooltip {
+  z-index: 100;
+  background: var(--panel);
+  border: 1px solid var(--panel-rim);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.65rem;
+  max-width: 360px;
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 4px 14px rgba(0, 0, 0, 0.55);
 }
 
 /* ===== Knob ============================================================= */
@@ -1093,35 +1101,114 @@ details[open] > .auto-phrases-summary::before {
   justify-content: center;
 }
 
-/* ===== Project menu / drop zone ========================================= */
+/* ===== Brand panel ====================================================== */
 
-.dropzone {
-  margin-top: 0.5rem;
-  padding: 0.85rem;
-  border: 1px dashed var(--panel-rim);
-  border-radius: var(--radius);
-  text-align: center;
+/* Chassis-mounted column hosting the brand mark plus the subdued Project
+ * actions. No panel chrome — the letterpress brand needs to sit directly on
+ * the chassis surface for the engraved illusion to work. Vertically centred
+ * inside the stretched top-row cell so the brand reads as the focal point
+ * regardless of how tall Transport / Global grow. */
+.brand-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.5rem;
+}
+
+/* Import / Export sit side by side beneath the brand. A fixed-width status
+ * slot sits between the two buttons; it always reserves space for the warning
+ * icon so that the row's width doesn't shift when an import error appears or
+ * clears. */
+.brand-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+button.brand-action {
+  background: none;
+  border: none;
+  padding: 0.05rem 0.2rem;
   color: var(--fg-faint);
   font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.2em;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.import-label {
   cursor: pointer;
+  box-shadow: none;
+  transition: color 80ms ease;
+}
+button.brand-action:hover {
+  background: none;
+  border: none;
+  color: var(--fg);
+}
+button.brand-action:active {
+  background: none;
+  box-shadow: none;
+  color: var(--fg);
 }
 
-.import-errors {
-  margin-top: 0.5rem;
-  padding: 0.55rem;
-  background: rgba(211, 59, 59, 0.06);
-  border: 1px solid var(--danger-dim);
-  border-radius: var(--radius);
-  color: #fbb;
+/* Fixed-width slot that sits between Import and Export. Always present in
+ * the layout so the warning icon's appearance / disappearance never shifts
+ * either button — the icon just fades in inside the slot when an import
+ * fails. The asymmetric `margin-right` shifts the slot toward Import so the
+ * icon reads as belonging to Import, not as a centred separator. */
+.brand-action-status {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Inline warning badge that surfaces import errors next to the Import button.
+ * A circled "!" in danger tone — clicking does nothing; hovering / focusing
+ * opens the Tooltip with the full error list. The icon's footprint is fixed
+ * regardless of error count so the brand row's geometry stays stable. */
+button.brand-error-icon {
+  background: none;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: 50%;
+  width: 0.75rem;
+  height: 0.75rem;
+  padding: 0;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.5rem;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  box-shadow: none;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: background 80ms ease;
+}
+button.brand-error-icon:hover {
+  background: rgba(211, 59, 59, 0.12);
+  border-color: var(--danger);
+}
+button.brand-error-icon:active {
+  background: rgba(211, 59, 59, 0.18);
+  box-shadow: none;
+}
+
+/* Body of the import-error tooltip — sits inside `.tooltip`, so the surrounding
+ * panel chrome / background comes from there; this rule only handles typography
+ * and the inner list spacing. */
+.import-errors {
+  color: var(--fg);
+}
+.import-errors strong {
+  color: var(--danger);
+  font-weight: 700;
 }
 .import-errors ul {
   margin: 0.25rem 0 0;

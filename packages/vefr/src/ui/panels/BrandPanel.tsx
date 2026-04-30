@@ -1,13 +1,13 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ChangeEvent,
-  type DragEvent,
   type ReactElement,
 } from "react";
 import type { ImportError } from "../../api/project.js";
-import { Panel } from "../components/index.js";
+import { Tooltip } from "../components/index.js";
 import { useControlApi } from "../context.js";
 
 /** Filename used for project exports — namespaced and timestamped. */
@@ -17,10 +17,17 @@ function exportFileName(): string {
   return `vefr-${stamp}.json`;
 }
 
-/** Export / import controls plus a drop zone for `.json` project files. */
-export function ProjectMenu(): ReactElement {
+/**
+ * Chassis-mounted brand mark with subdued Import / Export controls underneath.
+ * The brand is the visual focus; the project actions are infrequently used so
+ * they sit small and quiet below the logo. Import errors surface as a small
+ * warning icon next to Import — hovering it reveals the full error list in a
+ * tooltip without disturbing the row's layout.
+ */
+export function BrandPanel(): ReactElement {
   const api = useControlApi();
   const [errors, setErrors] = useState<ImportError[] | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   /** Build a Blob from the current project and trigger a download. */
   const onExport = (): void => {
@@ -34,7 +41,7 @@ export function ProjectMenu(): ReactElement {
     URL.revokeObjectURL(url);
   };
 
-  /** Try to import a JSON-text payload; surfaces any parse errors in the panel. */
+  /** Try to import a JSON-text payload; surfaces any parse errors via the warning icon. */
   const importText = useCallback(
     (text: string): void => {
       try {
@@ -67,23 +74,16 @@ export function ProjectMenu(): ReactElement {
     [importText],
   );
 
+  /** Trigger the hidden file input so the visible button can stay a plain button. */
+  const onImportClick = (): void => {
+    fileInputRef.current?.click();
+  };
+
   /** File-input change handler. */
   const onFileChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const file = e.target.files?.[0];
     if (file) importFile(file);
     e.target.value = "";
-  };
-
-  /** Drag-and-drop drop handler. */
-  const onDrop = (e: DragEvent<HTMLDivElement>): void => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file) importFile(file);
-  };
-
-  /** Allow drop by suppressing the default browser action. */
-  const onDragOver = (e: DragEvent<HTMLDivElement>): void => {
-    e.preventDefault();
   };
 
   // Clear stale errors when the project changes from another path (autosave restore, etc.)
@@ -93,28 +93,44 @@ export function ProjectMenu(): ReactElement {
     });
   }, [api]);
 
+  const hasErrors = errors !== undefined && errors.length > 0;
+
   return (
-    <Panel title="Project">
-      <div className="row">
-        <button type="button" onClick={onExport}>
-          Export JSON
+    <div className="brand-panel">
+      <h1 className="brand">vefr</h1>
+      <div className="brand-actions">
+        <button type="button" className="brand-action" onClick={onImportClick}>
+          Import
         </button>
-        <label className="import-label">
-          Import JSON
-          <input type="file" accept="application/json,.json" onChange={onFileChange} />
-        </label>
+        <div className="brand-action-status">
+          {hasErrors ?
+            <Tooltip content={<ImportErrors errors={errors} />} placement="bottom">
+              <button
+                type="button"
+                className="brand-error-icon"
+                aria-label={`Import failed: ${errors.length} ${errors.length === 1 ? "error" : "errors"}`}
+              >
+                !
+              </button>
+            </Tooltip>
+          : null}
+        </div>
+        <button type="button" className="brand-action" onClick={onExport}>
+          Export
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          onChange={onFileChange}
+          hidden
+        />
       </div>
-      <div className="dropzone" onDrop={onDrop} onDragOver={onDragOver}>
-        Drop a project file here
-      </div>
-      {errors && errors.length > 0 ?
-        <ImportErrors errors={errors} />
-      : null}
-    </Panel>
+    </div>
   );
 }
 
-/** Render the list of import errors in a panel-local message area. */
+/** Render the list of import errors as the body of the warning tooltip. */
 function ImportErrors({ errors }: { errors: readonly ImportError[] }): ReactElement {
   return (
     <div className="import-errors">

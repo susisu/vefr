@@ -3,10 +3,10 @@ import type { Track } from "../engine/types.js";
 import { Panel } from "./components/index.js";
 import { useTracks, useTrackMuteShortcuts } from "./hooks.js";
 import { AutoTrackEditor } from "./panels/AutoTrackEditor.js";
+import { BrandPanel } from "./panels/BrandPanel.js";
 import { GlobalPanel } from "./panels/GlobalPanel.js";
 import { ManualDrumEditor } from "./panels/ManualDrumEditor.js";
 import { ManualPitchedEditor } from "./panels/ManualPitchedEditor.js";
-import { ProjectMenu } from "./panels/ProjectMenu.js";
 import { TrackList } from "./panels/TrackList.js";
 import { TransportPanel } from "./panels/TransportPanel.js";
 import "./styles.css";
@@ -18,10 +18,9 @@ export function App(): ReactElement {
   return (
     <main>
       <div className="top-row">
+        <BrandPanel />
         <TransportPanel />
         <GlobalPanel />
-        <ProjectMenu />
-        <h1 className="brand">vefr</h1>
       </div>
       <TrackList />
       <Panel title="Editors">

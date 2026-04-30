@@ -6,3 +6,4 @@ export { Knob } from "./Knob.js";
 export { LED } from "./LED.js";
 export { Panel } from "./Panel.js";
 export { PlayheadOverlay } from "./PlayheadOverlay.js";
+export { Tooltip } from "./Tooltip.js";
