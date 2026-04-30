@@ -97,7 +97,16 @@ export function BrandPanel(): ReactElement {
 
   return (
     <div className="brand-panel">
-      <h1 className="brand">vefr</h1>
+      <h1 className="brand">
+        <a
+          className="brand-link"
+          href="https://github.com/susisu/vefr"
+          target="_blank"
+          rel="noreferrer noopener"
+        >
+          vefr
+        </a>
+      </h1>
       <div className="brand-actions">
         <button type="button" className="brand-action" onClick={onImportClick}>
           Import
