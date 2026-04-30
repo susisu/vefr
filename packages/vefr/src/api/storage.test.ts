@@ -13,6 +13,7 @@ function makeProject(): Project {
     mutedPads: [],
     mute: false,
     volume: 0.8,
+    color: "white",
     source: "manual",
     pattern: {
       lengthTicks: TICKS_PER_BEAT * 4,

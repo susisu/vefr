@@ -10,7 +10,6 @@ import {
 } from "../../engine/types.js";
 import { Chip, DrumPadMuteToggle, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
-import { trackTone } from "../trackTone.js";
 
 /** Number of steps shown in the drum grid: 32 sixteenth-notes spanning 2 bars. */
 const STEPS_PER_PHRASE = 32;
@@ -47,12 +46,11 @@ function ManualDrumEditorInner({
     api.track.setDrumPattern(refById(track.id), next);
   };
 
-  const tone = trackTone(track);
   return (
-    <div className="editor" data-tone={tone}>
+    <div className={`editor track-color-${track.color}`}>
       <div className="editor-header">
         <span>
-          <Chip tone={tone} width={72}>
+          <Chip tone="accent" width={72}>
             DRUM
           </Chip>{" "}
           <Chip width={72}>MANUAL</Chip> {track.name}

@@ -16,6 +16,7 @@ function makeApi(): { api: InProcessControlApi; engine: Engine } {
     mutedPads: [],
     mute: false,
     volume: 0.5,
+    color: "white",
     source: "manual",
     pattern: {
       lengthTicks: 4 * TICKS_PER_BEAT,

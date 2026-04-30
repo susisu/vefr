@@ -16,7 +16,6 @@ import type { DrumTemplate, RhythmTemplate } from "../../phrases/types.js";
 import { Chip, DrumPadMuteToggle, Knob, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useActivePhraseId } from "../hooks.js";
-import { trackTone } from "../trackTone.js";
 import { InstrumentSelect } from "./InstrumentSelect.js";
 
 /** AutoParams fields that map to a numeric knob. */
@@ -91,14 +90,13 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
     api.track.rerollPhrase(refById(track.id));
   };
 
-  const tone = trackTone(track);
   const kindLabel = track.kind === "drum" ? "DRUM" : track.role.toUpperCase();
 
   return (
-    <div className="editor" data-tone={tone}>
+    <div className={`editor track-color-${track.color}`}>
       <div className="editor-header">
         <span>
-          <Chip tone={tone} width={72}>
+          <Chip tone="accent" width={72}>
             {kindLabel}
           </Chip>{" "}
           <Chip width={72}>AUTO</Chip> {track.name}
@@ -153,7 +151,6 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
               setParam(spec.key, v);
             }}
             format={(v) => (v === 0 ? "∞" : String(v))}
-            tone={tone}
             size={48}
           />
         ))}

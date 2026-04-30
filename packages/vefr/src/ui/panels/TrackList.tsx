@@ -23,11 +23,16 @@ import {
   type KeyboardEvent,
   type ReactElement,
 } from "react";
-import { refById, type PitchedRole, type Track } from "../../engine/types.js";
+import {
+  refById,
+  TRACK_COLOR_IDS,
+  type PitchedRole,
+  type Track,
+  type TrackColorId,
+} from "../../engine/types.js";
 import { Chip, Knob, LED, Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useTracks } from "../hooks.js";
-import { trackTone } from "../trackTone.js";
 import { buildNewTrackInput, type TrackKindChoice } from "./trackFactory.js";
 
 /** Vertical list of tracks with per-track controls and drag-to-reorder. */
@@ -76,7 +81,7 @@ function SortableTrackRow({ track }: { track: Track }): ReactElement {
     opacity: isDragging ? 0.6 : undefined,
   };
   return (
-    <li ref={setNodeRef} style={style} className="track-row">
+    <li ref={setNodeRef} style={style} className={`track-row track-color-${track.color}`}>
       <button
         type="button"
         className="drag-handle"
@@ -86,8 +91,37 @@ function SortableTrackRow({ track }: { track: Track }): ReactElement {
       >
         ⋮⋮
       </button>
+      <TrackColorButton track={track} />
       <TrackRowBody track={track} />
     </li>
+  );
+}
+
+/**
+ * Round button that displays the track's current color and cycles to the next
+ * entry of {@link TRACK_COLOR_IDS} on each click. The button itself is an
+ * `<input type="button">`-shaped control; the colored disc is painted via the
+ * `--track-accent` variable inherited from the surrounding row class.
+ */
+function TrackColorButton({ track }: { track: Track }): ReactElement {
+  const api = useControlApi();
+  const onClick = (): void => {
+    const idx = TRACK_COLOR_IDS.indexOf(track.color);
+    const next: TrackColorId =
+      TRACK_COLOR_IDS[(idx + 1) % TRACK_COLOR_IDS.length] ?? TRACK_COLOR_IDS[0];
+    api.track.update(refById(track.id), { color: next });
+  };
+  const label = `Color: ${track.color}, click to cycle`;
+  return (
+    <button
+      type="button"
+      className="track-color-button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+    >
+      <span className="track-color-swatch" />
+    </button>
   );
 }
 
@@ -95,7 +129,6 @@ function SortableTrackRow({ track }: { track: Track }): ReactElement {
 function TrackRowBody({ track }: { track: Track }): ReactElement {
   const api = useControlApi();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const tone = trackTone(track);
 
   /** Apply a mute toggle through the ControlApi. */
   const onMuteToggle = (): void => {
@@ -130,7 +163,7 @@ function TrackRowBody({ track }: { track: Track }): ReactElement {
     <>
       <RenameField track={track} />
       <span className="track-kind">
-        <Chip tone={tone} width={72}>
+        <Chip tone="accent" width={72}>
           {kindLabel}
         </Chip>{" "}
         <Chip width={72}>{sourceLabel}</Chip>
@@ -142,7 +175,7 @@ function TrackRowBody({ track }: { track: Track }): ReactElement {
         aria-label={track.mute ? `Unmute ${track.name}` : `Mute ${track.name}`}
         title={track.mute ? "Unmute" : "Mute"}
       >
-        <LED on={!track.mute} tone={tone} /> {track.mute ? "MUTE" : "ON"}
+        <LED on={!track.mute} /> {track.mute ? "MUTE" : "ON"}
       </button>
       <Knob
         label="VOL"
@@ -157,7 +190,6 @@ function TrackRowBody({ track }: { track: Track }): ReactElement {
             .padStart(3, " ")
         }
         size={30}
-        tone={tone}
       />
       {confirmingDelete ?
         <span className="track-delete-confirm">
@@ -246,13 +278,11 @@ function RenameField({ track }: { track: Track }): ReactElement {
     }
   };
 
-  const tone = trackTone(track);
-
   return (
     <span className="track-name-field">
       <input
         ref={inputRef}
-        className={`track-name-input track-name-input-tone-${tone}`}
+        className="track-name-input"
         value={value}
         onChange={onChange}
         onBlur={onBlur}

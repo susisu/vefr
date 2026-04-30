@@ -3,7 +3,8 @@ import type { ReactElement } from "react";
 /**
  * A boxed monospace readout that mimics a hardware OLED / segment display.
  * Use for BPM, key, scale, position — anything the user reads but doesn't
- * type directly into.
+ * type directly into. With `tone="accent"` the value picks up the inherited
+ * `--track-accent` color.
  */
 export function Display({
   label,
@@ -15,8 +16,8 @@ export function Display({
   label?: string;
   value: string;
   size?: "sm" | "md" | "lg";
-  /** Color treatment for the value (e.g. "accent" for the LED-green look). */
-  tone?: "default" | "accent" | "warm" | "cool";
+  /** Color treatment for the value. `"accent"` follows `--track-accent`. */
+  tone?: "default" | "accent";
 }): ReactElement {
   return (
     <div className={`display display-${size} display-tone-${tone}`}>

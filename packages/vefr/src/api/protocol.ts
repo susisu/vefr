@@ -24,6 +24,7 @@ import {
   PitchedAutoSchema,
   PitchedManualSchema,
   ScaleIdSchema,
+  TrackColorIdSchema,
   patternSchema,
 } from "./project.js";
 
@@ -59,6 +60,7 @@ const TrackPatchSchema = v.object({
   name: v.exactOptional(v.string()),
   mute: v.exactOptional(v.boolean()),
   volume: v.exactOptional(NormalizedNumber),
+  color: v.exactOptional(TrackColorIdSchema),
   instrumentId: v.exactOptional(InstrumentIdSchema),
   mutedPads: v.exactOptional(v.array(DrumPadSchema)),
 });

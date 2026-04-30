@@ -22,6 +22,7 @@ import {
   type PhraseId,
   type Tick,
   type Track,
+  type TrackColorId,
   type TrackId,
   type TrackRef,
   type TransportState,
@@ -61,6 +62,7 @@ export type TrackPatch = {
   name?: string;
   mute?: boolean;
   volume?: number;
+  color?: TrackColorId;
   instrumentId?: InstrumentId;
   mutedPads?: readonly DrumPad[];
 };
@@ -679,6 +681,7 @@ function applyPatch(t: Track, patch: TrackPatch): Track {
   if (patch.name !== undefined) next.name = patch.name;
   if (patch.mute !== undefined) next.mute = patch.mute;
   if (patch.volume !== undefined) next.volume = patch.volume;
+  if (patch.color !== undefined) next.color = patch.color;
   if (patch.instrumentId !== undefined && next.kind === "pitched") {
     next.instrumentId = patch.instrumentId;
   }

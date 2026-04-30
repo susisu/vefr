@@ -24,8 +24,6 @@ export type KnobProps = {
    * Defaults to 200px which feels close to a hardware encoder.
    */
   sensitivity?: number;
-  /** Visual tone — drives the indicator/glow color. */
-  tone?: "accent" | "warm" | "cool";
   /** Diameter in CSS pixels; defaults to 56. */
   size?: number;
 };
@@ -53,7 +51,6 @@ export function Knob({
   label,
   format,
   sensitivity = DEFAULT_SENSITIVITY,
-  tone = "accent",
   size = 56,
 }: KnobProps): ReactElement {
   const [dragging, setDragging] = useState(false);
@@ -161,7 +158,7 @@ export function Knob({
   const display = format !== undefined ? format(value) : String(value);
 
   return (
-    <div className={`knob knob-tone-${tone} ${dragging ? "knob-dragging" : ""}`}>
+    <div className={`knob ${dragging ? "knob-dragging" : ""}`}>
       <span className="knob-label">{label}</span>
       <svg
         className="knob-svg"

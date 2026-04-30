@@ -34,7 +34,7 @@ export function TransportPanel(): ReactElement {
       title="Transport"
       meta={
         <>
-          <LED on={transport.playing} tone="accent" /> {transport.playing ? "RUN" : "STOP"}
+          <LED on={transport.playing} /> {transport.playing ? "RUN" : "STOP"}
         </>
       }
     >

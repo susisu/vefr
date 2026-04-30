@@ -22,6 +22,7 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
     mutedPads: [],
     mute: false,
     volume: 1,
+    color: "white",
     source: "manual",
     pattern: {
       lengthTicks: 4 * TICKS_PER_BEAT,
@@ -121,6 +122,7 @@ describe("Engine", () => {
       instrumentId: "pluck",
       mute: false,
       volume: 1,
+      color: "white",
       source: "manual",
       pattern: { lengthTicks: TICKS_PER_BEAT * 4, events: [] },
     });
@@ -160,6 +162,7 @@ describe("Engine", () => {
       mutedPads: [],
       mute: false,
       volume: 1,
+      color: "white",
       source: "auto",
       phraseIds: [phrase.id],
       seed: 0,
@@ -206,6 +209,7 @@ describe("Engine", () => {
       mutedPads: ["closed-hat"],
       mute: false,
       volume: 1,
+      color: "white",
       source: "auto",
       phraseIds: [phrase.id],
       seed: 0,
@@ -238,6 +242,7 @@ describe("Engine", () => {
       mutedPads: [],
       mute: false,
       volume: 0.5,
+      color: "white",
       source: "manual",
       pattern: { lengthTicks: TICKS_PER_BEAT * 4, events: [] },
     });
@@ -255,6 +260,7 @@ describe("Engine", () => {
         mutedPads: [],
         mute: false,
         volume: 0.5,
+        color: "white",
         source: "manual",
         pattern: { lengthTicks: TICKS_PER_BEAT * 4, events: [] },
       }),
@@ -275,6 +281,7 @@ describe("Engine", () => {
       mutedPads: [],
       mute: false,
       volume: 1,
+      color: "white",
       source: "manual",
       pattern: { lengthTicks: TICKS_PER_BEAT * 4, events: [] },
     });
@@ -343,6 +350,7 @@ describe("Engine", () => {
       instrumentId: "lead",
       mute: false,
       volume: 1,
+      color: "white",
       source: "manual",
       pattern: {
         lengthTicks: TICKS_PER_BEAT * 4,

@@ -22,6 +22,7 @@ function makeDrumTrack(): DrumTrack {
     mutedPads: [],
     mute: false,
     volume: 0.8,
+    color: "white",
     source: "manual",
     pattern: {
       lengthTicks: TICKS_PER_BEAT * 4,
@@ -40,6 +41,7 @@ function makeMelodyTrack(): PitchedTrack {
     instrumentId: "pluck",
     mute: false,
     volume: 0.7,
+    color: "white",
     source: "manual",
     pattern: {
       lengthTicks: TICKS_PER_BEAT * 4,
@@ -63,6 +65,7 @@ function makeAutoBassTrack(): PitchedTrack {
     instrumentId: "bass",
     mute: false,
     volume: 0.9,
+    color: "white",
     source: "auto",
     phraseIds: ["bass.phrase"],
     seed: 42,

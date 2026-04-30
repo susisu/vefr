@@ -19,6 +19,26 @@ export type TrackId = string;
 /** Stable identifier for a phrase (one auto-rotation candidate) in the library. */
 export type PhraseId = string;
 
+/**
+ * Palette of LED-toned colors a track can be tagged with. The order is the
+ * cycle order used by the per-track color toggle in the UI (click → next
+ * entry, wrapping at the end). New tracks default to the first entry.
+ */
+export const TRACK_COLOR_IDS = [
+  "white",
+  "red",
+  "orange",
+  "yellow",
+  "lime",
+  "cyan",
+  "blue",
+  "indigo",
+  "magenta",
+] as const;
+
+/** One member of {@link TRACK_COLOR_IDS}; persisted on each track. */
+export type TrackColorId = (typeof TRACK_COLOR_IDS)[number];
+
 /** Time signature (e.g. 4/4, 6/8). */
 export type TimeSignature = {
   numerator: number;
@@ -142,6 +162,8 @@ type TrackBase = {
   mute: boolean;
   /** Linear gain 0..1; combined with per-event velocity at the sound boundary. */
   volume: number;
+  /** Decorative LED tone driving the track-row UI's accent color. */
+  color: TrackColorId;
 };
 
 /** Manual track body: a fixed pattern. */

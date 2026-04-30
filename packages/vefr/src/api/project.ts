@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import { INSTRUMENT_IDS } from "../engine/sound-port.js";
+import { TRACK_COLOR_IDS } from "../engine/types.js";
 import type {
   DrumHit,
   GlobalMusicState,
@@ -100,6 +101,9 @@ export const PitchedRoleSchema = v.picklist(["melody", "bass"]);
 /** Built-in instrument id picklist; mirrors `INSTRUMENT_IDS` from the engine. */
 export const InstrumentIdSchema = v.picklist(INSTRUMENT_IDS);
 
+/** Per-track decorative LED color id; mirrors `TRACK_COLOR_IDS` from the engine. */
+export const TrackColorIdSchema = v.picklist(TRACK_COLOR_IDS);
+
 /** Schema for {@link DrumHit} payloads. */
 export const DrumHitSchema = v.object({
   pad: DrumPadSchema,
@@ -147,6 +151,7 @@ const TrackBaseShape = {
   name: v.string(),
   mute: v.boolean(),
   volume: NormalizedNumber,
+  color: TrackColorIdSchema,
 };
 
 /** Track-base + auto-body fields, pre-merged so leaf schemas only spread once. */

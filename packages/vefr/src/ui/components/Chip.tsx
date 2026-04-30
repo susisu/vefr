@@ -7,6 +7,9 @@ import type { CSSProperties, ReactElement, ReactNode } from "react";
  * between renders (e.g. DRUM / MELODY / BASS, MANUAL / AUTO). The chip is
  * given a fixed box and the label is centered, so the row's geometry stays
  * stable instead of shifting with the longest possible string.
+ *
+ * `tone="accent"` opts the chip into the `--track-accent`-driven coloring;
+ * the default tone is the neutral chassis gray.
  */
 export function Chip({
   children,
@@ -14,7 +17,7 @@ export function Chip({
   width,
 }: {
   children: ReactNode;
-  tone?: "default" | "accent" | "warm" | "cool";
+  tone?: "default" | "accent";
   width?: number;
 }): ReactElement {
   const style: CSSProperties | undefined =

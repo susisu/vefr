@@ -57,12 +57,7 @@ export function Tooltip({
       </span>
       {open ?
         <FloatingPortal>
-          <div
-            ref={setFloating}
-            style={floatingStyles}
-            className="tooltip"
-            {...getFloatingProps()}
-          >
+          <div ref={setFloating} style={floatingStyles} className="tooltip" {...getFloatingProps()}>
             {content}
           </div>
         </FloatingPortal>

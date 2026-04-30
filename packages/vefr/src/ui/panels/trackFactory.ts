@@ -54,7 +54,7 @@ function defaultNameFor(choice: TrackKindChoice): string {
  */
 export function buildNewTrackInput(api: ControlApi, choice: TrackKindChoice): NewTrackInput {
   const name = api.track.proposeName(defaultNameFor(choice));
-  const base = { name, mute: false, volume: 0.8 };
+  const base = { name, mute: false, volume: 0.8, color: "white" as const };
   if (choice.kind === "drum") {
     if (choice.source === "manual") {
       return {

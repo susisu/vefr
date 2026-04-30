@@ -19,13 +19,13 @@
   --fg-dim: #8a8a8a;
   --fg-faint: #555;
 
-  /* Accents. */
-  --accent: #6df56d; /* LED green */
-  --accent-dim: #2d6b2d;
-  --warm: #f5a623; /* amber */
-  --warm-dim: #6b4912;
-  --cool: #6cf;
-  --cool-dim: #234c66;
+  /* Accents. The chassis-default accent is white; per-track UI overrides
+   * --track-accent / --track-accent-dim via .track-color-* classes (see
+   * "Track color palette" below). All accent-aware components consume
+   * `var(--track-accent, var(--accent))` so they inherit the surrounding
+   * track's color when scoped under a row, and fall back to white outside. */
+  --accent: #ffffff;
+  --accent-dim: #555555;
   --danger: #d33b3b;
   --danger-dim: #5b1f1f;
 
@@ -256,11 +256,11 @@ button.transport-play {
   text-align: center;
 }
 button.transport-play.is-playing {
-  background: linear-gradient(180deg, #1f3a1f 0%, #122112 100%);
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
   border-color: var(--accent);
   box-shadow:
-    inset 0 1px 0 rgba(109, 245, 109, 0.25),
-    0 0 8px rgba(109, 245, 109, 0.12);
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 8px rgba(255, 255, 255, 0.08);
 }
 
 select {
@@ -287,7 +287,7 @@ input[type="number"] {
 }
 
 input[type="checkbox"] {
-  accent-color: var(--accent);
+  accent-color: var(--track-accent, var(--accent));
   width: 14px;
   height: 14px;
 }
@@ -307,7 +307,7 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 14px;
   height: 14px;
-  background: var(--accent);
+  background: var(--track-accent, var(--accent));
   border: 1px solid #1a1a1a;
   border-radius: 1px;
   cursor: ew-resize;
@@ -315,7 +315,7 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-moz-range-thumb {
   width: 14px;
   height: 14px;
-  background: var(--accent);
+  background: var(--track-accent, var(--accent));
   border: 1px solid #1a1a1a;
   border-radius: 1px;
   cursor: ew-resize;
@@ -336,25 +336,10 @@ input[type="range"]::-moz-range-thumb {
   width: 12px;
   height: 12px;
 }
-.led.led-on.led-tone-accent {
-  background: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 0 6px rgba(109, 245, 109, 0.7);
-}
-.led.led-on.led-tone-warm {
-  background: var(--warm);
-  border-color: var(--warm);
-  box-shadow: 0 0 6px rgba(245, 166, 35, 0.7);
-}
-.led.led-on.led-tone-cool {
-  background: var(--cool);
-  border-color: var(--cool);
-  box-shadow: 0 0 6px rgba(102, 204, 255, 0.7);
-}
-.led.led-on.led-tone-danger {
-  background: var(--danger);
-  border-color: var(--danger);
-  box-shadow: 0 0 6px rgba(211, 59, 59, 0.7);
+.led.led-on {
+  background: var(--track-accent, var(--accent));
+  border-color: var(--track-accent, var(--accent));
+  box-shadow: 0 0 6px var(--track-accent-glow, rgba(255, 255, 255, 0.55));
 }
 
 /* ===== Display ========================================================== */
@@ -395,14 +380,8 @@ input[type="range"]::-moz-range-thumb {
   font-size: 1.4rem;
 }
 .display-tone-accent .display-value {
-  color: var(--accent);
-  text-shadow: 0 0 6px rgba(109, 245, 109, 0.4);
-}
-.display-tone-warm .display-value {
-  color: var(--warm);
-}
-.display-tone-cool .display-value {
-  color: var(--cool);
+  color: var(--track-accent, var(--accent));
+  text-shadow: 0 0 6px var(--track-accent-glow, rgba(255, 255, 255, 0.35));
 }
 
 /* ===== Chip ============================================================= */
@@ -420,19 +399,9 @@ input[type="range"]::-moz-range-thumb {
   color: var(--fg-dim);
 }
 .chip-tone-accent {
-  background: rgba(109, 245, 109, 0.08);
-  border-color: var(--accent-dim);
-  color: var(--accent);
-}
-.chip-tone-warm {
-  background: rgba(245, 166, 35, 0.08);
-  border-color: var(--warm-dim);
-  color: var(--warm);
-}
-.chip-tone-cool {
-  background: rgba(102, 204, 255, 0.08);
-  border-color: var(--cool-dim);
-  color: var(--cool);
+  background: var(--track-accent-tint, rgba(255, 255, 255, 0.06));
+  border-color: var(--track-accent-dim, var(--accent-dim));
+  color: var(--track-accent, var(--accent));
 }
 
 /* ===== Tooltip ========================================================== */
@@ -498,31 +467,17 @@ input[type="range"]::-moz-range-thumb {
   stroke-width: 1.5;
 }
 .knob-indicator {
-  stroke: var(--accent);
+  stroke: var(--track-accent, var(--accent));
   stroke-width: 2;
   stroke-linecap: round;
-  filter: drop-shadow(0 0 3px rgba(109, 245, 109, 0.5));
-}
-.knob-tone-warm .knob-indicator {
-  stroke: var(--warm);
-  filter: drop-shadow(0 0 3px rgba(245, 166, 35, 0.5));
-}
-.knob-tone-cool .knob-indicator {
-  stroke: var(--cool);
-  filter: drop-shadow(0 0 3px rgba(102, 204, 255, 0.5));
+  filter: drop-shadow(0 0 3px var(--track-accent-glow, rgba(255, 255, 255, 0.4)));
 }
 .knob-focus-ring {
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--track-accent, var(--accent));
   stroke-width: 1.5;
   opacity: 0;
   pointer-events: none;
-}
-.knob-tone-warm .knob-focus-ring {
-  stroke: var(--warm);
-}
-.knob-tone-cool .knob-focus-ring {
-  stroke: var(--cool);
 }
 .knob-svg:focus-visible .knob-focus-ring {
   opacity: 1;
@@ -553,7 +508,7 @@ input[type="range"]::-moz-range-thumb {
 
 .track-row {
   display: grid;
-  grid-template-columns: 14px 1fr auto auto auto auto;
+  grid-template-columns: 14px 14px 1fr auto auto auto auto;
   gap: 0.4rem;
   align-items: center;
   padding: 0.2rem 0.35rem;
@@ -603,14 +558,8 @@ input[type="range"]::-moz-range-thumb {
 }
 .track-name-input:focus {
   outline: none;
-  border-color: var(--accent-dim);
+  border-color: var(--track-accent-dim, var(--accent-dim));
   background: #0a0a0a;
-}
-.track-name-input-tone-warm:focus {
-  border-color: var(--warm-dim);
-}
-.track-name-input-tone-cool:focus {
-  border-color: var(--cool-dim);
 }
 .track-name-error {
   font-family: var(--font-mono);
@@ -674,6 +623,114 @@ input[type="range"]::-moz-range-thumb {
   border-top: 1px dashed var(--panel-rim);
 }
 
+/* ===== Track color palette =============================================
+ *
+ * Each `.track-color-*` class scopes three CSS variables that the rest of
+ * the chassis consumes via `var(--track-accent, var(--accent))`:
+ *   --track-accent      : LED-bright base color (used for fills, strokes, text)
+ *   --track-accent-dim  : darker companion (used for borders / focus rings)
+ *   --track-accent-glow : translucent base color used for halos / hover tints
+ *   --track-accent-tint : barely-there fill used for chip backgrounds
+ *
+ * White is the chassis default and is wired through `:root`-level `--accent`,
+ * so the `.track-color-white` block below just mirrors those values onto
+ * the per-track variable names for parity with the other entries. The palette
+ * order matches `TRACK_COLOR_IDS` in `src/engine/types.ts` (the cycle order
+ * for the per-track color-toggle button). */
+
+.track-color-white {
+  --track-accent: #ffffff;
+  --track-accent-dim: #555555;
+  --track-accent-glow: rgba(255, 255, 255, 0.55);
+  --track-accent-tint: rgba(255, 255, 255, 0.06);
+}
+.track-color-red {
+  --track-accent: #ff5060;
+  --track-accent-dim: #6b242c;
+  --track-accent-glow: rgba(255, 80, 96, 0.55);
+  --track-accent-tint: rgba(255, 80, 96, 0.08);
+}
+.track-color-orange {
+  --track-accent: #ff9040;
+  --track-accent-dim: #6b3c12;
+  --track-accent-glow: rgba(255, 144, 64, 0.55);
+  --track-accent-tint: rgba(255, 144, 64, 0.08);
+}
+.track-color-yellow {
+  --track-accent: #ffe040;
+  --track-accent-dim: #6b5912;
+  --track-accent-glow: rgba(255, 224, 64, 0.55);
+  --track-accent-tint: rgba(255, 224, 64, 0.08);
+}
+.track-color-lime {
+  --track-accent: #80ff50;
+  --track-accent-dim: #2d6b1f;
+  --track-accent-glow: rgba(128, 255, 80, 0.55);
+  --track-accent-tint: rgba(128, 255, 80, 0.08);
+}
+.track-color-cyan {
+  --track-accent: #50f0ff;
+  --track-accent-dim: #1f5c66;
+  --track-accent-glow: rgba(80, 240, 255, 0.55);
+  --track-accent-tint: rgba(80, 240, 255, 0.08);
+}
+.track-color-blue {
+  --track-accent: #5080ff;
+  --track-accent-dim: #1f3866;
+  --track-accent-glow: rgba(80, 128, 255, 0.55);
+  --track-accent-tint: rgba(80, 128, 255, 0.08);
+}
+.track-color-indigo {
+  --track-accent: #9060ff;
+  --track-accent-dim: #3a2466;
+  --track-accent-glow: rgba(144, 96, 255, 0.55);
+  --track-accent-tint: rgba(144, 96, 255, 0.08);
+}
+.track-color-magenta {
+  --track-accent: #ff60c0;
+  --track-accent-dim: #66244c;
+  --track-accent-glow: rgba(255, 96, 192, 0.55);
+  --track-accent-tint: rgba(255, 96, 192, 0.08);
+}
+
+/* Round, low-chrome button that displays the track's current color and cycles
+ * to the next palette entry on click. The colored disc inside derives from
+ * --track-accent, so wrapping the row in `.track-color-*` is enough to keep
+ * the swatch and the rest of the row in lockstep. */
+.track-color-button {
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  letter-spacing: 0;
+  transition: none;
+}
+.track-color-button:hover,
+.track-color-button:active {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.track-color-button:focus-visible {
+  outline: 1px solid var(--track-accent-dim, var(--accent-dim));
+  outline-offset: 1px;
+  border-radius: 50%;
+}
+.track-color-swatch {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--track-accent, var(--accent));
+  border: 1px solid var(--track-accent-dim, var(--accent-dim));
+  box-shadow: 0 0 4px var(--track-accent-glow, rgba(255, 255, 255, 0.4));
+}
+
 /* ===== Editors ========================================================== */
 
 .editor {
@@ -724,7 +781,7 @@ input[type="range"]::-moz-range-thumb {
 }
 .chip-select:focus-visible {
   outline: none;
-  border-color: var(--accent-dim);
+  border-color: var(--track-accent-dim, var(--accent-dim));
   color: var(--fg);
 }
 
@@ -823,8 +880,8 @@ button.pad-mute.is-muted {
  * dense grid of lit cells visibly chug. Inset shadow is clipped to the
  * box, so it stays cheap. */
 .step.on {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--track-accent, var(--accent));
+  border-color: var(--track-accent, var(--accent));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 .step:hover {
@@ -832,28 +889,11 @@ button.pad-mute.is-muted {
 }
 /* Brighten via an explicit colour swap rather than `filter: brightness()`
  * — filter forces compositor-layer creation per hover, which cascades
- * paint cost across the grid. */
+ * paint cost across the grid. The hover tint piggybacks on the same
+ * --track-accent-glow rgba (which already carries an alpha < 1) so it
+ * lifts the lit cell without needing a hand-tuned color per palette entry. */
 .step.on:hover {
-  background: #8eff8e;
-}
-
-/* Tone-coloured step variants. The editor's `data-tone` attribute drives the
- * lit-cell colour so each track role reads at a glance. */
-[data-tone="warm"] .step.on {
-  background: var(--warm);
-  border-color: var(--warm);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-[data-tone="warm"] .step.on:hover {
-  background: #ffc56b;
-}
-[data-tone="cool"] .step.on {
-  background: var(--cool);
-  border-color: var(--cool);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-[data-tone="cool"] .step.on:hover {
-  background: #9be0ff;
+  background: var(--track-accent-glow, rgba(255, 255, 255, 0.55));
 }
 
 /* Stack the playhead overlay on top of the data grid using CSS grid; both
@@ -905,22 +945,8 @@ button.pad-mute.is-muted {
   will-change: transform;
 }
 
-/* Phrase-list checkboxes: the native accent-color paints the tick mark, so a
- * tone-aware override here makes the editor's controls feel of-a-piece. */
-[data-tone="warm"] input[type="checkbox"] {
-  accent-color: var(--warm);
-}
-[data-tone="cool"] input[type="checkbox"] {
-  accent-color: var(--cool);
-}
-
-/* Active-phrase title in the auto preview also picks up the tone. */
-[data-tone="warm"] .auto-preview-name {
-  color: var(--warm);
-}
-[data-tone="cool"] .auto-preview-name {
-  color: var(--cool);
-}
+/* Phrase-list checkboxes pick up the row's `--track-accent` via the global
+ * `input[type="checkbox"]` rule, so no per-tone override is needed here. */
 
 /* Read-only preview cells: same look, no pointer affordance. */
 .auto-preview .step {
@@ -1047,7 +1073,7 @@ details[open] > .auto-phrases-summary::before {
   font-size: 0.68rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--track-accent, var(--accent));
   margin-bottom: 0.35rem;
 }
 
