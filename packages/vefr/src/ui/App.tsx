@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import type { Track } from "../engine/types.js";
 import { Panel } from "./components/index.js";
-import { useTracks } from "./hooks.js";
+import { useTracks, useTrackMuteShortcuts } from "./hooks.js";
 import { AutoTrackEditor } from "./panels/AutoTrackEditor.js";
 import { GlobalPanel } from "./panels/GlobalPanel.js";
 import { ManualDrumEditor } from "./panels/ManualDrumEditor.js";
@@ -14,6 +14,7 @@ import "./styles.css";
 /** Top-level UI: transport, global, project menu, track list, and per-track editors. */
 export function App(): ReactElement {
   const tracks = useTracks();
+  useTrackMuteShortcuts();
   return (
     <main>
       <div className="top-row">
