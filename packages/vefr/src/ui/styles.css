@@ -114,6 +114,12 @@ main {
 }
 .editor-grid > .editor {
   margin-bottom: 0;
+  /* Without `min-width: 0`, grid items default to `min-width: auto`, which
+   * sizes them to their min-content. A long track name in the header would
+   * then push the editor box wider than its `minmax(0, 1fr)` column. Forcing
+   * 0 lets the column clip so the header's own `text-overflow: ellipsis`
+   * actually kicks in. */
+  min-width: 0;
 }
 
 /* Brand mark stamped into the chassis. Letterpress-style depth: a bright
@@ -752,6 +758,17 @@ input[type="range"]::-moz-range-thumb {
   align-items: center;
   justify-content: space-between;
   gap: 0.4rem;
+}
+/* Title cell: chips followed by the (possibly long) track name. Force a single
+ * line and let the trailing name truncate with an ellipsis instead of wrapping
+ * the header onto a second row. `min-width: 0` lets the flex item shrink below
+ * its intrinsic content width. */
+.editor-header > span:first-child {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Chip-shaped <select> used inline alongside Chip components in headers.
