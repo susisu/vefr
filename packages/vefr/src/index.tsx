@@ -28,7 +28,7 @@ function defaultInitial(): EngineInitial {
     mutedPads: [],
     mute: false,
     volume: 0.8,
-    color: "white",
+    color: "magenta",
     source: "auto",
     phraseIds: [
       "drum.lofi.boom-bap",
@@ -47,7 +47,7 @@ function defaultInitial(): EngineInitial {
     instrumentId: "bass",
     mute: false,
     volume: 0.8,
-    color: "white",
+    color: "orange",
     source: "auto",
     phraseIds: ["bass.lofi.synco", "bass.lofi.dub", "bass.lofi.half-stab", "bass.lofi.pickup"],
     seed: 80,
@@ -61,7 +61,7 @@ function defaultInitial(): EngineInitial {
     instrumentId: "pluck",
     mute: false,
     volume: 0.8,
-    color: "white",
+    color: "yellow",
     source: "auto",
     phraseIds: [
       "melody.lofi.minimal",
