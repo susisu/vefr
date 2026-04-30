@@ -33,8 +33,8 @@ type ParamSpec = {
 
 /** Knobs shown on every auto-track editor — both periods at the same scale. */
 const PARAM_SPECS: readonly ParamSpec[] = [
-  { key: "microPeriodLoops", label: "MICRO", min: 0, max: 16, step: 1 },
-  { key: "macroPeriodLoops", label: "MACRO", min: 0, max: 32, step: 1 },
+  { key: "microPeriodLoops", label: "MICRO", min: 0, max: 64, step: 1 },
+  { key: "macroPeriodLoops", label: "MACRO", min: 0, max: 64, step: 1 },
 ];
 
 /** Pads laid out in preview rows (top → bottom) for drum auto tracks. */

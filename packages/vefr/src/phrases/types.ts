@@ -54,12 +54,12 @@ export type Phrase = DrumPhrase | PitchedPhrase;
  * counted in loops (current loop length is 2 bars in 4/4).
  */
 export const DEFAULT_AUTO_PARAMS_PITCHED: Record<PitchedRole, AutoParams> = {
-  melody: { microPeriodLoops: 1, macroPeriodLoops: 4 },
-  bass: { microPeriodLoops: 4, macroPeriodLoops: 16 },
+  melody: { microPeriodLoops: 2, macroPeriodLoops: 8 },
+  bass: { microPeriodLoops: 8, macroPeriodLoops: 32 },
 };
 
 /** Default {@link AutoParams} for an auto drum track. */
 export const DEFAULT_AUTO_PARAMS_DRUM: AutoParams = {
-  microPeriodLoops: 4,
-  macroPeriodLoops: 16,
+  microPeriodLoops: 8,
+  macroPeriodLoops: 32,
 };
