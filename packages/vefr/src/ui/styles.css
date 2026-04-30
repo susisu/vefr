@@ -65,12 +65,15 @@ main {
 }
 
 /* Top row: brand mark + Transport + Global share one horizontal band.
- * Global takes the 1fr slack so Brand + Transport stay packed against the
- * left edge — putting the slack on the brand's column instead would leave
- * a big empty space to its right and make the brand look stranded. */
+ * Brand and Transport stay at their natural widths on the left; Global grows
+ * to absorb the slack — putting the slack on the brand's column instead
+ * would leave a big empty space to its right and make the brand look
+ * stranded. Flex (rather than grid) is used so a wide Global doesn't drag
+ * Brand/Transport's tracks wider than their content when Global wraps to
+ * its own row on narrow viewports. */
 .top-row {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
   align-items: stretch;
@@ -78,6 +81,23 @@ main {
 .top-row > .panel {
   margin-bottom: 0;
   min-width: 0;
+}
+.top-row > :nth-child(3) {
+  flex: 1 1 0;
+}
+
+/* Narrow viewports: Brand + Transport can no longer share a row with Global
+ * without crushing the readouts, so Global drops onto its own full-width row
+ * underneath. With Global gone from the first row, Brand absorbs the slack
+ * so the row spans the full width and Transport stays packed to the right
+ * of the brand mark. */
+@media (max-width: 800px) {
+  .top-row > :nth-child(1) {
+    flex: 1 1 0;
+  }
+  .top-row > :nth-child(3) {
+    flex-basis: 100%;
+  }
 }
 
 /* Editors laid out two per row on wide viewports; falls back to one column
