@@ -10,10 +10,10 @@ import {
 import { defaultAutoParamsFor } from "../../phrases/index.js";
 
 /**
- * Default phrase length for fresh manual patterns: 2 musical bars in 4/4
+ * Default loop length for fresh manual patterns: 2 musical bars in 4/4
  * (= 32 sixteenth-step grid). Matches the bootstrap defaults in `src/index.tsx`.
  */
-const DEFAULT_PHRASE_TICKS = 8 * TICKS_PER_BEAT;
+const DEFAULT_LOOP_TICKS = 8 * TICKS_PER_BEAT;
 
 /**
  * High-level spec the UI's "Add track" affordance produces. The factory below
@@ -24,14 +24,14 @@ export type TrackKindChoice =
   | { kind: "drum"; source: "manual" | "auto" }
   | { kind: "pitched"; role: PitchedRole; source: "manual" | "auto" };
 
-/** Empty drum pattern at the standard phrase length. */
+/** Empty drum pattern at the standard loop length. */
 function emptyDrumPattern(): Pattern<DrumHit> {
-  return { lengthTicks: DEFAULT_PHRASE_TICKS, events: [] };
+  return { lengthTicks: DEFAULT_LOOP_TICKS, events: [] };
 }
 
-/** Empty pitched pattern at the standard phrase length. */
+/** Empty pitched pattern at the standard loop length. */
 function emptyPitchedPattern(): Pattern<Note> {
-  return { lengthTicks: DEFAULT_PHRASE_TICKS, events: [] };
+  return { lengthTicks: DEFAULT_LOOP_TICKS, events: [] };
 }
 
 /** Non-negative 16-bit integer, matching the API's reroll seed range. */
@@ -50,7 +50,7 @@ function defaultNameFor(choice: TrackKindChoice): string {
  * Build a {@link NewTrackInput} for the given high-level choice, picking a
  * unique default name via `api.track.proposeName`. Auto tracks ship with an
  * empty `phraseIds` list so the user picks phrases in the editor; manual
- * tracks ship with an empty pattern at the standard phrase length.
+ * tracks ship with an empty pattern at the standard loop length.
  */
 export function buildNewTrackInput(api: ControlApi, choice: TrackKindChoice): NewTrackInput {
   const name = api.track.proposeName(defaultNameFor(choice));

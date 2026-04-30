@@ -6,13 +6,13 @@ import {
   type Note,
   type PatternEvent,
 } from "../engine/types.js";
-import { PHRASE_STEPS, type DrumTemplate, type RhythmTemplate } from "../phrases/types.js";
-import type { DrumBar, DrumGeneratorInput, PitchedBar, PitchedGeneratorInput } from "./types.js";
+import { LOOP_STEPS, type DrumTemplate, type RhythmTemplate } from "../phrases/types.js";
+import type { DrumLoop, DrumGeneratorInput, PitchedLoop, PitchedGeneratorInput } from "./types.js";
 
 /** One sixteenth-note in ticks; templates are authored at this resolution. */
 const SIXTEENTH = TICKS_PER_BEAT / 4;
-/** Total ticks in one phrase = 32 sixteenths = 2 bars in 4/4. */
-const PHRASE_TICKS = PHRASE_STEPS * SIXTEENTH;
+/** Total ticks in one loop = 32 sixteenths = 2 bars in 4/4. */
+const LOOP_TICKS = LOOP_STEPS * SIXTEENTH;
 
 /** Octave constant for emitted bass notes (sub-bass register). */
 const BASS_OCTAVE = -2;
@@ -48,40 +48,40 @@ const TAG_WALK = 0x574b; /* "WK" — melody walk step */
 const TAG_WALK_START = 0x5753; /* "WS" — melody walk starting degree */
 
 /**
- * Materialize one bar of drum events. The macro slot picks a template from
+ * Materialize one loop of drum events. The macro slot picks a template from
  * the candidate list; the micro slot seeds drop dice per event. Pure
  * function — same input always returns the same output.
  */
-export function generateDrumBar(input: DrumGeneratorInput): DrumBar {
-  if (input.templates.length === 0) return emptyBar();
-  const macroSlot = slotFor(input.bar, input.params.macroPeriodBars);
-  const microSlot = slotFor(input.bar, input.params.microPeriodBars);
+export function generateDrumLoop(input: DrumGeneratorInput): DrumLoop {
+  if (input.templates.length === 0) return emptyLoop();
+  const macroSlot = slotFor(input.loop, input.params.macroPeriodLoops);
+  const microSlot = slotFor(input.loop, input.params.microPeriodLoops);
   const template = pickTemplate<DrumTemplate>(input.seed, macroSlot, input.templates);
   const events: Array<PatternEvent<DrumHit>> = [];
   for (const pad of DRUM_PADS) {
     const row = template[pad];
     if (!row) continue;
-    for (let step = 0; step < PHRASE_STEPS; step++) {
+    for (let step = 0; step < LOOP_STEPS; step++) {
       const v = row[step] ?? 0;
       if (v <= 0) continue;
       if (rollDrop(input.seed, microSlot, padIdx(pad), step, DROP_DRUM)) continue;
       events.push({ tick: step * SIXTEENTH, payload: { pad, velocity: v } });
     }
   }
-  return { lengthTicks: PHRASE_TICKS, events };
+  return { lengthTicks: LOOP_TICKS, events };
 }
 
 /**
- * Materialize one bar of bass events. Bass stays on the root degree by
+ * Materialize one loop of bass events. Bass stays on the root degree by
  * design; rhythm + drop come from the template plus the micro slot's dice.
  */
-export function generateBassBar(input: PitchedGeneratorInput): PitchedBar {
-  if (input.templates.length === 0) return emptyBar();
-  const macroSlot = slotFor(input.bar, input.params.macroPeriodBars);
-  const microSlot = slotFor(input.bar, input.params.microPeriodBars);
+export function generateBassLoop(input: PitchedGeneratorInput): PitchedLoop {
+  if (input.templates.length === 0) return emptyLoop();
+  const macroSlot = slotFor(input.loop, input.params.macroPeriodLoops);
+  const microSlot = slotFor(input.loop, input.params.microPeriodLoops);
   const template = pickTemplate<RhythmTemplate>(input.seed, macroSlot, input.templates);
   const events: Array<PatternEvent<Note>> = [];
-  for (let step = 0; step < PHRASE_STEPS; step++) {
+  for (let step = 0; step < LOOP_STEPS; step++) {
     const v = template[step] ?? 0;
     if (v <= 0) continue;
     if (rollDrop(input.seed, microSlot, 0, step, DROP_BASS)) continue;
@@ -90,23 +90,23 @@ export function generateBassBar(input: PitchedGeneratorInput): PitchedBar {
       payload: { degree: 0, octave: BASS_OCTAVE, velocity: v, lengthTicks: SIXTEENTH },
     });
   }
-  return { lengthTicks: PHRASE_TICKS, events };
+  return { lengthTicks: LOOP_TICKS, events };
 }
 
 /**
- * Materialize one bar of melody events. The macro slot picks a template,
+ * Materialize one loop of melody events. The macro slot picks a template,
  * the micro slot seeds a fresh scale walk + drop / ghost dice. Same micro
- * slot always produces the same walk so phrase repeats sound identical
+ * slot always produces the same walk so loop repeats sound identical
  * within the slot; crossing a slot boundary yields a new walk.
  */
-export function generateMelodyBar(input: PitchedGeneratorInput): PitchedBar {
-  if (input.templates.length === 0) return emptyBar();
-  const macroSlot = slotFor(input.bar, input.params.macroPeriodBars);
-  const microSlot = slotFor(input.bar, input.params.microPeriodBars);
+export function generateMelodyLoop(input: PitchedGeneratorInput): PitchedLoop {
+  if (input.templates.length === 0) return emptyLoop();
+  const macroSlot = slotFor(input.loop, input.params.macroPeriodLoops);
+  const microSlot = slotFor(input.loop, input.params.microPeriodLoops);
   const template = pickTemplate<RhythmTemplate>(input.seed, macroSlot, input.templates);
   const walkDegrees = computeWalk(input.seed, microSlot);
   const events: Array<PatternEvent<Note>> = [];
-  for (let step = 0; step < PHRASE_STEPS; step++) {
+  for (let step = 0; step < LOOP_STEPS; step++) {
     const tmplVel = template[step] ?? 0;
     if (tmplVel > 0) {
       if (rollDrop(input.seed, microSlot, 1, step, DROP_MELODY)) continue;
@@ -132,20 +132,20 @@ export function generateMelodyBar(input: PitchedGeneratorInput): PitchedBar {
       });
     }
   }
-  return { lengthTicks: PHRASE_TICKS, events };
+  return { lengthTicks: LOOP_TICKS, events };
 }
 
 /**
- * Compute `floor(bar / period)`, treating `period <= 0` as "infinity"
+ * Compute `floor(loop / period)`, treating `period <= 0` as "infinity"
  * (slot stays at 0 forever — used for locked rotation / variation).
  */
-function slotFor(bar: number, period: number): number {
+function slotFor(loop: number, period: number): number {
   if (period <= 0) return 0;
-  return Math.floor(bar / period);
+  return Math.floor(loop / period);
 }
 
 /** Empty fallback for generators called with no usable templates. */
-function emptyBar<T>(): { lengthTicks: number; events: ReadonlyArray<PatternEvent<T>> } {
+function emptyLoop<T>(): { lengthTicks: number; events: ReadonlyArray<PatternEvent<T>> } {
   return { lengthTicks: 0, events: [] };
 }
 
@@ -176,12 +176,12 @@ function pickIndex(seed: number, tag: number, slot: number, n: number): number {
  */
 export function pickAutoPhraseIndex(
   seed: number,
-  bar: number,
-  macroPeriodBars: number,
+  loop: number,
+  macroPeriodLoops: number,
   count: number,
 ): number {
   if (count <= 0) return 0;
-  return pickIndex(seed, TAG_TEMPLATE, slotFor(bar, macroPeriodBars), count);
+  return pickIndex(seed, TAG_TEMPLATE, slotFor(loop, macroPeriodLoops), count);
 }
 
 /**
@@ -219,7 +219,7 @@ function computeWalk(seed: number, microSlot: number): readonly number[] {
   // Start anywhere in roughly the middle 4 degrees of the walk range.
   let cur = Math.floor(startRng() * 4) - 1;
   const out: number[] = [];
-  for (let step = 0; step < PHRASE_STEPS; step++) {
+  for (let step = 0; step < LOOP_STEPS; step++) {
     const rng = mulberry32(hashSeeds(seed, TAG_WALK, microSlot, step));
     const r1 = rng();
     let mag: number;

@@ -58,7 +58,7 @@ External-control overlay (optional, opt-in at build):
 ```
 
 - **`src/engine/`** — pure timing + state core. `Engine` owns transport, global music state, the track list, and the dispatch loop. `Scheduler` look-aheads ~100 ms via `setTimeout` and converts `Tick`s to `AudioContext.currentTime` seconds; `Clock` wraps the audio clock so tests can swap in a fake. `sound-port.ts` is the interface the engine pushes events into — engine never touches WebAudio directly. Time grid is `TICKS_PER_BEAT = 96` (PPQN 96).
-- **`src/auto/`** — pure functions that take `(seed, bar, params, phraseTemplates)` and return a bar of events. The variation model collapses to two periods: `microPeriodBars` (per-event drop / walk / ghost dice re-roll) and `macroPeriodBars` (template rotation slot). `0` means "infinity" (lock). Variation strengths are constants in `generator.ts`, not user-tunable.
+- **`src/auto/`** — pure functions that take `(seed, loop, params, phraseTemplates)` and return a loop of events. The variation model collapses to two periods, both counted in loops: `microPeriodLoops` (per-event drop / walk / ghost dice re-roll) and `macroPeriodLoops` (template rotation slot). `0` means "infinity" (lock). Variation strengths are constants in `generator.ts`, not user-tunable. One loop = `LOOP_BARS` musical bars (currently 2); this is the only place `bar` enters the auto pipeline.
 - **`src/sound/`** — `SoundOutput` implementations. `webaudio.ts` is the production sink (Oscillator + ADSR for pitched, noise-based drums); `mock.ts` is for tests. Engine uses only the port, so swapping in Web MIDI later is an additional adapter, not a refactor.
 - **`src/api/`** — the **Control API**.
   - `types.ts` is the public façade (`ControlApi` + sub-APIs `transport`, `global`, `track`, `project`). All methods are synchronous; recoverable errors go through `Result<T, E>`.
@@ -83,7 +83,7 @@ External-control overlay (optional, opt-in at build):
 - `Note.degree` is a **scale degree** (0-based, can be negative or exceed scale length — wraps with octave). It is resolved to MIDI at sound time using the global `key` + `scale`. Patterns therefore transpose for free; never bake absolute pitches into a pattern.
 - `Track` is a discriminated union over `kind` ("drum" | "pitched") **and** `source` ("manual" | "auto"). Use `DistributiveOmit` (see `engine.ts`) when stripping fields off `Track`; the built-in `Omit` collapses the union and drops variant-specific fields like `pattern` / `phraseIds`.
 - Tracks have both an opaque `id` and a unique human-readable `name`. Ref them via `TrackRef` (`refById` / `refByName`) — uniqueness of names is engine-enforced.
-- Auto tracks must be reproducible from `(seed, bar, params, phraseIds)` alone. Don't keep "live" auto state outside the seed; that's why `seed` is a saved field of the `Project`.
+- Auto tracks must be reproducible from `(seed, loop, params, phraseIds)` alone. Don't keep "live" auto state outside the seed; that's why `seed` is a saved field of the `Project`.
 - `Project` JSON carries `schemaVersion` (`CURRENT_SCHEMA_VERSION` in `api/project.ts`). When you change the persisted shape, bump the version and add a migration — don't silently coerce.
 - The wire protocol carries its own `PROTOCOL_VERSION` (separate from `schemaVersion`). Any breaking frame change bumps that constant in `api/protocol.ts`.
 

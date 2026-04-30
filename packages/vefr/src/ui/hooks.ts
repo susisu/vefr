@@ -33,8 +33,8 @@ export function useTracks(): readonly Track[] {
 
 /**
  * Phrase id currently selected for the macro slot of an auto track. Updates
- * live when the engine crosses a phrase boundary, when the track's config
- * is edited, or when the transport seeks.
+ * live when the active phrase changes, when the track's config is edited,
+ * or when the transport seeks.
  */
 export function useActivePhraseId(ref: TrackRef): PhraseId | undefined {
   const api = useControlApi();

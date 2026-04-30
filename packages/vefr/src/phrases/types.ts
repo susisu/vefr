@@ -1,7 +1,7 @@
 import type { AutoParams, DrumPad, PhraseId, PitchedRole } from "../engine/types.js";
 
-/** Number of sixteenth-note steps in a phrase (32 = 2 bars in 4/4). */
-export const PHRASE_STEPS = 32;
+/** Number of sixteenth-note steps in one loop (32 = 2 bars in 4/4). Phrase templates are authored at this resolution. */
+export const LOOP_STEPS = 32;
 
 /**
  * A 32-step rhythm template at sixteenth-note resolution.
@@ -49,17 +49,17 @@ export type PitchedPhrase = {
 export type Phrase = DrumPhrase | PitchedPhrase;
 
 /**
- * Default {@link AutoParams} per pitched role. Bass stays steady on a
- * single phrase by default (macroPeriodBars=0 = no rotation, microPeriodBars=0
- * = no variation re-roll). Melody rotates and re-rolls so phrases evolve.
+ * Default {@link AutoParams} per pitched role. Bass evolves slowly by default;
+ * melody rotates and re-rolls more often so phrases keep moving. Periods are
+ * counted in loops (current loop length is 2 bars in 4/4).
  */
 export const DEFAULT_AUTO_PARAMS_PITCHED: Record<PitchedRole, AutoParams> = {
-  melody: { microPeriodBars: 2, macroPeriodBars: 8 },
-  bass: { microPeriodBars: 8, macroPeriodBars: 32 },
+  melody: { microPeriodLoops: 1, macroPeriodLoops: 4 },
+  bass: { microPeriodLoops: 4, macroPeriodLoops: 16 },
 };
 
-/** Default {@link AutoParams} for an auto drum track. Locked by default. */
+/** Default {@link AutoParams} for an auto drum track. */
 export const DEFAULT_AUTO_PARAMS_DRUM: AutoParams = {
-  microPeriodBars: 8,
-  macroPeriodBars: 32,
+  microPeriodLoops: 4,
+  macroPeriodLoops: 16,
 };

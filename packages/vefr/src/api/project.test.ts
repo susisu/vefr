@@ -66,7 +66,7 @@ function makeAutoBassTrack(): PitchedTrack {
     source: "auto",
     phraseIds: ["bass.phrase"],
     seed: 42,
-    params: { microPeriodBars: 2, macroPeriodBars: 8 },
+    params: { microPeriodLoops: 1, macroPeriodLoops: 4 },
   };
 }
 

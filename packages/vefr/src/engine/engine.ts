@@ -1,10 +1,10 @@
 import {
-  generateBassBar,
-  generateDrumBar,
-  generateMelodyBar,
+  generateBassLoop,
+  generateDrumLoop,
+  generateMelodyLoop,
   pickAutoPhraseIndex,
 } from "../auto/generator.js";
-import type { DrumBar, PitchedBar } from "../auto/types.js";
+import type { DrumLoop, PitchedLoop } from "../auto/types.js";
 import type { DrumPhrase, Phrase, PitchedPhrase } from "../phrases/types.js";
 import { degreeToMidi } from "../shared/music.js";
 import { Signal } from "../shared/signal.js";
@@ -28,11 +28,14 @@ import {
 } from "./types.js";
 
 /**
- * How many musical bars one auto-track phrase spans. Phrase patterns are
+ * How many musical bars one auto-track loop spans. Phrase templates are
  * authored at this length (32 sixteenth-note steps = 2 bars in 4/4) so the
- * generator output and the dispatcher cycle stay aligned.
+ * generator output and the dispatcher cycle stay aligned. This is the only
+ * place "bar" appears in the auto/loop pipeline — generators and slot
+ * arithmetic work in loops; bars only re-enter when converting loop length
+ * to ticks via the time signature.
  */
-const PHRASE_BARS = 2;
+const LOOP_BARS = 2;
 
 /**
  * Visual playhead resolution: one "step" = one sixteenth note, matching the
@@ -110,7 +113,7 @@ export class Engine {
   private readonly output: SoundOutput;
   private readonly resolvePhrase: PhraseLookup;
   /**
-   * Cache of materialized auto-track bars keyed by track id. The dispatcher
+   * Cache of materialized auto-track loops keyed by track id. The dispatcher
    * fires per tick; without this the 3-tier generator would re-run several
    * hundred times per second per track.
    */
@@ -278,7 +281,7 @@ export class Engine {
 
   /**
    * Remove a track. Throws {@link TrackError} (`not-found`) if the ref doesn't
-   * resolve. Drops any cached materialized phrase so we don't leak memory if
+   * resolve. Drops any cached materialized loop so we don't leak memory if
    * the same id is later re-used by an import.
    */
   removeTrack(ref: TrackRef): void {
@@ -412,8 +415,8 @@ export class Engine {
 
   /**
    * Patch the auto-generation config of an auto track. Throws if the resolved
-   * track is manual. Invalidates the materialized-bar cache for that track so
-   * the next bar reflects the change immediately.
+   * track is manual. Invalidates the materialized-loop cache for that track so
+   * the next loop reflects the change immediately.
    */
   setAutoConfig(ref: TrackRef, patch: AutoConfigPatch): void {
     const target = this.resolveTrack(ref);
@@ -437,13 +440,13 @@ export class Engine {
   /**
    * Resolve every track's events for `tick` and forward them to the SoundOutput.
    * Manual tracks index their pattern modulo `lengthTicks`; auto tracks use a
-   * per-phrase materialized cache produced by the {@link generator} module.
-   * A phrase is {@link PHRASE_BARS} musical bars long — the natural cycle
-   * length of the 32-step (= 2 × 16-sixteenth-notes) preset variants.
+   * per-loop materialized cache produced by the {@link generator} module.
+   * A loop is {@link LOOP_BARS} musical bars long — the natural cycle length
+   * of the 32-step (= 2 × 16-sixteenth-notes) preset variants.
    */
   private dispatch(tick: Tick, time: number): void {
     // Advance the saved position so derived state (e.g. the auto-track
-    // active phrase id, which floors the position into a phrase index)
+    // active phrase id, which floors the position into a loop index)
     // reflects the live tick. We deliberately don't emit transportChanged
     // — that's reserved for play / pause / stop / seek / setBpm and would
     // re-render every transport-watching component on every tick.
@@ -499,8 +502,8 @@ export class Engine {
   }
 
   /**
-   * Fire matching events from an auto track's materialized phrase at the
-   * given global tick. Re-materializes when crossing a phrase boundary (or
+   * Fire matching events from an auto track's materialized loop at the
+   * given global tick. Re-materializes when crossing a loop boundary (or
    * when the track config has changed since the last cache write).
    */
   private dispatchAuto(
@@ -510,11 +513,11 @@ export class Engine {
     gain: number,
   ): void {
     const barLength = TICKS_PER_BEAT * this.transport.signature.numerator;
-    const phraseTicks = barLength * PHRASE_BARS;
-    const phrase = Math.floor(tick / phraseTicks);
-    const localTick = tick - phrase * phraseTicks;
+    const loopTicks = barLength * LOOP_BARS;
+    const loop = Math.floor(tick / loopTicks);
+    const localTick = tick - loop * loopTicks;
     const cached = this.autoCache.get(track.id);
-    const entry = cached && cached.phrase === phrase ? cached : this.materializeAuto(track, phrase);
+    const entry = cached && cached.loop === loop ? cached : this.materializeAuto(track, loop);
     if (entry !== cached) this.autoCache.set(track.id, entry);
     if (entry.lengthTicks <= 0 || localTick >= entry.lengthTicks) return;
     if (entry.kind === "drum") {
@@ -536,38 +539,34 @@ export class Engine {
 
   /**
    * Run the appropriate generator and wrap the result in a cache entry.
-   * The generator is called once per phrase boundary with the bar index at
-   * the start of that phrase. Phrases are pre-resolved so we can also report
-   * which phrase id was picked for the macro slot (used by the UI preview).
+   * The generator is called once per loop boundary with the loop index.
+   * Phrase templates are pre-resolved so we can also report which phrase id
+   * was picked for the macro slot (used by the UI preview).
    */
-  private materializeAuto(
-    track: Extract<Track, { source: "auto" }>,
-    phrase: number,
-  ): AutoCacheEntry {
-    const bar = phrase * PHRASE_BARS;
+  private materializeAuto(track: Extract<Track, { source: "auto" }>, loop: number): AutoCacheEntry {
     if (track.kind === "drum") {
       const phrases = this.collectDrumPhrases(track.phraseIds);
-      const phraseId = pickActivePhraseId(phrases, track.seed, bar, track.params.macroPeriodBars);
+      const phraseId = pickActivePhraseId(phrases, track.seed, loop, track.params.macroPeriodLoops);
       this.maybeEmitPhraseChange(track.id, phraseId);
       const templates = phrases.map((p) => p.template);
-      const out = generateDrumBar({ bar, seed: track.seed, templates, params: track.params });
+      const out = generateDrumLoop({ loop, seed: track.seed, templates, params: track.params });
       return {
         kind: "drum",
-        phrase,
+        loop,
         phraseId,
         lengthTicks: out.lengthTicks,
         events: out.events,
       };
     }
     const phrases = this.collectPitchedPhrases(track.phraseIds, track.role);
-    const phraseId = pickActivePhraseId(phrases, track.seed, bar, track.params.macroPeriodBars);
+    const phraseId = pickActivePhraseId(phrases, track.seed, loop, track.params.macroPeriodLoops);
     this.maybeEmitPhraseChange(track.id, phraseId);
     const templates = phrases.map((p) => p.template);
-    const args = { bar, seed: track.seed, templates, params: track.params };
-    const out = track.role === "melody" ? generateMelodyBar(args) : generateBassBar(args);
+    const args = { loop, seed: track.seed, templates, params: track.params };
+    const out = track.role === "melody" ? generateMelodyLoop(args) : generateBassLoop(args);
     return {
       kind: "pitched",
-      phrase,
+      loop,
       phraseId,
       lengthTicks: out.lengthTicks,
       events: out.events,
@@ -612,14 +611,13 @@ export class Engine {
     const track = this.resolveTrack(ref);
     if (!track || track.source !== "auto") return undefined;
     const barLength = TICKS_PER_BEAT * this.transport.signature.numerator;
-    const phraseTicks = barLength * PHRASE_BARS;
-    const phrase = Math.floor(this.transport.positionTick / phraseTicks);
-    const bar = phrase * PHRASE_BARS;
+    const loopTicks = barLength * LOOP_BARS;
+    const loop = Math.floor(this.transport.positionTick / loopTicks);
     const phrases =
       track.kind === "drum" ?
         this.collectDrumPhrases(track.phraseIds)
       : this.collectPitchedPhrases(track.phraseIds, track.role);
-    return pickActivePhraseId(phrases, track.seed, bar, track.params.macroPeriodBars);
+    return pickActivePhraseId(phrases, track.seed, loop, track.params.macroPeriodLoops);
   }
 
   /** Common pitched-event dispatch path shared by manual and auto tracks. */
@@ -631,26 +629,27 @@ export class Engine {
 }
 
 /**
- * Cached materialized phrase (drum or pitched) plus the phrase index it was
- * produced for. `phrase` indexes whole {@link PHRASE_BARS}-bar chunks of
- * playback, so a single materialization covers `PHRASE_BARS` musical bars.
- * `phraseId` is the macro-tier picked phrase used for that chunk; the UI
- * reads it via {@link Engine.getActiveAutoPhraseId} to render the preview.
+ * Cached materialized loop (drum or pitched) plus the loop index it was
+ * produced for. `loop` indexes whole {@link LOOP_BARS}-bar chunks of
+ * playback, so a single materialization covers `LOOP_BARS` musical bars.
+ * `phraseId` is the macro-tier picked phrase template used for that chunk;
+ * the UI reads it via {@link Engine.getActiveAutoPhraseId} to render the
+ * preview.
  */
 type AutoCacheEntry =
   | {
       kind: "drum";
-      phrase: number;
+      loop: number;
       phraseId: PhraseId | undefined;
       lengthTicks: Tick;
-      events: DrumBar["events"];
+      events: DrumLoop["events"];
     }
   | {
       kind: "pitched";
-      phrase: number;
+      loop: number;
       phraseId: PhraseId | undefined;
       lengthTicks: Tick;
-      events: PitchedBar["events"];
+      events: PitchedLoop["events"];
     };
 
 /**
@@ -660,11 +659,11 @@ type AutoCacheEntry =
 function pickActivePhraseId(
   phrases: ReadonlyArray<{ id: PhraseId }>,
   seed: number,
-  bar: number,
-  macroPeriodBars: number,
+  loop: number,
+  macroPeriodLoops: number,
 ): PhraseId | undefined {
   if (phrases.length === 0) return undefined;
-  const idx = pickAutoPhraseIndex(seed, bar, macroPeriodBars, phrases.length);
+  const idx = pickAutoPhraseIndex(seed, loop, macroPeriodLoops, phrases.length);
   return phrases[idx]?.id;
 }
 

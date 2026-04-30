@@ -179,9 +179,9 @@ function makeTrackApi(engine: Engine): TrackApi {
       engine.tracksChanged.on(handler),
     getActivePhraseId: (ref: TrackRef) => engine.getActiveAutoPhraseId(ref),
     subscribeActivePhrase: (ref: TrackRef, handler: () => void): (() => void) => {
-      // Fire on live phrase boundary crossings filtered to this track,
-      // plus on track-config and transport changes since both shift the
-      // derived value `getActivePhraseId` returns.
+      // Fire on live active-phrase changes filtered to this track, plus on
+      // track-config and transport changes since both shift the derived
+      // value `getActivePhraseId` returns.
       const offPhrase = engine.activePhraseChanged.on((e) => {
         const target = engine.resolveTrack(ref);
         if (target && e.trackId === target.id) handler();

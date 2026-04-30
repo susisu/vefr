@@ -782,7 +782,7 @@ button.pad-mute.is-muted {
   border-left-color: #2a2a2a;
 }
 
-/* Stronger divider at the bar / half-phrase boundary. */
+/* Stronger divider at the half-loop bar boundary. */
 .drum-row .step:nth-child(18),
 .pitched-row .step:nth-child(18),
 .auto-preview-row .step:nth-child(18) {

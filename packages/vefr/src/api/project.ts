@@ -50,7 +50,7 @@ export type PhraseResolver = (id: PhraseId) => boolean;
 
 /** A positive integer. */
 export const PositiveInteger = v.pipe(v.number(), v.integer(), v.minValue(1));
-/** A non-negative integer (used for ticks, period bars, etc.). */
+/** A non-negative integer (used for ticks, period loops, etc.). */
 export const NonNegativeInteger = v.pipe(v.number(), v.integer(), v.minValue(0));
 /** Velocity / volume / etc. — a normalized 0..1. */
 export const NormalizedNumber = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
@@ -137,8 +137,8 @@ export function patternSchema<P>(payload: v.GenericSchema<P>): v.GenericSchema<P
 
 /** Schema for {@link AutoParams}. Periods of 0 mean "infinity" (slot frozen at 0). */
 export const AutoParamsSchema = v.object({
-  microPeriodBars: NonNegativeInteger,
-  macroPeriodBars: NonNegativeInteger,
+  microPeriodLoops: NonNegativeInteger,
+  macroPeriodLoops: NonNegativeInteger,
 });
 
 /** Fields shared by every track. */

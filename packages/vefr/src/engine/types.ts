@@ -113,23 +113,25 @@ export type Pattern<T> = {
 };
 
 /**
- * Tunables for an auto track. Two periods drive the entire variation model:
+ * Tunables for an auto track. Two periods drive the entire variation model,
+ * both measured in loops (one loop = one phrase template repeat):
  *
- * - `microPeriodBars`: how often the per-event variation re-rolls (drum/bass
- *   drop pattern, melody walk + ghost insertions). Within one micro slot
- *   the same variation seed applies, so phrase repeats sound identical.
+ * - `microPeriodLoops`: how many loops between per-event variation re-rolls
+ *   (drum/bass drop pattern, melody walk + ghost insertions). Within one
+ *   micro slot the same variation seed applies, so loop repeats sound
+ *   identical.
  *
- * - `macroPeriodBars`: how often the rotation slot advances and a new
- *   template is picked from `phraseIds`.
+ * - `macroPeriodLoops`: how many loops between rotation-slot advances. Each
+ *   advance picks a new template from `phraseIds`.
  *
  * Either field set to `0` means "infinity" — the slot stays at 0 forever.
- * (Use macroPeriodBars=0 to lock onto a single phrase.)
+ * (Use macroPeriodLoops=0 to lock onto a single phrase.)
  *
  * Variation strengths are baked into the generator and are not user-tunable.
  */
 export type AutoParams = {
-  microPeriodBars: number;
-  macroPeriodBars: number;
+  microPeriodLoops: number;
+  macroPeriodLoops: number;
 };
 
 /** Fields common to every track. */

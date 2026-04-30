@@ -163,7 +163,7 @@ describe("Engine", () => {
       source: "auto",
       phraseIds: [phrase.id],
       seed: 0,
-      params: { microPeriodBars: 0, macroPeriodBars: 0 },
+      params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
     };
     const initial: EngineInitial = {
       transport: {
@@ -209,7 +209,7 @@ describe("Engine", () => {
       source: "auto",
       phraseIds: [phrase.id],
       seed: 0,
-      params: { microPeriodBars: 0, macroPeriodBars: 0 },
+      params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
     };
     const initial: EngineInitial = {
       transport: {
