@@ -1196,12 +1196,18 @@ details[open] > .auto-phrases-summary::before {
 /* Import / Export sit side by side beneath the brand. A fixed-width status
  * slot sits between the two buttons; it always reserves space for the warning
  * icon so that the row's width doesn't shift when an import error appears or
- * clears. */
+ * clears. The row sits inside an LCD-style inset (matching `.grid-frame`) so
+ * the actions read as if displayed on the chassis' readout surface. */
 .brand-actions {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
+  padding: 0.25rem 0.55rem;
+  background: #060606;
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 button.brand-action {
