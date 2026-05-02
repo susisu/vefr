@@ -1,11 +1,16 @@
-import { INSTRUMENT_IDS, type InstrumentId } from "./sound-port.js";
+import {
+  DRUM_KIT_IDS,
+  INSTRUMENT_IDS,
+  type DrumKitId,
+  type InstrumentId,
+} from "./sound-port.js";
 
 /**
- * Re-exports of the engine's instrument ids so UI / API consumers (which
- * are forbidden from importing `engine/sound-port` directly) can reach
- * the value-level list and the type without going through the port.
+ * Re-exports of the engine's instrument / kit ids so UI / API consumers
+ * (which are forbidden from importing `engine/sound-port` directly) can
+ * reach the value-level lists and types without going through the port.
  */
-export { INSTRUMENT_IDS, type InstrumentId };
+export { DRUM_KIT_IDS, INSTRUMENT_IDS, type DrumKitId, type InstrumentId };
 
 /** Resolution of the internal time grid: 96 ticks per quarter note (PPQN 96). */
 export const TICKS_PER_BEAT = 96;
@@ -189,6 +194,12 @@ type AutoSource = {
 export type DrumTrack = TrackBase & {
   kind: "drum";
   /**
+   * Drum-kit timbre selected at the {@link SoundOutput} boundary. Parallels
+   * `instrumentId` on {@link PitchedTrack} — independent of phrase content,
+   * so the same pattern can be voiced as `standard`, `lofi`, or `boom`.
+   */
+  kitId: DrumKitId;
+  /**
    * Pads silenced at dispatch time. Orthogonal to `mute` (which silences
    * the whole track): a pad listed here drops its hits even when the track
    * itself is unmuted, so the user can pull a single voice (e.g. hi-hat)
@@ -221,6 +232,13 @@ export type PitchedTrack = TrackBase & {
 export function defaultInstrumentForRole(role: PitchedRole): InstrumentId {
   return role === "bass" ? "bass" : "pluck";
 }
+
+/**
+ * Default drum kit used when a drum track is created without an explicit
+ * `kitId`. Kept as a named constant so factories and bootstrap code don't
+ * have to repeat the literal.
+ */
+export const DEFAULT_DRUM_KIT_ID: DrumKitId = "standard";
 
 /** Any track managed by the engine. */
 export type Track = DrumTrack | PitchedTrack;

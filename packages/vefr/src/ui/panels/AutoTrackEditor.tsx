@@ -16,6 +16,7 @@ import type { DrumTemplate, RhythmTemplate } from "../../phrases/types.js";
 import { Chip, DrumPadMuteToggle, Knob, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useActivePhraseId } from "../hooks.js";
+import { DrumKitSelect } from "./DrumKitSelect.js";
 import { InstrumentSelect } from "./InstrumentSelect.js";
 
 /** AutoParams fields that map to a numeric knob. */
@@ -103,7 +104,7 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
         </span>
         {track.kind === "pitched" ?
           <InstrumentSelect track={track} />
-        : null}
+        : <DrumKitSelect track={track} />}
       </div>
       <ActivePhrasePreview
         phrase={activePhrase}

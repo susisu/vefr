@@ -1,5 +1,6 @@
 import type { ControlApi, NewTrackInput } from "../../api/types.js";
 import {
+  DEFAULT_DRUM_KIT_ID,
   TICKS_PER_BEAT,
   defaultInstrumentForRole,
   type DrumHit,
@@ -60,6 +61,7 @@ export function buildNewTrackInput(api: ControlApi, choice: TrackKindChoice): Ne
       return {
         ...base,
         kind: "drum",
+        kitId: DEFAULT_DRUM_KIT_ID,
         mutedPads: [],
         source: "manual",
         pattern: emptyDrumPattern(),
@@ -68,6 +70,7 @@ export function buildNewTrackInput(api: ControlApi, choice: TrackKindChoice): Ne
     return {
       ...base,
       kind: "drum",
+      kitId: DEFAULT_DRUM_KIT_ID,
       mutedPads: [],
       source: "auto",
       phraseIds: [],

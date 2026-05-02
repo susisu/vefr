@@ -240,6 +240,7 @@ describe("batch verification — pattern + tempo + key landed atomically", () =>
     const addRes = api.track.add({
       name: "Drum 1",
       kind: "drum",
+      kitId: "standard",
       mutedPads: [],
       mute: false,
       volume: 0.8,

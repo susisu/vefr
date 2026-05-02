@@ -1,4 +1,4 @@
-import type { InstrumentId, SoundOutput } from "../engine/sound-port.js";
+import type { DrumKitId, InstrumentId, SoundOutput } from "../engine/sound-port.js";
 import type { DrumHit } from "../engine/types.js";
 
 /** Recorded `playDrum` invocation. */
@@ -6,6 +6,7 @@ export type RecordedDrum = {
   kind: "drum";
   time: number;
   hit: DrumHit;
+  kitId: DrumKitId;
   gain: number;
 };
 
@@ -39,8 +40,8 @@ export class RecordingSoundOutput implements SoundOutput {
   readonly events: RecordedEvent[] = [];
 
   /** Record a drum hit. */
-  playDrum(time: number, hit: DrumHit, gain: number): void {
-    this.events.push({ kind: "drum", time, hit, gain });
+  playDrum(time: number, hit: DrumHit, kitId: DrumKitId, gain: number): void {
+    this.events.push({ kind: "drum", time, hit, kitId, gain });
   }
 
   /** Record a pitched note. */

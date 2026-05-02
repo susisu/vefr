@@ -19,6 +19,7 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
     id: "drum-1",
     name: "Manual Drum 1",
     kind: "drum",
+    kitId: "standard",
     mutedPads: [],
     mute: false,
     volume: 1,
@@ -159,6 +160,7 @@ describe("Engine", () => {
       id: "auto-1",
       name: "Auto Drum",
       kind: "drum",
+      kitId: "standard",
       mutedPads: [],
       mute: false,
       volume: 1,
@@ -206,6 +208,7 @@ describe("Engine", () => {
       id: "auto-mute-1",
       name: "Auto Drum",
       kind: "drum",
+      kitId: "standard",
       mutedPads: ["closed-hat"],
       mute: false,
       volume: 1,
@@ -239,6 +242,7 @@ describe("Engine", () => {
     const created = engine.addTrack({
       name: "New Drum",
       kind: "drum",
+      kitId: "standard",
       mutedPads: [],
       mute: false,
       volume: 0.5,
@@ -257,6 +261,7 @@ describe("Engine", () => {
       engine.addTrack({
         name: "Manual Drum 1",
         kind: "drum",
+        kitId: "standard",
         mutedPads: [],
         mute: false,
         volume: 0.5,
@@ -278,6 +283,7 @@ describe("Engine", () => {
     const second = engine.addTrack({
       name: "Second",
       kind: "drum",
+      kitId: "standard",
       mutedPads: [],
       mute: false,
       volume: 1,

@@ -10,6 +10,7 @@ function makeProject(): Project {
     id: "d1",
     name: "Drum 1",
     kind: "drum",
+    kitId: "standard",
     mutedPads: [],
     mute: false,
     volume: 0.8,

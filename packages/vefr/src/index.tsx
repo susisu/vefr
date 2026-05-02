@@ -25,6 +25,7 @@ function defaultInitial(): EngineInitial {
     id: "track-default-auto-drum",
     name: "Auto Drum",
     kind: "drum",
+    kitId: "lofi",
     mutedPads: [],
     mute: false,
     volume: 0.8,

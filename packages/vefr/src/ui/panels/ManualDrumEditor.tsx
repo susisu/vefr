@@ -10,6 +10,7 @@ import {
 } from "../../engine/types.js";
 import { Chip, DrumPadMuteToggle, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
+import { DrumKitSelect } from "./DrumKitSelect.js";
 
 /** Number of steps shown in the drum grid: 32 sixteenth-notes spanning 2 bars. */
 const STEPS_PER_PHRASE = 32;
@@ -55,6 +56,7 @@ function ManualDrumEditorInner({
           </Chip>{" "}
           <Chip width={72}>MANUAL</Chip> {track.name}
         </span>
+        <DrumKitSelect track={track} />
       </div>
       <div className="grid-frame">
         <div className="grid-stack">

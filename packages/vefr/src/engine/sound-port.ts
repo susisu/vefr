@@ -55,14 +55,38 @@ export const INSTRUMENT_IDS = [
 ] as const satisfies readonly InstrumentId[];
 
 /**
+ * Built-in drum-kit identifiers selectable per drum track. Same hexagonal
+ * rationale as {@link InstrumentId}: symbolic so the id survives swapping
+ * the {@link SoundOutput} implementation. Values:
+ *
+ * - `standard`: the project's default modern kit — punchy sine kick, mid
+ *   snare with a triangle ring, bright HP-noise hats.
+ * - `lofi`: dampened lo-fi / chill-pop kit — softer kick with a low click,
+ *   band-passed mid snare, darker hats.
+ * - `boom`: heavy 808-style kit — deep sub kick with a long tail, crisp
+ *   noise-forward snare, slightly longer / brighter open hat.
+ */
+export type DrumKitId = "standard" | "lofi" | "boom";
+
+/**
+ * The full set of built-in {@link DrumKitId}s, in canonical UI order.
+ * Mirrors {@link INSTRUMENT_IDS}: re-exported through `src/engine/types.ts`
+ * so UI code can use it without breaching the engine-import boundary.
+ */
+export const DRUM_KIT_IDS = ["standard", "lofi", "boom"] as const satisfies readonly DrumKitId[];
+
+/**
  * The Engine's port to actual sound generation. Implementations are an
  * adapter — the Engine never knows whether it's WebAudio, MIDI, or a mock.
  * Hexagonal: this interface lives with the Engine, the WebAudio impl
  * lives in `src/sound/webaudio.ts`.
  */
 export interface SoundOutput {
-  /** Trigger a drum hit at absolute audio time `time`. `gain` is post-velocity. */
-  playDrum(time: number, hit: DrumHit, gain: number): void;
+  /**
+   * Trigger a drum hit at absolute audio time `time` using the per-track
+   * kit selected by `kitId`. `gain` is post-velocity.
+   */
+  playDrum(time: number, hit: DrumHit, kitId: DrumKitId, gain: number): void;
   /**
    * Play a pitched note (monophonic per voice) starting at audio time
    * `time` using the timbre selected by `instrumentId`.

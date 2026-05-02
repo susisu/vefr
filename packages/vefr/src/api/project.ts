@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { INSTRUMENT_IDS } from "../engine/sound-port.js";
+import { DRUM_KIT_IDS, INSTRUMENT_IDS } from "../engine/sound-port.js";
 import { TRACK_COLOR_IDS } from "../engine/types.js";
 import type {
   DrumHit,
@@ -101,6 +101,9 @@ export const PitchedRoleSchema = v.picklist(["melody", "bass"]);
 /** Built-in instrument id picklist; mirrors `INSTRUMENT_IDS` from the engine. */
 export const InstrumentIdSchema = v.picklist(INSTRUMENT_IDS);
 
+/** Built-in drum-kit id picklist; mirrors `DRUM_KIT_IDS` from the engine. */
+export const DrumKitIdSchema = v.picklist(DRUM_KIT_IDS);
+
 /** Per-track decorative LED color id; mirrors `TRACK_COLOR_IDS` from the engine. */
 export const TrackColorIdSchema = v.picklist(TRACK_COLOR_IDS);
 
@@ -167,6 +170,7 @@ const AutoTrackBaseShape = {
 export const DrumManualSchema = v.object({
   ...TrackBaseShape,
   kind: v.literal("drum"),
+  kitId: DrumKitIdSchema,
   mutedPads: v.array(DrumPadSchema),
   source: v.literal("manual"),
   pattern: patternSchema<DrumHit>(DrumHitSchema),
@@ -176,6 +180,7 @@ export const DrumManualSchema = v.object({
 export const DrumAutoSchema = v.object({
   ...AutoTrackBaseShape,
   kind: v.literal("drum"),
+  kitId: DrumKitIdSchema,
   mutedPads: v.array(DrumPadSchema),
 });
 
