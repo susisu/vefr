@@ -13,6 +13,9 @@ import type { DrumHit } from "./types.js";
  * - `bell`: bright sparkle with a long ring.
  * - `keys`: softer-bodied pluck, electric-piano-ish.
  * - `sub`: pure-sine deep bass; cleaner alternative to `bass`.
+ * - `acid`: resonant saw bass with a squelchy LPF (TB-303-ish character).
+ * - `pick`: bright triangle bass — picked / fingered low-mid feel.
+ * - `growl`: low-cutoff saw bass with a longer decay; snarling sustain.
  * - `chip`: bright square pluck reminiscent of NES Square2.
  * - `stab`: punchy short accent — sharp attack, very fast decay.
  */
@@ -24,6 +27,9 @@ export type InstrumentId =
   | "bell"
   | "keys"
   | "sub"
+  | "acid"
+  | "pick"
+  | "growl"
   | "chip"
   | "stab";
 
@@ -41,6 +47,9 @@ export const INSTRUMENT_IDS = [
   "bell",
   "keys",
   "sub",
+  "acid",
+  "pick",
+  "growl",
   "chip",
   "stab",
 ] as const satisfies readonly InstrumentId[];

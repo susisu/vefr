@@ -19,6 +19,9 @@ const INSTRUMENT_LABELS: Record<InstrumentId, string> = {
   bell: "BELL",
   keys: "KEYS",
   sub: "SUB",
+  acid: "ACID",
+  pick: "PICK",
+  growl: "GROWL",
   chip: "CHIP",
   stab: "STAB",
 };

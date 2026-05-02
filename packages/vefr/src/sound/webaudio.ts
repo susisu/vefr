@@ -37,6 +37,9 @@ const INSTRUMENT_PATCHES: Record<InstrumentId, WebAudioPatch> = {
   bell: { oscType: "sine", filterFreq: 4000, filterQ: 0.5, decay: 0.6 },
   keys: { oscType: "triangle", filterFreq: 1400, filterQ: 0.5, decay: 0.2 },
   sub: { oscType: "sine", filterFreq: 200, filterQ: 1, decay: 0.25 },
+  acid: { oscType: "sawtooth", filterFreq: 600, filterQ: 8, decay: 0.2 },
+  pick: { oscType: "triangle", filterFreq: 1100, filterQ: 2, decay: 0.12 },
+  growl: { oscType: "sawtooth", filterFreq: 380, filterQ: 4, decay: 0.28 },
   chip: { oscType: "square", filterFreq: 4000, filterQ: 0.5, decay: 0.1 },
   stab: { oscType: "sawtooth", filterFreq: 2500, filterQ: 5, decay: 0.06 },
 };
