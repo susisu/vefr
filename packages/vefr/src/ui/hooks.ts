@@ -7,7 +7,7 @@ import {
   type TrackRef,
   type TransportState,
 } from "../engine/types.js";
-import { useControlApi } from "./context.js";
+import { useControlApi, useRelay } from "./context.js";
 
 /**
  * Subscribe to transport-state updates from the {@link ControlApi}.
@@ -54,6 +54,22 @@ export function useActivePhraseId(ref: TrackRef): PhraseId | undefined {
 export function usePlayheadStep(): number | undefined {
   const api = useControlApi();
   return useSyncExternalStore(api.transport.onPlayheadStepChange, api.transport.getPlayheadStep);
+}
+
+/**
+ * Subscribe to the relay WebSocket connection state. Returns `null` when the
+ * relay client is not present (static builds without `VITE_RELAY_ENABLED`),
+ * `true` while the socket is open, `false` while disconnected / reconnecting.
+ * Callers render the indicator only when the result is non-null.
+ */
+export function useRelayConnected(): boolean | null {
+  const handle = useRelay();
+  const subscribe = useCallback(
+    (cb: () => void): (() => void) => handle?.onConnectedChange(cb) ?? ((): void => undefined),
+    [handle],
+  );
+  const getSnapshot = useCallback((): boolean | null => handle?.getConnected() ?? null, [handle]);
+  return useSyncExternalStore(subscribe, getSnapshot);
 }
 
 /**

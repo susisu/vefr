@@ -1234,6 +1234,45 @@ button.brand-action:active {
   color: var(--fg);
 }
 
+/* Relay-WebSocket connection indicator. Sits at the leading edge of the LCD
+ * readout when (and only when) the relay client is present at runtime — i.e.
+ * builds with `VITE_RELAY_ENABLED`. The little LED inherits the chassis
+ * accent so it reads consistently with other indicators on the panel; the
+ * "WS" label is rendered in the same letterpress mono as the action buttons
+ * so the row's typographic rhythm stays uniform. */
+.brand-relay-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding-right: 0.45rem;
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition:
+    color 80ms ease,
+    text-shadow 80ms ease;
+}
+
+/* When the relay is connected the LED lights up; the "WS" label tracks it
+ * by shifting to the chassis accent and picking up a soft halo so the LED
+ * and label read as one lit unit. The halo echoes the LED's box-shadow. */
+.brand-relay-status.is-connected {
+  color: var(--track-accent, var(--accent));
+  text-shadow: 0 0 4px var(--track-accent-glow, rgba(255, 255, 255, 0.45));
+}
+
+/* Slim vertical separator that delimits the WS status from the action row.
+ * Matches the LCD's inset rim so it reads as a section divider, not a stroke. */
+.brand-actions-divider {
+  display: inline-block;
+  width: 1px;
+  align-self: stretch;
+  margin: 0 0.5rem 0 0;
+  background: var(--inset-rim);
+}
+
 /* Fixed-width slot that sits between Import and Export. Always present in
  * the layout so the warning icon's appearance / disappearance never shifts
  * either button — the icon just fades in inside the slot when an import

@@ -11,6 +11,7 @@
  * WebSocket / timer constructors are injectable for tests; production
  * defaults to the browser globals.
  */
+import { Signal } from "../shared/signal.js";
 import {
   PROTOCOL_VERSION,
   parseWsFrame,
@@ -43,8 +44,22 @@ export type RelayClientOptions = {
   scheduler?: Scheduler;
 };
 
-/** Handle returned by {@link connectRelay}. Calling it tears the connection down for good. */
-export type RelayClientHandle = () => void;
+/**
+ * Handle returned by {@link connectRelay}. Exposes the live connection state
+ * (so the UI can render an indicator) plus a disposer that closes the socket
+ * and aborts any pending reconnect for good.
+ */
+export type RelayClientHandle = {
+  /** Tear the connection down permanently and cancel any pending reconnect. */
+  dispose: () => void;
+  /** Snapshot of whether the WebSocket is currently open. */
+  getConnected: () => boolean;
+  /**
+   * Subscribe to connection-state transitions. Fires only on actual value
+   * changes (no duplicate emits). Returns a detach function.
+   */
+  onConnectedChange: (handler: (connected: boolean) => void) => () => void;
+};
 
 /** {@link Scheduler} backed by globalThis.setTimeout / clearTimeout. */
 const defaultScheduler: Scheduler = {
@@ -70,6 +85,15 @@ export function connectRelay(api: ControlApi, opts: RelayClientOptions): RelayCl
   let socket: WebSocket | null = null;
   let cancelReconnect: (() => void) | null = null;
   let backoff = initialDelay;
+  let connected = false;
+  const connectedSignal = new Signal<boolean>();
+
+  /** Update the cached connected flag, only emitting on actual transitions. */
+  const setConnected = (next: boolean): void => {
+    if (connected === next) return;
+    connected = next;
+    connectedSignal.emit(next);
+  };
 
   const open = (): void => {
     if (disposed) return;
@@ -80,12 +104,14 @@ export function connectRelay(api: ControlApi, opts: RelayClientOptions): RelayCl
       // Reset backoff after a successful connection so a long-up session
       // re-dials promptly when the relay later restarts.
       backoff = initialDelay;
+      setConnected(true);
     });
     ws.addEventListener("message", (ev) => {
       handleMessage(api, ws, ev.data);
     });
     ws.addEventListener("close", () => {
       socket = null;
+      setConnected(false);
       if (disposed) return;
       cancelReconnect = scheduler.schedule(open, backoff);
       backoff = Math.min(backoff * 2, maxDelay);
@@ -98,10 +124,14 @@ export function connectRelay(api: ControlApi, opts: RelayClientOptions): RelayCl
 
   open();
 
-  return () => {
-    disposed = true;
-    if (cancelReconnect !== null) cancelReconnect();
-    if (socket !== null) socket.close();
+  return {
+    dispose: () => {
+      disposed = true;
+      if (cancelReconnect !== null) cancelReconnect();
+      if (socket !== null) socket.close();
+    },
+    getConnected: () => connected,
+    onConnectedChange: (handler) => connectedSignal.on(handler),
   };
 }
 

@@ -7,8 +7,9 @@ import {
   type ReactElement,
 } from "react";
 import type { ImportError } from "../../api/project.js";
-import { Tooltip } from "../components/index.js";
+import { LED, Tooltip } from "../components/index.js";
 import { useControlApi } from "../context.js";
+import { useRelayConnected } from "../hooks.js";
 
 /** Filename used for project exports — namespaced and timestamped. */
 function exportFileName(): string {
@@ -26,6 +27,7 @@ function exportFileName(): string {
  */
 export function BrandPanel(): ReactElement {
   const api = useControlApi();
+  const relayConnected = useRelayConnected();
   const [errors, setErrors] = useState<ImportError[] | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -108,6 +110,18 @@ export function BrandPanel(): ReactElement {
         </a>
       </h1>
       <div className="brand-actions">
+        {relayConnected !== null ?
+          <>
+            <div
+              className={`brand-relay-status${relayConnected ? " is-connected" : ""}`}
+              aria-label={relayConnected ? "Relay connected" : "Relay disconnected"}
+            >
+              <LED on={relayConnected} size="sm" />
+              <span className="brand-relay-label">WS</span>
+            </div>
+            <span className="brand-actions-divider" aria-hidden />
+          </>
+        : null}
         <button type="button" className="brand-action" onClick={onImportClick}>
           Import
         </button>

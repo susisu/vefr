@@ -158,7 +158,7 @@ describe("connectRelay", () => {
 
   it("dispatches a req frame and replies with a res frame on the same socket", () => {
     const api = makeApi();
-    const dispose = connectRelay(api, { url: "ws://test/browser", WebSocket: FakeWs });
+    const handle = connectRelay(api, { url: "ws://test/browser", WebSocket: FakeWs });
     expect(FakeSocket.instances).toHaveLength(1);
     const socket = FakeSocket.instances[0];
     if (!socket) throw new Error("no socket");
@@ -187,7 +187,7 @@ describe("connectRelay", () => {
     expect(sent.results[0]?.ok).toBe(true);
     expect(api.transport.getState().bpm).toBe(144);
 
-    dispose();
+    handle.dispose();
   });
 
   it("ignores frames that fail validation rather than crashing the connection", () => {
@@ -231,6 +231,88 @@ describe("connectRelay", () => {
     second.close();
     expect(schedule).toHaveBeenCalledTimes(2);
     expect(schedule.mock.calls[1]?.[1]).toBe(200);
+  });
+
+  it("exposes connection state: false initially, true on open, false on close", () => {
+    const api = makeApi();
+    const handle = connectRelay(api, {
+      url: "ws://test/browser",
+      WebSocket: FakeWs,
+      scheduler: { schedule: () => () => undefined },
+    });
+
+    const events: boolean[] = [];
+    const detach = handle.onConnectedChange((c) => {
+      events.push(c);
+    });
+
+    expect(handle.getConnected()).toBe(false);
+    expect(events).toEqual([]);
+
+    const socket = FakeSocket.instances[0];
+    if (!socket) throw new Error("no socket");
+
+    socket.dispatchEvent(new Event("open"));
+    expect(handle.getConnected()).toBe(true);
+    expect(events).toEqual([true]);
+
+    socket.close();
+    expect(handle.getConnected()).toBe(false);
+    expect(events).toEqual([true, false]);
+
+    detach();
+    handle.dispose();
+  });
+
+  it("does not double-emit when the same connection state is reasserted", () => {
+    const api = makeApi();
+    const handle = connectRelay(api, {
+      url: "ws://test/browser",
+      WebSocket: FakeWs,
+      scheduler: { schedule: () => () => undefined },
+    });
+    const events: boolean[] = [];
+    handle.onConnectedChange((c) => {
+      events.push(c);
+    });
+
+    const socket = FakeSocket.instances[0];
+    if (!socket) throw new Error("no socket");
+
+    // Two opens in a row (defensive: real browsers won't do this, but the
+    // guard keeps the Signal stream clean for UI consumers either way).
+    socket.dispatchEvent(new Event("open"));
+    socket.dispatchEvent(new Event("open"));
+    expect(events).toEqual([true]);
+
+    handle.dispose();
+  });
+
+  it("flips to disconnected on dispose and never reschedules a reconnect", () => {
+    const schedule = vi.fn<Scheduler["schedule"]>().mockReturnValue(() => undefined);
+    const api = makeApi();
+    const handle = connectRelay(api, {
+      url: "ws://test/browser",
+      WebSocket: FakeWs,
+      scheduler: { schedule },
+    });
+    const socket = FakeSocket.instances[0];
+    if (!socket) throw new Error("no socket");
+    socket.dispatchEvent(new Event("open"));
+
+    const events: boolean[] = [];
+    handle.onConnectedChange((c) => {
+      events.push(c);
+    });
+
+    handle.dispose();
+    // dispose() closes the socket, which fires close → connected goes false.
+    expect(events).toEqual([false]);
+    expect(handle.getConnected()).toBe(false);
+    // Disposed handles must not schedule a reconnect.
+    expect(schedule).not.toHaveBeenCalled();
+    // No new socket spun up either.
+    expect(FakeSocket.instances).toHaveLength(1);
   });
 });
 

@@ -12,8 +12,9 @@ import { Engine, type EngineInitial } from "./engine/engine.js";
 import type { DrumTrack, PitchedTrack } from "./engine/types.js";
 import { defaultAutoParamsFor, getPhrase, phraseExists } from "./phrases/index.js";
 import { WebAudioSoundOutput } from "./sound/webaudio.js";
+import type { RelayClientHandle } from "./api/relay-client.js";
 import { App } from "./ui/App.js";
-import { ControlApiProvider } from "./ui/context.js";
+import { ControlApiProvider, RelayProvider } from "./ui/context.js";
 
 /**
  * Default engine state used on every fresh boot when no autosave is found.
@@ -115,9 +116,10 @@ async function bootstrap(): Promise<void> {
   // Optional relay connection. Gated by `VITE_RELAY_ENABLED` so static-deploy
   // builds drop the WS/relay-client code path entirely; the dynamic import
   // below is dead-code-eliminated when the env flag is unset at build time.
+  let relayHandle: RelayClientHandle | null = null;
   if (import.meta.env.VITE_RELAY_ENABLED === "true") {
     const { connectRelay } = await import("./api/relay-client.js");
-    connectRelay(api, {
+    relayHandle = connectRelay(api, {
       url: import.meta.env.VITE_RELAY_URL ?? "ws://127.0.0.1:8787/browser",
     });
   }
@@ -142,7 +144,9 @@ async function bootstrap(): Promise<void> {
   createRoot(container).render(
     <StrictMode>
       <ControlApiProvider api={api}>
-        <App />
+        <RelayProvider handle={relayHandle}>
+          <App />
+        </RelayProvider>
       </ControlApiProvider>
     </StrictMode>,
   );
