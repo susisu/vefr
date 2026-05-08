@@ -375,10 +375,7 @@ export class Engine {
       );
     }
     if (patch.kitId !== undefined && target.kind !== "drum") {
-      throw new TrackError(
-        `kitId is only valid on drum tracks: ${target.name}`,
-        "kind-mismatch",
-      );
+      throw new TrackError(`kitId is only valid on drum tracks: ${target.name}`, "kind-mismatch");
     }
     if (patch.mutedPads !== undefined && target.kind !== "drum") {
       throw new TrackError(

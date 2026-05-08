@@ -1,9 +1,4 @@
-import {
-  DRUM_KIT_IDS,
-  INSTRUMENT_IDS,
-  type DrumKitId,
-  type InstrumentId,
-} from "./sound-port.js";
+import { DRUM_KIT_IDS, INSTRUMENT_IDS, type DrumKitId, type InstrumentId } from "./sound-port.js";
 
 /**
  * Re-exports of the engine's instrument / kit ids so UI / API consumers
