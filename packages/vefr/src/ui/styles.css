@@ -64,13 +64,11 @@ main {
   border-right: 1px solid var(--panel-rim);
 }
 
-/* Top row: brand mark + Transport + Global share one horizontal band.
- * Brand and Transport stay at their natural widths on the left; Global grows
- * to absorb the slack — putting the slack on the brand's column instead
- * would leave a big empty space to its right and make the brand look
- * stranded. Flex (rather than grid) is used so a wide Global doesn't drag
- * Brand/Transport's tracks wider than their content when Global wraps to
- * its own row on narrow viewports. */
+/* Top row: Transport + Global share one horizontal band. Transport stays at
+ * its natural width on the left; Global grows to absorb the slack. Flex
+ * (rather than grid) is used so a wide Global doesn't drag Transport's track
+ * wider than its content when Global wraps to its own row on narrow
+ * viewports. */
 .top-row {
   display: flex;
   flex-wrap: wrap;
@@ -82,20 +80,19 @@ main {
   margin-bottom: 0;
   min-width: 0;
 }
-.top-row > :nth-child(3) {
+.top-row > :nth-child(2) {
   flex: 1 1 0;
 }
 
-/* Narrow viewports: Brand + Transport can no longer share a row with Global
- * without crushing the readouts, so Global drops onto its own full-width row
- * underneath. With Global gone from the first row, Brand absorbs the slack
- * so the row spans the full width and Transport stays packed to the right
- * of the brand mark. */
+/* Narrow viewports: Transport can no longer share a row with Global without
+ * crushing the readouts, so Global drops onto its own full-width row
+ * underneath. Transport then absorbs the first row's slack so the band still
+ * spans the chassis full width. */
 @media (max-width: 800px) {
   .top-row > :nth-child(1) {
     flex: 1 1 0;
   }
-  .top-row > :nth-child(3) {
+  .top-row > :nth-child(2) {
     flex-basis: 100%;
   }
 }
@@ -122,42 +119,35 @@ main {
   min-width: 0;
 }
 
-/* Brand mark stamped into the chassis. Letterpress-style depth: a bright
- * highlight below the glyphs + a darker shadow above traces the depression's
- * edges, so the letters read as cut into the surface. The base color is a
- * mid-grey for legibility — engraved illusion rides on the shadows, not on
- * the text being darker than the chassis. No frame; just the engraving.
- *
- * The brand lives inside `.brand-panel`, which is itself a chassis-mounted
- * column (no panel chrome) sharing the top row with Transport / Global. */
-h1.brand {
+/* Brand wordmark in the slim header. Plain capital letters in the chassis
+ * mono — the heavier letterpress treatment from the previous chassis-mounted
+ * brand panel is intentionally dropped now that the brand sits as a small
+ * label in a thin header rather than a focal feature. The fill is a soft
+ * silver-grey rather than the chassis text colour: pure white reads as
+ * emissive, but the brand is silk-screened printing on a non-emissive
+ * surface, so it should be slightly muted. */
+h1.app-header-brand {
   margin: 0;
-  padding: 0 0.4rem;
   font-family: var(--font-mono);
-  font-size: 1.6rem;
-  font-weight: 800;
-  letter-spacing: 0.45em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  /* Letterpress: glyph fill matches the chassis surface so the only
-   * thing the eye sees is the brighter highlight tracing the bottom edge
-   * of the depression and the soft shadow above it. */
-  color: var(--chassis);
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.3),
-    0 -1px 1px rgba(0, 0, 0, 0.85);
+  color: #b0b0b0;
   user-select: none;
   border: none;
+  align-self: center;
 }
 
-/* The brand mark doubles as a link to the repo. Inherit the letterpress
- * styling so the anchor is invisible — the cursor is the only affordance,
- * which keeps the chassis stamp reading as a stamp, not a hyperlink. */
-a.brand-link {
+/* The brand mark doubles as a link to the repo. Inherit the wordmark
+ * styling so the anchor is visually invisible — the cursor is the only
+ * affordance. */
+a.app-header-brand-link {
   color: inherit;
   text-decoration: none;
   outline: none;
 }
-a.brand-link:focus-visible {
+a.app-header-brand-link:focus-visible {
   outline: 1px solid var(--accent, #888);
   outline-offset: 2px;
 }
@@ -1177,148 +1167,136 @@ details[open] > .auto-phrases-summary::before {
   justify-content: center;
 }
 
-/* ===== Brand panel ====================================================== */
-
-/* Chassis-mounted column hosting the brand mark plus the subdued Project
- * actions. No panel chrome — the letterpress brand needs to sit directly on
- * the chassis surface for the engraved illusion to work. Vertically centred
- * inside the stretched top-row cell so the brand reads as the focal point
- * regardless of how tall Transport / Global grow. */
-.brand-panel {
+/* ===== App header ======================================================
+ *
+ * Slim chassis-width strip above the main panel grid. The strip itself is
+ * the raised hardware bezel: a top-to-bottom gradient pulls light onto the
+ * upper edge, a 1px inset highlight catches that edge, and an outset bottom
+ * shadow drops it onto the chassis below — together they read as a single
+ * piece of metal lifted off the chassis surface. Buttons hosted on this
+ * strip therefore have no chrome of their own; the surface around them is
+ * already raised, so adding box-shadow caps to each button would over-do it
+ * (and look kitsch). The strip stays visually continuous with the chassis
+ * box (same width, same side rims). */
+.app-header {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 0.7rem;
+  background: linear-gradient(180deg, #262626 0%, #141414 100%);
+  border-left: 1px solid var(--panel-rim);
+  border-right: 1px solid var(--panel-rim);
+  border-bottom: 1px solid #050505;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 1px 0 rgba(0, 0, 0, 0.55);
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  padding: 0.5rem;
+  align-items: stretch;
+  gap: 0.85rem;
+  min-height: 1.55rem;
 }
 
-/* Import / Export sit side by side beneath the brand. A fixed-width status
- * slot sits between the two buttons; it always reserves space for the warning
- * icon so that the row's width doesn't shift when an import error appears or
- * clears. The row sits inside an LCD-style inset (matching `.grid-frame`) so
- * the actions read as if displayed on the chassis' readout surface. */
-.brand-actions {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25rem 0.55rem;
-  background: #060606;
-  border: 1px solid var(--inset-rim);
-  border-radius: var(--radius);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-
-button.brand-action {
-  background: none;
-  border: none;
-  padding: 0.05rem 0.2rem;
-  color: var(--fg-faint);
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  cursor: pointer;
-  box-shadow: none;
-  transition: color 80ms ease;
-}
-button.brand-action:hover {
-  background: none;
-  border: none;
-  color: var(--fg);
-}
-button.brand-action:active {
-  background: none;
-  box-shadow: none;
-  color: var(--fg);
-}
-
-/* Relay-WebSocket connection indicator. Sits at the leading edge of the LCD
- * readout when (and only when) the relay client is present at runtime — i.e.
- * builds with `VITE_RELAY_ENABLED`. The little LED inherits the chassis
- * accent so it reads consistently with other indicators on the panel; the
- * "WS" label is rendered in the same letterpress mono as the action buttons
- * so the row's typographic rhythm stays uniform. */
-.brand-relay-status {
+/* WS indicator. LED + caption, sitting directly on the raised bezel — no
+ * LCD inset, no extra container chrome. Anchored close to the brand on the
+ * leading edge so it reads as part of the system-status zone, well away
+ * from the trailing-edge action buttons. The caption stays a static
+ * silk-screen label regardless of state — only the LED itself lights up,
+ * because emissive printed text on a non-LCD surface isn't a real thing. */
+.app-header-led {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding-right: 0.45rem;
-  color: var(--fg-faint);
+  gap: 0.45rem;
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.app-header-led-label {
+  line-height: 1;
+}
+
+/* Trailing-edge cluster: optional import-error indicator + Import/Export
+ * group. Pushed to the trailing edge so the brand and WS LED stay anchored
+ * on the leading edge regardless of the actions' total width. */
+.app-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+/* Import + Export segmented action group. Only left and right borders —
+ * the header strip's own top highlight + bottom shadow already act as the
+ * top/bottom edge of the buttons (they extend the full strip height), so
+ * adding a top/bottom border to the group would imply a non-existent
+ * 0-width gap between the group's frame and the strip's edge. Treating
+ * Import / Export as one unit also avoids the false visual pair of
+ * "WS + Import" vs "Export" that the previous spaced-out layout produced. */
+.header-button-group {
+  display: flex;
+  align-items: stretch;
+  border-left: 1px solid rgba(0, 0, 0, 0.6);
+  border-right: 1px solid rgba(0, 0, 0, 0.6);
+}
+
+/* Action button on the raised header surface. The button itself has no
+ * chrome of its own — no border, no fill, no drop shadow — because the
+ * group frame already provides the visible boundary. Hover lifts the
+ * surface tint; press sinks it via an inset shadow so the area reads as
+ * pushed into the bezel without the button moving. */
+button.header-button {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  box-shadow: none;
+  cursor: pointer;
   transition:
     color 80ms ease,
-    text-shadow 80ms ease;
+    background 80ms ease;
+}
+button.header-button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+}
+button.header-button:active {
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.55);
+  color: var(--fg);
+}
+button.header-button:focus-visible {
+  outline: 1px solid var(--accent-dim);
+  outline-offset: -3px;
 }
 
-/* When the relay is connected the LED lights up; the "WS" label tracks it
- * by shifting to the chassis accent and picking up a soft halo so the LED
- * and label read as one lit unit. The halo echoes the LED's box-shadow. */
-.brand-relay-status.is-connected {
-  color: var(--track-accent, var(--accent));
-  text-shadow: 0 0 4px var(--track-accent-glow, rgba(255, 255, 255, 0.45));
+/* Internal divider between adjacent items in the button group. Targets
+ * "every direct child after the first" rather than `button + button`
+ * because Import may be wrapped in a `<Tooltip>` anchor (a span) when an
+ * import error is present — so the second item is sometimes a span,
+ * sometimes a button. The `:not(:first-child)` pseudo-class also raises
+ * the rule's specificity so the button's own `border: none` declaration
+ * doesn't blanket-override this `border-left`. */
+.header-button-group > :not(:first-child) {
+  border-left: 1px solid rgba(0, 0, 0, 0.6);
 }
 
-/* Slim vertical separator that delimits the WS status from the action row.
- * Matches the LCD's inset rim so it reads as a section divider, not a stroke. */
-.brand-actions-divider {
-  display: inline-block;
-  width: 1px;
-  align-self: stretch;
-  margin: 0 0.5rem 0 0;
-  background: var(--inset-rim);
-}
-
-/* Fixed-width slot that sits between Import and Export. Always present in
- * the layout so the warning icon's appearance / disappearance never shifts
- * either button — the icon just fades in inside the slot when an import
- * fails. The asymmetric `margin-right` shifts the slot toward Import so the
- * icon reads as belonging to Import, not as a centred separator. */
-.brand-action-status {
-  width: 0.75rem;
-  height: 0.75rem;
-  margin-right: 0.4rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Inline warning badge that surfaces import errors next to the Import button.
- * A circled "!" in danger tone — clicking does nothing; hovering / focusing
- * opens the Tooltip with the full error list. The icon's footprint is fixed
- * regardless of error count so the brand row's geometry stays stable. */
-button.brand-error-icon {
-  background: none;
-  border: 1px solid var(--danger);
-  color: var(--danger);
-  border-radius: 50%;
-  width: 0.75rem;
-  height: 0.75rem;
-  padding: 0;
-  font-family: var(--font-mono);
-  font-size: 0.5rem;
-  font-weight: 700;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: help;
-  box-shadow: none;
-  letter-spacing: 0;
-  text-transform: none;
-  transition: background 80ms ease;
-}
-button.brand-error-icon:hover {
-  background: rgba(211, 59, 59, 0.12);
+/* Red LED variant for the Import button's import-error indicator. Scopes
+ * the chassis accent variables so the existing `.led.led-on` rule paints
+ * the lamp in danger tone without each consumer needing a bespoke rule.
+ * The rule is `&.led-on` (not just `&`) so an inert / off `led-danger`
+ * doesn't try to tint a dark socket. */
+.led-danger.led-on {
+  background: var(--danger);
   border-color: var(--danger);
-}
-button.brand-error-icon:active {
-  background: rgba(211, 59, 59, 0.18);
-  box-shadow: none;
+  box-shadow: 0 0 6px rgba(211, 59, 59, 0.55);
 }
 
 /* Body of the import-error tooltip — sits inside `.tooltip`, so the surrounding

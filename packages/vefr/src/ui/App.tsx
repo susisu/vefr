@@ -16,21 +16,23 @@ export function App(): ReactElement {
   const tracks = useTracks();
   useTrackMuteShortcuts();
   return (
-    <main>
-      <div className="top-row">
-        <BrandPanel />
-        <TransportPanel />
-        <GlobalPanel />
-      </div>
-      <TrackList />
-      <Panel title="Editors">
-        <div className="editor-grid">
-          {tracks.map((track) => (
-            <TrackEditor key={track.id} track={track} />
-          ))}
+    <>
+      <BrandPanel />
+      <main>
+        <div className="top-row">
+          <TransportPanel />
+          <GlobalPanel />
         </div>
-      </Panel>
-    </main>
+        <TrackList />
+        <Panel title="Editors">
+          <div className="editor-grid">
+            {tracks.map((track) => (
+              <TrackEditor key={track.id} track={track} />
+            ))}
+          </div>
+        </Panel>
+      </main>
+    </>
   );
 }
 

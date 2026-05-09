@@ -19,11 +19,18 @@ function exportFileName(): string {
 }
 
 /**
- * Chassis-mounted brand mark with subdued Import / Export controls underneath.
- * The brand is the visual focus; the project actions are infrequently used so
- * they sit small and quiet below the logo. Import errors surface as a small
- * warning icon next to Import — hovering it reveals the full error list in a
- * tooltip without disturbing the row's layout.
+ * Slim chassis-width header sitting above the main panel grid. The strip
+ * itself is the raised hardware bezel — buttons sit flush on its surface
+ * with only a hairline groove dividing Import from Export, so individual
+ * controls don't protrude. Layout zones, leading to trailing edge:
+ *   1. Brand wordmark (plain capital, no engraving).
+ *   2. WS LED status lamp (only when the relay client is present at runtime).
+ *   3. Import / Export segmented action group. Import has a small red LED
+ *      embedded in it that lights up when the most recent import failed;
+ *      hovering or focusing the button then opens a tooltip with the full
+ *      error list. The LED itself is always rendered (unlit by default) so
+ *      it reads as a fixed hardware affordance rather than appearing on
+ *      demand.
  */
 export function BrandPanel(): ReactElement {
   const api = useControlApi();
@@ -98,10 +105,10 @@ export function BrandPanel(): ReactElement {
   const hasErrors = errors !== undefined && errors.length > 0;
 
   return (
-    <div className="brand-panel">
-      <h1 className="brand">
+    <header className="app-header">
+      <h1 className="app-header-brand">
         <a
-          className="brand-link"
+          className="app-header-brand-link"
           href="https://github.com/susisu/vefr"
           target="_blank"
           rel="noreferrer noopener"
@@ -109,38 +116,38 @@ export function BrandPanel(): ReactElement {
           vefr
         </a>
       </h1>
-      <div className="brand-actions">
-        {relayConnected !== null ?
-          <>
-            <div
-              className={`brand-relay-status${relayConnected ? " is-connected" : ""}`}
-              aria-label={relayConnected ? "Relay connected" : "Relay disconnected"}
-            >
-              <LED on={relayConnected} size="sm" />
-              <span className="brand-relay-label">WS</span>
-            </div>
-            <span className="brand-actions-divider" aria-hidden />
-          </>
-        : null}
-        <button type="button" className="brand-action" onClick={onImportClick}>
-          Import
-        </button>
-        <div className="brand-action-status">
+      {relayConnected !== null ?
+        <div
+          className="app-header-led"
+          aria-label={relayConnected ? "Relay connected" : "Relay disconnected"}
+        >
+          <LED on={relayConnected} size="sm" />
+          <span className="app-header-led-label">WS</span>
+        </div>
+      : null}
+      <div className="app-header-actions">
+        <div className="header-button-group">
           {hasErrors ?
             <Tooltip content={<ImportErrors errors={errors} />} placement="bottom">
               <button
                 type="button"
-                className="brand-error-icon"
-                aria-label={`Import failed: ${errors.length} ${errors.length === 1 ? "error" : "errors"}`}
+                className="header-button"
+                onClick={onImportClick}
+                aria-label={`Import — ${errors.length} ${errors.length === 1 ? "error" : "errors"}`}
               >
-                !
+                <LED on={true} size="sm" tone="danger" />
+                Import
               </button>
             </Tooltip>
-          : null}
+          : <button type="button" className="header-button" onClick={onImportClick}>
+              <LED on={false} size="sm" tone="danger" />
+              Import
+            </button>
+          }
+          <button type="button" className="header-button" onClick={onExport}>
+            Export
+          </button>
         </div>
-        <button type="button" className="brand-action" onClick={onExport}>
-          Export
-        </button>
         <input
           ref={fileInputRef}
           type="file"
@@ -149,7 +156,7 @@ export function BrandPanel(): ReactElement {
           hidden
         />
       </div>
-    </div>
+    </header>
   );
 }
 
