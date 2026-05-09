@@ -3,7 +3,7 @@ import type { Track } from "../engine/types.js";
 import { Panel } from "./components/index.js";
 import { useTracks, useTrackMuteShortcuts } from "./hooks.js";
 import { AutoTrackEditor } from "./panels/AutoTrackEditor.js";
-import { BrandPanel } from "./panels/BrandPanel.js";
+import { AppHeader } from "./panels/AppHeader.js";
 import { GlobalPanel } from "./panels/GlobalPanel.js";
 import { ManualDrumEditor } from "./panels/ManualDrumEditor.js";
 import { ManualPitchedEditor } from "./panels/ManualPitchedEditor.js";
@@ -17,7 +17,7 @@ export function App(): ReactElement {
   useTrackMuteShortcuts();
   return (
     <>
-      <BrandPanel />
+      <AppHeader />
       <main>
         <div className="top-row">
           <TransportPanel />

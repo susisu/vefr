@@ -32,7 +32,7 @@ function exportFileName(): string {
  *      it reads as a fixed hardware affordance rather than appearing on
  *      demand.
  */
-export function BrandPanel(): ReactElement {
+export function AppHeader(): ReactElement {
   const api = useControlApi();
   const relayConnected = useRelayConnected();
   const [errors, setErrors] = useState<ImportError[] | undefined>(undefined);
@@ -50,7 +50,7 @@ export function BrandPanel(): ReactElement {
     URL.revokeObjectURL(url);
   };
 
-  /** Try to import a JSON-text payload; surfaces any parse errors via the warning icon. */
+  /** Try to import a JSON-text payload; surfaces any parse errors via the Import button's error LED. */
   const importText = useCallback(
     (text: string): void => {
       try {
