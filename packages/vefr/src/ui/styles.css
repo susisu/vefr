@@ -95,12 +95,11 @@ main {
 
 /* Narrow viewports: Transport can no longer share a row with Global without
  * crushing the readouts, so Global drops onto its own full-width row
- * underneath. Transport then absorbs the first row's slack so the band still
- * spans the chassis full width. */
-@media (max-width: 800px) {
-  .top-row > :nth-child(1) {
-    flex: 1 1 0;
-  }
+ * underneath. Transport keeps its natural content width — stretching it to
+ * fill the row leaves a large dead zone inside the panel that fights the
+ * hardware metaphor, so the chassis just shows bare basket-weave to its
+ * right instead. */
+@media (max-width: 767px) {
   .top-row > :nth-child(2) {
     flex-basis: 100%;
   }
