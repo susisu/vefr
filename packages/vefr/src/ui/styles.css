@@ -126,7 +126,7 @@ main {
  * silver-grey rather than the chassis text colour: pure white reads as
  * emissive, but the brand is silk-screened printing on a non-emissive
  * surface, so it should be slightly muted. */
-h1.app-header-brand {
+h1.top-bezel-brand {
   margin: 0;
   font-family: var(--font-mono);
   font-size: 0.78rem;
@@ -142,12 +142,12 @@ h1.app-header-brand {
 /* The brand mark doubles as a link to the repo. Inherit the wordmark
  * styling so the anchor is visually invisible — the cursor is the only
  * affordance. */
-a.app-header-brand-link {
+a.top-bezel-brand-link {
   color: inherit;
   text-decoration: none;
   outline: none;
 }
-a.app-header-brand-link:focus-visible {
+a.top-bezel-brand-link:focus-visible {
   outline: 1px solid var(--accent, #888);
   outline-offset: 2px;
 }
@@ -1178,7 +1178,7 @@ details[open] > .auto-phrases-summary::before {
  * already raised, so adding box-shadow caps to each button would over-do it
  * (and look kitsch). The strip stays visually continuous with the chassis
  * box (same width, same side rims). */
-.app-header {
+.top-bezel {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 0.7rem;
@@ -1201,7 +1201,7 @@ details[open] > .auto-phrases-summary::before {
  * from the trailing-edge action buttons. The caption stays a static
  * silk-screen label regardless of state — only the LED itself lights up,
  * because emissive printed text on a non-LCD surface isn't a real thing. */
-.app-header-led {
+.top-bezel-led {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -1211,14 +1211,14 @@ details[open] > .auto-phrases-summary::before {
   text-transform: uppercase;
   color: var(--fg-faint);
 }
-.app-header-led-label {
+.top-bezel-led-label {
   line-height: 1;
 }
 
 /* Trailing-edge cluster: optional import-error indicator + Import/Export
  * group. Pushed to the trailing edge so the brand and WS LED stay anchored
  * on the leading edge regardless of the actions' total width. */
-.app-header-actions {
+.top-bezel-actions {
   margin-left: auto;
   display: flex;
   align-items: stretch;

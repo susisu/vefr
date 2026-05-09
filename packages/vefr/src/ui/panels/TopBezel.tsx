@@ -32,7 +32,7 @@ function exportFileName(): string {
  *      it reads as a fixed hardware affordance rather than appearing on
  *      demand.
  */
-export function AppHeader(): ReactElement {
+export function TopBezel(): ReactElement {
   const api = useControlApi();
   const relayConnected = useRelayConnected();
   const [errors, setErrors] = useState<ImportError[] | undefined>(undefined);
@@ -105,10 +105,10 @@ export function AppHeader(): ReactElement {
   const hasErrors = errors !== undefined && errors.length > 0;
 
   return (
-    <header className="app-header">
-      <h1 className="app-header-brand">
+    <header className="top-bezel">
+      <h1 className="top-bezel-brand">
         <a
-          className="app-header-brand-link"
+          className="top-bezel-brand-link"
           href="https://github.com/susisu/vefr"
           target="_blank"
           rel="noreferrer noopener"
@@ -118,14 +118,14 @@ export function AppHeader(): ReactElement {
       </h1>
       {relayConnected !== null ?
         <div
-          className="app-header-led"
+          className="top-bezel-led"
           aria-label={relayConnected ? "Relay connected" : "Relay disconnected"}
         >
           <LED on={relayConnected} size="sm" />
-          <span className="app-header-led-label">WS</span>
+          <span className="top-bezel-led-label">WS</span>
         </div>
       : null}
-      <div className="app-header-actions">
+      <div className="top-bezel-actions">
         <div className="header-button-group">
           {hasErrors ?
             <Tooltip content={<ImportErrors errors={errors} />} placement="bottom">
