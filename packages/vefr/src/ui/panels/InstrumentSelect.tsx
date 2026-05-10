@@ -12,18 +12,18 @@ import { useControlApi } from "../context.js";
  * {@link Chip} family the selector sits alongside in the editor header.
  */
 const INSTRUMENT_LABELS: Record<InstrumentId, string> = {
+  keys: "KEYS",
+  bell: "BELL",
   pluck: "PLUCK",
   bass: "BASS",
-  lead: "LEAD",
-  pad: "PAD",
-  bell: "BELL",
-  keys: "KEYS",
+  pick: "PICK",
   sub: "SUB",
   acid: "ACID",
-  pick: "PICK",
   growl: "GROWL",
+  lead: "LEAD",
   chip: "CHIP",
   stab: "STAB",
+  pad: "PAD",
 };
 
 /** Type guard for raw `<select>` values; rejects anything outside {@link INSTRUMENT_IDS}. */

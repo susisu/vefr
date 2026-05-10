@@ -4,54 +4,57 @@ import type { DrumHit } from "./types.js";
  * Built-in instrument identifiers selectable per pitched track.
  * Symbolic / character-oriented (not oscillator-shaped) so the same id
  * can be mapped to a WebAudio patch today and to a GM Program number
- * once a MIDI {@link SoundOutput} adapter ships. Values:
+ * once a MIDI {@link SoundOutput} adapter ships. Listed in canonical UI
+ * order, grouped by GM-style family (Keys / Mallet → Pluck → Bass →
+ * Lead → Pad). Values:
  *
+ * - `keys`: softer-bodied pluck, electric-piano-ish.
+ * - `bell`: bright sparkle with a long ring.
  * - `pluck`: short pluck (the default for "melody" role tracks).
  * - `bass`: low-register monophonic body (the default for "bass" role).
- * - `lead`: bright sustained lead.
- * - `pad`: soft sustained pad.
- * - `bell`: bright sparkle with a long ring.
- * - `keys`: softer-bodied pluck, electric-piano-ish.
+ * - `pick`: bright triangle bass — picked / fingered low-mid feel.
  * - `sub`: pure-sine deep bass; cleaner alternative to `bass`.
  * - `acid`: resonant saw bass with a squelchy LPF (TB-303-ish character).
- * - `pick`: bright triangle bass — picked / fingered low-mid feel.
  * - `growl`: low-cutoff saw bass with a longer decay; snarling sustain.
+ * - `lead`: bright sustained lead.
  * - `chip`: bright square pluck reminiscent of NES Square2.
  * - `stab`: punchy short accent — sharp attack, very fast decay.
+ * - `pad`: soft sustained pad.
  */
 export type InstrumentId =
+  | "keys"
+  | "bell"
   | "pluck"
   | "bass"
-  | "lead"
-  | "pad"
-  | "bell"
-  | "keys"
+  | "pick"
   | "sub"
   | "acid"
-  | "pick"
   | "growl"
+  | "lead"
   | "chip"
-  | "stab";
+  | "stab"
+  | "pad";
 
 /**
- * The full set of built-in {@link InstrumentId}s, in canonical UI order.
+ * The full set of built-in {@link InstrumentId}s, in canonical UI order
+ * (GM-style family grouping: Keys / Mallet → Pluck → Bass → Lead → Pad).
  * Re-exported through `src/engine/types.ts` so UI code (which is forbidden
  * from importing this port directly) has a value-level handle for
  * `<select>` options without breaching the import boundary.
  */
 export const INSTRUMENT_IDS = [
+  "keys",
+  "bell",
   "pluck",
   "bass",
-  "lead",
-  "pad",
-  "bell",
-  "keys",
+  "pick",
   "sub",
   "acid",
-  "pick",
   "growl",
+  "lead",
   "chip",
   "stab",
+  "pad",
 ] as const satisfies readonly InstrumentId[];
 
 /**
