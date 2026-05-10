@@ -11,13 +11,16 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "cmk && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "cmk && tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "test:dev": "vitest dev"
+    "test:dev": "vitest dev",
+    "generate": "cmk",
+    "generate:watch": "cmk --watch"
   },
   "devDependencies": {
+    "@css-modules-kit/codegen": "^1.1.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",

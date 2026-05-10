@@ -1,3 +1,6 @@
+# css-modules-kit generated d.ts output
+generated/
+
 # Logs
 logs
 *.log

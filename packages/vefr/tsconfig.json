@@ -1,8 +1,14 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "rootDirs": [".", "generated"],
+    "allowArbitraryExtensions": true,
     "jsx": "react-jsx",
     "lib": ["esnext", "dom", "dom.iterable"]
   },
-  "include": ["**/*"]
+  "include": ["**/*"],
+  "cmkOptions": {
+    "enabled": true,
+    "arbitraryExtensions": true
+  }
 }

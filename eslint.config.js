@@ -7,7 +7,7 @@ export default config(
     tsconfigRootDir: import.meta.dirname,
   },
   {
-    ignores: ["**/dist/**", "**/node_modules/**"],
+    ignores: ["**/dist/**", "**/generated/**", "**/node_modules/**"],
   },
   {
     languageOptions: {
