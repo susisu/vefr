@@ -1,0 +1,67 @@
+.controls {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+/* Each readout (Key, Scale) and its iconic Reroll button form a logical
+ * unit — group them so when the row wraps, the button stays attached to
+ * the readout it acts on instead of getting orphaned. */
+.readoutGroup {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0.3rem;
+}
+
+/*
+ * Native <select> styled as a Display: dark inset, accent-coloured value,
+ * small label sitting above. Replaces the previous Display + select pair so
+ * the value isn't shown twice.
+ */
+.readout {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--fg);
+}
+.readoutLabel {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.readoutControl {
+  background: var(--inset);
+  color: var(--fg);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  min-width: 100px;
+}
+
+/* Square icon button for "regenerate this value". Used next to Key / Scale
+ * readouts in Global. (The auto-track editor's own seed reroll has its own
+ * variant in `AutoTrackEditor.module.css` because it needs to match the
+ * surrounding input height there.) Reset letter-spacing / text-transform so
+ * the arrow glyph isn't shifted. */
+.rerollButton {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

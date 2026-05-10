@@ -13,6 +13,7 @@ import {
   type Placement,
 } from "@floating-ui/react";
 import { useState, type ReactElement, type ReactNode } from "react";
+import styles from "./Tooltip.module.css";
 
 /**
  * Hover / focus tooltip wrapping `@floating-ui/react`. Renders an inline
@@ -52,12 +53,17 @@ export function Tooltip({
 
   return (
     <>
-      <span ref={setReference} className="tooltip-anchor" {...getReferenceProps()}>
+      <span ref={setReference} className={styles.anchor} {...getReferenceProps()}>
         {children}
       </span>
       {open ?
         <FloatingPortal>
-          <div ref={setFloating} style={floatingStyles} className="tooltip" {...getFloatingProps()}>
+          <div
+            ref={setFloating}
+            style={floatingStyles}
+            className={styles.tooltip}
+            {...getFloatingProps()}
+          >
             {content}
           </div>
         </FloatingPortal>

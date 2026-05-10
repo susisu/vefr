@@ -9,6 +9,7 @@ import { ManualDrumEditor } from "./panels/ManualDrumEditor.js";
 import { ManualPitchedEditor } from "./panels/ManualPitchedEditor.js";
 import { TrackList } from "./panels/TrackList.js";
 import { TransportPanel } from "./panels/TransportPanel.js";
+import styles from "./App.module.css";
 import "./styles.css";
 
 /** Top-level UI: transport, global, project menu, track list, and per-track editors. */
@@ -19,13 +20,13 @@ export function App(): ReactElement {
     <>
       <TopBezel />
       <main>
-        <div className="top-row">
+        <div className={styles.topRow}>
           <TransportPanel />
           <GlobalPanel />
         </div>
         <TrackList />
         <Panel title="Editors">
-          <div className="editor-grid">
+          <div className={styles.editorGrid}>
             {tracks.map((track) => (
               <TrackEditor key={track.id} track={track} />
             ))}

@@ -1,0 +1,267 @@
+.editor {
+  margin-bottom: 0.5rem;
+  padding: 0.45rem;
+  background: var(--inset);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+}
+
+.header {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+.header > span:first-child {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.frame {
+  padding: 0.45rem 0.55rem;
+  background: #060606;
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.stack {
+  display: grid;
+  position: relative;
+  contain: paint;
+}
+.stack > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+/*
+ * Phrase selector is collapsed by default — once a track is configured it
+ * rarely gets re-edited, but the list is long enough that always-open
+ * dominates the editor visually.
+ */
+.phrasesCollapsible {
+  margin: 0.4rem 0;
+}
+.phrasesSummary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.45rem;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--panel-rim);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  list-style: none;
+}
+.phrasesSummary::-webkit-details-marker {
+  display: none;
+}
+/* Custom marker that flips when the disclosure opens — replaces the default
+ * triangle, which doesn't fit the chassis vibe. */
+.phrasesSummary::before {
+  content: "▸";
+  color: var(--fg-faint);
+  font-size: 0.7rem;
+  letter-spacing: 0;
+  transition: transform 100ms ease;
+}
+details[open] > .phrasesSummary::before {
+  transform: rotate(90deg);
+}
+.phrasesSummaryCount {
+  margin-left: auto;
+  color: var(--fg-faint);
+  letter-spacing: 0.1em;
+}
+
+.phrases {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.phraseGroup {
+  border: 1px solid var(--panel-rim);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.55rem 0.4rem;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.phraseGroup legend {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  padding: 0 0.3rem;
+}
+
+.phraseList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.7rem;
+}
+
+.phraseRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  color: var(--fg);
+  cursor: pointer;
+}
+
+/* Auto-track preview owns the spacing to its sibling (phrase list / params)
+ * — manual editors don't have anything below the grid, so this margin lives
+ * on `.preview` rather than on the shared `.frame`. */
+.preview {
+  margin-bottom: 0.5rem;
+}
+
+.previewEmpty {
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.previewName {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--track-accent, var(--accent));
+  margin-bottom: 0.35rem;
+}
+
+.previewGrid {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.previewRow {
+  display: grid;
+  grid-template-columns: 56px repeat(32, 1fr);
+  gap: 1px;
+  align-items: center;
+}
+
+/* Leading label cell for the rhythm preview's `?` glyph (pitched auto). The
+ * drum auto preview reuses `DrumPadMuteToggle` for its label cells, which
+ * carries its own typography. */
+.padLabel {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  padding-right: 0.4rem;
+}
+
+/* Read-only step cell. Shares its visual recipe with the manual-editor steps
+ * but the preview disables hover / pointer interaction. */
+.step {
+  background: #0a0a0a;
+  border: 1px solid #1d1d1d;
+  border-radius: 1px;
+  height: 18px;
+  padding: 0;
+  cursor: default;
+  pointer-events: none;
+  min-width: 0;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
+  transition: none;
+  contain: layout style paint;
+}
+
+.previewRow .step:nth-child(4n + 2) {
+  border-left-width: 2px;
+  border-left-color: #2a2a2a;
+}
+
+.previewRow .step:nth-child(18) {
+  border-left: 2px solid #404040;
+}
+
+.step.on {
+  background: var(--track-accent, var(--accent));
+  border-color: var(--track-accent, var(--accent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.params {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--panel-rim);
+}
+
+/* Layout-only: seedLabel + seedRow stack vertically. The label + control
+ * rhythm mirrors the readout-select pattern and the knob's label-above-control
+ * layout, so SEED reads as just another labeled control in the params row. */
+.seed {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+}
+/* Match the knob label tone — both sit in `.params` so a shared label
+ * aesthetic keeps the row coherent. */
+.seedLabel {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  line-height: 1;
+}
+.seedRow {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0.3rem;
+}
+.seed input {
+  width: 96px;
+}
+
+/* Square icon button for "regenerate the seed". Letter-spacing / text-transform
+ * are reset so the arrow glyph isn't shifted. The seed input is taller than
+ * the readouts the equivalent button sits next to in Global, so this variant
+ * stretches to match the input's height instead of the fixed 28x28 used there. */
+.rerollButton {
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  align-self: stretch;
+}

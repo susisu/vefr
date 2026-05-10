@@ -1,4 +1,6 @@
+import clsx from "clsx";
 import type { ReactElement } from "react";
+import styles from "./LED.module.css";
 
 /**
  * A small status LED. Glows when `on`, dim otherwise. The lit color is driven
@@ -18,6 +20,14 @@ export function LED({
   size?: "sm" | "md";
   tone?: "danger";
 }): ReactElement {
-  const cls = `led led-${size}${on ? " led-on" : ""}${tone ? ` led-${tone}` : ""}`;
-  return <span className={cls} />;
+  return (
+    <span
+      className={clsx(
+        styles.led,
+        size === "md" && styles.sizeMd,
+        on && styles.on,
+        tone === "danger" && styles.toneDanger,
+      )}
+    />
+  );
 }

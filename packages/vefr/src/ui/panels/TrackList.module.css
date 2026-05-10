@@ -1,0 +1,160 @@
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 14px 14px 1fr auto auto auto auto;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.2rem 0.35rem;
+  background: var(--inset);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  margin-bottom: 0.18rem;
+}
+
+.dragHandle {
+  background: transparent;
+  border: none;
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: 0;
+  cursor: grab;
+  letter-spacing: 0;
+}
+.dragHandle:active {
+  cursor: grabbing;
+}
+.dragHandle:hover {
+  color: var(--fg);
+  background: transparent;
+}
+
+.nameField {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.nameInput {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: var(--radius);
+  width: 100%;
+  min-width: 0;
+}
+.nameInput:hover {
+  border-color: var(--inset-rim);
+}
+.nameInput:focus {
+  outline: none;
+  border-color: var(--track-accent-dim, var(--accent-dim));
+  background: #0a0a0a;
+}
+.nameError {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--danger);
+}
+
+.kind {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+
+.mute {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: 1px solid var(--inset-rim);
+  padding: 0.2rem 0.45rem;
+  /* Fixed width so the row geometry doesn't shift between MUTE (4ch) and
+   * ON (2ch) — same reasoning as the Play button. */
+  width: 80px;
+  justify-content: center;
+  font-size: 0.66rem;
+}
+.mute.muted {
+  color: var(--fg-faint);
+  border-color: #2a2a2a;
+}
+
+.delete {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--fg-faint);
+  padding: 0.15rem 0.35rem;
+  font-size: 0.8rem;
+}
+.delete:hover {
+  color: var(--danger);
+  border-color: var(--danger-dim);
+  background: rgba(211, 59, 59, 0.05);
+}
+.deleteConfirm {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+.deleteConfirm button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.65rem;
+}
+
+.addRow {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px dashed var(--panel-rim);
+}
+
+/* Round, low-chrome button that displays the track's current color and cycles
+ * to the next palette entry on click. The colored disc inside derives from
+ * --track-accent, so wrapping the row in `.track-color-*` (the global palette
+ * utility) is enough to keep the swatch and the rest of the row in lockstep. */
+.colorButton {
+  background: transparent;
+  border: none;
+  padding: 0;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  letter-spacing: 0;
+  transition: none;
+}
+.colorButton:hover,
+.colorButton:active {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.colorButton:focus-visible {
+  outline: 1px solid var(--track-accent-dim, var(--accent-dim));
+  outline-offset: 1px;
+  border-radius: 50%;
+}
+.colorSwatch {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--track-accent, var(--accent));
+  border: 1px solid var(--track-accent-dim, var(--accent-dim));
+  box-shadow: 0 0 4px var(--track-accent-glow, rgba(255, 255, 255, 0.4));
+}

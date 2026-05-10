@@ -1,0 +1,17 @@
+.chip {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  background: #222;
+  border: 1px solid #303030;
+  color: var(--fg-dim);
+}
+.toneAccent {
+  background: var(--track-accent-tint, rgba(255, 255, 255, 0.06));
+  border-color: var(--track-accent-dim, var(--accent-dim));
+  color: var(--track-accent, var(--accent));
+}

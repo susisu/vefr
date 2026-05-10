@@ -1,5 +1,7 @@
+import clsx from "clsx";
 import type { CSSProperties, ReactElement } from "react";
 import { usePlayheadStep } from "../hooks.js";
+import styles from "./PlayheadOverlay.module.css";
 
 /**
  * Single column overlay that lights the live playhead step.
@@ -12,7 +14,7 @@ import { usePlayheadStep } from "../hooks.js";
  * the underlying step grid. This is the difference between cheap GPU
  * compositing and full main-thread re-rasterization on every 16th.
  *
- * Place inside a `.grid-stack` wrapper so it's stacked over the data grid.
+ * Place inside a stacked grid wrapper so it's stacked over the data grid.
  */
 export function PlayheadOverlay({
   totalSteps,
@@ -30,7 +32,7 @@ export function PlayheadOverlay({
   const step = usePlayheadStep();
   if (step === undefined) return null;
   const local = step % totalSteps;
-  // CSS does the math from --playhead-step. See styles.css `.playhead-cell`.
+  // CSS does the math from --playhead-step. See PlayheadOverlay.module.css.
   // CSS custom properties are not in React's CSSProperties type, so the
   // record carries an extra string key that the renderer forwards verbatim.
   const style: CSSProperties & Record<"--playhead-step", string> = {
@@ -38,11 +40,11 @@ export function PlayheadOverlay({
   };
   return (
     <div
-      className={`playhead-overlay ${hasLabelColumn ? "playhead-overlay-labeled" : ""}`}
+      className={clsx(styles.overlay, hasLabelColumn && styles.labeled)}
       style={style}
       aria-hidden
     >
-      <div className="playhead-cell" />
+      <div className={styles.cell} />
     </div>
   );
 }

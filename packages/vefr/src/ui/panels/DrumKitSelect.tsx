@@ -1,6 +1,7 @@
 import type { ChangeEvent, ReactElement } from "react";
 import { DRUM_KIT_IDS, refById, type DrumKitId, type DrumTrack } from "../../engine/types.js";
 import { useControlApi } from "../context.js";
+import styles from "./DrumKitSelect.module.css";
 
 /**
  * Display label for each {@link DrumKitId}. Uppercase to match the
@@ -35,7 +36,7 @@ export function DrumKitSelect({ track }: { track: DrumTrack }): ReactElement {
   };
 
   return (
-    <select className="chip-select" value={track.kitId} onChange={onChange} aria-label="Drum kit">
+    <select className={styles.select} value={track.kitId} onChange={onChange} aria-label="Drum kit">
       {DRUM_KIT_IDS.map((id) => (
         <option key={id} value={id}>
           {KIT_LABELS[id]}

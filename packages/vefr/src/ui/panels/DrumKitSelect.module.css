@@ -1,0 +1,28 @@
+/* Chip-shaped <select>; mirrors the InstrumentSelect variant deliberately —
+ * each panel keeps its own copy so the modules stay self-contained. */
+.select {
+  display: inline-block;
+  padding: 0.12rem 1rem 0.12rem 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  background: #222
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 5'><path fill='%23888' d='M0 0l4 5 4-5z'/></svg>")
+    no-repeat right 0.4rem center / 6px 4px;
+  border: 1px solid #303030;
+  color: var(--fg-dim);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.select:hover {
+  color: var(--fg);
+  border-color: #404040;
+}
+.select:focus-visible {
+  outline: none;
+  border-color: var(--track-accent-dim, var(--accent-dim));
+  color: var(--fg);
+}

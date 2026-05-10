@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import type { ChangeEvent, ReactElement } from "react";
 import {
   refById,
@@ -18,6 +19,7 @@ import { useControlApi } from "../context.js";
 import { useActivePhraseId } from "../hooks.js";
 import { DrumKitSelect } from "./DrumKitSelect.js";
 import { InstrumentSelect } from "./InstrumentSelect.js";
+import styles from "./AutoTrackEditor.module.css";
 
 /** AutoParams fields that map to a numeric knob. */
 type NumericParamKey = "microPeriodLoops" | "macroPeriodLoops";
@@ -94,8 +96,8 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
   const kindLabel = track.kind === "drum" ? "DRUM" : track.role.toUpperCase();
 
   return (
-    <div className={`editor track-color-${track.color}`}>
-      <div className="editor-header">
+    <div className={clsx(styles.editor, `track-color-${track.color}`)}>
+      <div className={styles.header}>
         <span>
           <Chip tone="accent" width={72}>
             {kindLabel}
@@ -110,20 +112,20 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
         phrase={activePhrase}
         drumTrack={track.kind === "drum" ? track : undefined}
       />
-      <details className="auto-phrases-collapsible">
-        <summary className="auto-phrases-summary">
-          <span className="auto-phrases-summary-label">Phrases</span>
-          <span className="auto-phrases-summary-count">
+      <details className={styles.phrasesCollapsible}>
+        <summary className={styles.phrasesSummary}>
+          <span>Phrases</span>
+          <span className={styles.phrasesSummaryCount}>
             {selected.size} / {phrases.length} selected
           </span>
         </summary>
-        <div className="auto-phrases">
+        <div className={styles.phrases}>
           {groups.map(({ category, items }) => (
-            <fieldset key={category} className="auto-phrase-group">
+            <fieldset key={category} className={styles.phraseGroup}>
               <legend>{category}</legend>
-              <div className="auto-phrase-list">
+              <div className={styles.phraseList}>
                 {items.map((p) => (
-                  <label key={p.id} className="auto-phrase-row">
+                  <label key={p.id} className={styles.phraseRow}>
                     <input
                       type="checkbox"
                       checked={selected.has(p.id)}
@@ -131,7 +133,7 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
                         togglePhrase(p.id);
                       }}
                     />
-                    <span className="auto-phrase-name">{p.name}</span>
+                    <span>{p.name}</span>
                   </label>
                 ))}
               </div>
@@ -139,7 +141,7 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
           ))}
         </div>
       </details>
-      <div className="auto-params">
+      <div className={styles.params}>
         {PARAM_SPECS.map((spec) => (
           <Knob
             key={spec.key}
@@ -155,13 +157,13 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
             size={48}
           />
         ))}
-        <label className="auto-seed">
-          <span className="auto-seed-label">Seed</span>
-          <span className="auto-seed-row">
+        <label className={styles.seed}>
+          <span className={styles.seedLabel}>Seed</span>
+          <span className={styles.seedRow}>
             <input type="number" value={track.seed} onChange={setSeed} step={1} />
             <button
               type="button"
-              className="reroll-button"
+              className={styles.rerollButton}
               title="Reroll phrase"
               aria-label="Reroll phrase"
               onClick={rerollPhrase}
@@ -211,12 +213,16 @@ function ActivePhrasePreview({
   drumTrack: DrumTrack | undefined;
 }): ReactElement {
   if (phrase === undefined) {
-    return <div className="auto-preview auto-preview-empty grid-frame">No phrase selected</div>;
+    return (
+      <div className={clsx(styles.preview, styles.previewEmpty, styles.frame)}>
+        No phrase selected
+      </div>
+    );
   }
   return (
-    <div className="auto-preview grid-frame">
-      <div className="auto-preview-name">{phrase.name}</div>
-      <div className="grid-stack">
+    <div className={clsx(styles.preview, styles.frame)}>
+      <div className={styles.previewName}>{phrase.name}</div>
+      <div className={styles.stack}>
         {phrase.kind === "drum" && drumTrack ?
           <DrumPreview template={phrase.template} track={drumTrack} />
         : phrase.kind === "pitched" ?
@@ -237,9 +243,9 @@ function ActivePhrasePreview({
  */
 function RhythmPreview({ template }: { template: RhythmTemplate }): ReactElement {
   return (
-    <div className="auto-preview-grid">
-      <div className="auto-preview-row">
-        <span className="pad-label">?</span>
+    <div className={styles.previewGrid}>
+      <div className={styles.previewRow}>
+        <span className={styles.padLabel}>?</span>
         {Array.from({ length: PREVIEW_STEPS }, (_, i) => (
           <PreviewCell key={i} velocity={template[i] ?? 0} />
         ))}
@@ -261,11 +267,11 @@ function DrumPreview({
   track: DrumTrack;
 }): ReactElement {
   return (
-    <div className="auto-preview-grid">
+    <div className={styles.previewGrid}>
       {PREVIEW_PAD_ORDER.map((pad) => {
         const row = template[pad];
         return (
-          <div key={pad} className="auto-preview-row">
+          <div key={pad} className={styles.previewRow}>
             <DrumPadMuteToggle track={track} pad={pad} />
             {Array.from({ length: PREVIEW_STEPS }, (_, i) => (
               <PreviewCell key={i} velocity={row?.[i] ?? 0} />
@@ -283,8 +289,7 @@ function DrumPreview({
  */
 function PreviewCell({ velocity }: { velocity: number }): ReactElement {
   const filled = velocity > 0;
-  const className = `step ${filled ? "on" : ""}`;
   // 0..1 velocity → 0.4..1 opacity. Empty cells stay flat (no opacity tweak).
   const style = filled ? { opacity: 0.4 + velocity * 0.6 } : undefined;
-  return <span className={className} style={style} />;
+  return <span className={clsx(styles.step, filled && styles.on)} style={style} />;
 }

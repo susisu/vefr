@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import {
   useCallback,
   useRef,
@@ -7,6 +8,7 @@ import {
   type ReactElement,
   type WheelEvent as ReactWheelEvent,
 } from "react";
+import styles from "./Knob.module.css";
 
 /** Constructor options for {@link Knob}. */
 export type KnobProps = {
@@ -158,10 +160,10 @@ export function Knob({
   const display = format !== undefined ? format(value) : String(value);
 
   return (
-    <div className={`knob ${dragging ? "knob-dragging" : ""}`}>
-      <span className="knob-label">{label}</span>
+    <div className={clsx(styles.knob, dragging && styles.dragging)}>
+      <span className={styles.label}>{label}</span>
       <svg
-        className="knob-svg"
+        className={styles.svg}
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
@@ -181,19 +183,19 @@ export function Knob({
         aria-valuenow={value}
         aria-valuetext={display}
       >
-        <circle cx={center} cy={center} r={r} className="knob-body" />
-        <circle cx={center} cy={center} r={r} className="knob-rim" />
-        <circle cx={center} cy={center} r={focusRingR} className="knob-focus-ring" />
+        <circle cx={center} cy={center} r={r} className={styles.body} />
+        <circle cx={center} cy={center} r={r} className={styles.rim} />
+        <circle cx={center} cy={center} r={focusRingR} className={styles.focusRing} />
         <line
           x1={center}
           y1={center}
           x2={center}
           y2={indicatorEnd}
-          className="knob-indicator"
+          className={styles.indicator}
           transform={`rotate(${angle} ${center} ${center})`}
         />
       </svg>
-      <span className="knob-value">{display}</span>
+      <span className={styles.value}>{display}</span>
     </div>
   );
 }

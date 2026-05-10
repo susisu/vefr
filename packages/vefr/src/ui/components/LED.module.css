@@ -1,0 +1,29 @@
+.led {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+.sizeMd {
+  width: 12px;
+  height: 12px;
+}
+.led.on {
+  background: var(--track-accent, var(--accent));
+  border-color: var(--track-accent, var(--accent));
+  box-shadow: 0 0 6px var(--track-accent-glow, rgba(255, 255, 255, 0.55));
+}
+
+/* Red LED variant for the Import button's import-error indicator. Scopes
+ * the chassis accent variables so the existing `.led.on` rule paints
+ * the lamp in danger tone without each consumer needing a bespoke rule.
+ * The rule is `&.on` (not just `&`) so an inert / off `toneDanger`
+ * doesn't try to tint a dark socket. */
+.toneDanger.on {
+  background: var(--danger);
+  border-color: var(--danger);
+  box-shadow: 0 0 6px rgba(211, 59, 59, 0.55);
+}

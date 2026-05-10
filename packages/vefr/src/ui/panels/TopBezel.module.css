@@ -1,0 +1,168 @@
+/*
+ * Slim chassis-width strip above the main panel grid. The strip itself is
+ * the raised hardware bezel: a top-to-bottom gradient pulls light onto the
+ * upper edge, a 1px inset highlight catches that edge, and an outset bottom
+ * shadow drops it onto the chassis below — together they read as a single
+ * piece of metal lifted off the chassis surface. Buttons hosted on this
+ * strip therefore have no chrome of their own; the surface around them is
+ * already raised, so adding box-shadow caps to each button would over-do it
+ * (and look kitsch). The strip stays visually continuous with the chassis
+ * box (same width, same side rims).
+ */
+.bezel {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 0.7rem;
+  background: linear-gradient(180deg, #262626 0%, #141414 100%);
+  border-left: 1px solid var(--panel-rim);
+  border-right: 1px solid var(--panel-rim);
+  border-bottom: 1px solid #050505;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 1px 0 rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: stretch;
+  gap: 0.85rem;
+  min-height: 1.55rem;
+}
+
+/* Brand wordmark in the slim header. Plain capital letters in the chassis
+ * mono — the heavier letterpress treatment from the previous chassis-mounted
+ * brand panel is intentionally dropped now that the brand sits as a small
+ * label in a thin header rather than a focal feature. The fill is a soft
+ * silver-grey rather than the chassis text colour: pure white reads as
+ * emissive, but the brand is silk-screened printing on a non-emissive
+ * surface, so it should be slightly muted. */
+.brand {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #b0b0b0;
+  user-select: none;
+  border: none;
+  align-self: center;
+}
+
+/* The brand mark doubles as a link to the repo. Inherit the wordmark
+ * styling so the anchor is visually invisible — the cursor is the only
+ * affordance. */
+.brandLink {
+  color: inherit;
+  text-decoration: none;
+  outline: none;
+}
+.brandLink:focus-visible {
+  outline: 1px solid var(--accent, #888);
+  outline-offset: 2px;
+}
+
+/* WS indicator. LED + caption, sitting directly on the raised bezel — no
+ * LCD inset, no extra container chrome. Anchored close to the brand on the
+ * leading edge so it reads as part of the system-status zone, well away
+ * from the trailing-edge action buttons. The caption stays a static
+ * silk-screen label regardless of state — only the LED itself lights up,
+ * because emissive printed text on a non-LCD surface isn't a real thing. */
+.led {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.ledLabel {
+  line-height: 1;
+}
+
+/* Trailing-edge cluster: optional import-error indicator + Import/Export
+ * group. Pushed to the trailing edge so the brand and WS LED stay anchored
+ * on the leading edge regardless of the actions' total width. */
+.actions {
+  margin-left: auto;
+  display: flex;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+/* Import + Export segmented action group. Only left and right borders —
+ * the header strip's own top highlight + bottom shadow already act as the
+ * top/bottom edge of the buttons (they extend the full strip height), so
+ * adding a top/bottom border to the group would imply a non-existent
+ * 0-width gap between the group's frame and the strip's edge. Treating
+ * Import / Export as one unit also avoids the false visual pair of
+ * "WS + Import" vs "Export" that the previous spaced-out layout produced. */
+.buttonGroup {
+  display: flex;
+  align-items: stretch;
+  border-left: 1px solid rgba(0, 0, 0, 0.6);
+  border-right: 1px solid rgba(0, 0, 0, 0.6);
+}
+
+/* Internal divider between adjacent items in the button group. Targets
+ * "every direct child after the first" rather than `button + button`
+ * because Import may be wrapped in a `<Tooltip>` anchor (a span) when an
+ * import error is present — so the second item is sometimes a span,
+ * sometimes a button. The `:not(:first-child)` pseudo-class also raises
+ * the rule's specificity so the button's own `border: none` declaration
+ * doesn't blanket-override this `border-left`. */
+.buttonGroup > :not(:first-child) {
+  border-left: 1px solid rgba(0, 0, 0, 0.6);
+}
+
+/* Action button on the raised header surface. The button itself has no
+ * chrome of its own — no border, no fill, no drop shadow — because the
+ * group frame already provides the visible boundary. Hover lifts the
+ * surface tint; press sinks it via an inset shadow so the area reads as
+ * pushed into the bezel without the button moving. */
+.button {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  box-shadow: none;
+  cursor: pointer;
+  transition:
+    color 80ms ease,
+    background 80ms ease;
+}
+.button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+}
+.button:active {
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.55);
+  color: var(--fg);
+}
+.button:focus-visible {
+  outline: 1px solid var(--accent-dim);
+  outline-offset: -3px;
+}
+
+/* Body of the import-error tooltip — sits inside `Tooltip`, so the surrounding
+ * panel chrome / background comes from there; this rule only handles typography
+ * and the inner list spacing. */
+.errors {
+  color: var(--fg);
+}
+.errors strong {
+  color: var(--danger);
+  font-weight: 700;
+}
+.errors ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+}

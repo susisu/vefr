@@ -7,9 +7,11 @@ import {
   type PatternEvent,
   type PitchedTrack,
 } from "../../engine/types.js";
+import clsx from "clsx";
 import { Chip, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { InstrumentSelect } from "./InstrumentSelect.js";
+import styles from "./ManualPitchedEditor.module.css";
 
 /** Number of steps shown in the pitched grid: 32 sixteenth-notes spanning 2 bars. */
 const STEPS_PER_PHRASE = 32;
@@ -69,8 +71,8 @@ function ManualPitchedEditorInner({
 
   const kindLabel = track.role.toUpperCase();
   return (
-    <div className={`editor track-color-${track.color}`}>
-      <div className="editor-header">
+    <div className={clsx(styles.editor, `track-color-${track.color}`)}>
+      <div className={styles.header}>
         <span>
           <Chip tone="accent" width={72}>
             {kindLabel}
@@ -79,12 +81,12 @@ function ManualPitchedEditorInner({
         </span>
         <InstrumentSelect track={track} />
       </div>
-      <div className="grid-frame">
-        <div className="grid-stack">
-          <div className="pitched-grid">
+      <div className={styles.frame}>
+        <div className={styles.stack}>
+          <div className={styles.grid}>
             {DEGREES.map((degree) => (
-              <div key={degree} className="pitched-row">
-                <span className="degree-label">{degree}</span>
+              <div key={degree} className={styles.row}>
+                <span className={styles.degreeLabel}>{degree}</span>
                 {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
                   const tick = i * STEP_TICKS;
                   const ev = pattern.events.find((e) => e.tick === tick);
@@ -93,7 +95,7 @@ function ManualPitchedEditorInner({
                     <button
                       key={i}
                       type="button"
-                      className={`step ${on ? "on" : ""}`}
+                      className={clsx(styles.step, on && styles.on)}
                       onClick={() => {
                         toggle(degree, i);
                       }}

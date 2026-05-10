@@ -1,0 +1,30 @@
+/* Clickable pad-label variant: doubles as a per-pad mute toggle. The pad
+ * label's typography is inlined here rather than composed from the editor's
+ * `.padLabel` rule so the toggle owns its full visual. Flips colour + adds a
+ * strikethrough when the pad is silenced so the unmuted state stays the
+ * visually neutral one. The button base — `transparent`, `border: none`,
+ * `padding: 0 0.4rem 0 0` — strips browser defaults so the cell renders at
+ * the same height as the surrounding `<span class={styles.padLabel}>` cells
+ * in each editor row. */
+.button {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  background: transparent;
+  border: none;
+  /* Match `.padLabel`'s right-padding for grid spacing; zero the rest so the
+   * cell height matches the original span. */
+  padding: 0 0.4rem 0 0;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+.button:hover {
+  color: var(--fg);
+}
+.button.muted {
+  color: #444;
+  text-decoration: line-through;
+}

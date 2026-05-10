@@ -1,4 +1,12 @@
+import clsx from "clsx";
 import type { ReactElement } from "react";
+import styles from "./Display.module.css";
+
+const SIZE_CLASS = {
+  sm: styles.sizeSm,
+  md: styles.sizeMd,
+  lg: styles.sizeLg,
+} as const;
 
 /**
  * A boxed monospace readout that mimics a hardware OLED / segment display.
@@ -20,11 +28,11 @@ export function Display({
   tone?: "default" | "accent";
 }): ReactElement {
   return (
-    <div className={`display display-${size} display-tone-${tone}`}>
+    <div className={clsx(styles.display, SIZE_CLASS[size], tone === "accent" && styles.toneAccent)}>
       {label !== undefined ?
-        <span className="display-label">{label}</span>
+        <span className={styles.label}>{label}</span>
       : null}
-      <span className="display-value">{value}</span>
+      <span className={styles.value}>{value}</span>
     </div>
   );
 }

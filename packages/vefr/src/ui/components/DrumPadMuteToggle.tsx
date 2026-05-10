@@ -1,13 +1,15 @@
+import clsx from "clsx";
 import type { ReactElement } from "react";
 import { refById, type DrumPad, type DrumTrack } from "../../engine/types.js";
 import { useControlApi } from "../context.js";
 import { drumPadLabel } from "../drumPadLabel.js";
+import styles from "./DrumPadMuteToggle.module.css";
 
 /**
  * Per-pad mute toggle. Renders the pad's short label as a button; clicking
  * flips whether the pad is in `track.mutedPads`. Visually dimmed +
  * strikethrough when the pad is currently silenced. Designed to drop into
- * the existing `.pad-label` grid cell, so it inherits the row's column
+ * the existing pad-label grid cell, so it inherits the row's column
  * geometry and alignment.
  */
 export function DrumPadMuteToggle({
@@ -29,7 +31,7 @@ export function DrumPadMuteToggle({
   return (
     <button
       type="button"
-      className={`pad-label pad-mute ${muted ? "is-muted" : ""}`}
+      className={clsx(styles.button, muted && styles.muted)}
       onClick={onClick}
       aria-pressed={muted}
       aria-label={muted ? `Unmute ${pad}` : `Mute ${pad}`}

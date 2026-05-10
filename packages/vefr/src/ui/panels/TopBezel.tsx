@@ -10,6 +10,7 @@ import type { ImportError } from "../../api/project.js";
 import { LED, Tooltip } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useRelayConnected } from "../hooks.js";
+import styles from "./TopBezel.module.css";
 
 /** Filename used for project exports — namespaced and timestamped. */
 function exportFileName(): string {
@@ -105,10 +106,10 @@ export function TopBezel(): ReactElement {
   const hasErrors = errors !== undefined && errors.length > 0;
 
   return (
-    <header className="top-bezel">
-      <h1 className="top-bezel-brand">
+    <header className={styles.bezel}>
+      <h1 className={styles.brand}>
         <a
-          className="top-bezel-brand-link"
+          className={styles.brandLink}
           href="https://github.com/susisu/vefr"
           target="_blank"
           rel="noreferrer noopener"
@@ -118,20 +119,20 @@ export function TopBezel(): ReactElement {
       </h1>
       {relayConnected !== null ?
         <div
-          className="top-bezel-led"
+          className={styles.led}
           aria-label={relayConnected ? "Relay connected" : "Relay disconnected"}
         >
           <LED on={relayConnected} size="sm" />
-          <span className="top-bezel-led-label">WS</span>
+          <span className={styles.ledLabel}>WS</span>
         </div>
       : null}
-      <div className="top-bezel-actions">
-        <div className="header-button-group">
+      <div className={styles.actions}>
+        <div className={styles.buttonGroup}>
           {hasErrors ?
             <Tooltip content={<ImportErrors errors={errors} />} placement="bottom">
               <button
                 type="button"
-                className="header-button"
+                className={styles.button}
                 onClick={onImportClick}
                 aria-label={`Import — ${errors.length} ${errors.length === 1 ? "error" : "errors"}`}
               >
@@ -139,12 +140,12 @@ export function TopBezel(): ReactElement {
                 Import
               </button>
             </Tooltip>
-          : <button type="button" className="header-button" onClick={onImportClick}>
+          : <button type="button" className={styles.button} onClick={onImportClick}>
               <LED on={false} size="sm" tone="danger" />
               Import
             </button>
           }
-          <button type="button" className="header-button" onClick={onExport}>
+          <button type="button" className={styles.button} onClick={onExport}>
             Export
           </button>
         </div>
@@ -163,7 +164,7 @@ export function TopBezel(): ReactElement {
 /** Render the list of import errors as the body of the warning tooltip. */
 function ImportErrors({ errors }: { errors: readonly ImportError[] }): ReactElement {
   return (
-    <div className="import-errors">
+    <div className={styles.errors}>
       <strong>Import failed:</strong>
       <ul>
         {errors.map((err, i) => (

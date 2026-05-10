@@ -3,6 +3,7 @@ import { asScaleId, KEY_NAMES, SCALE_IDS } from "../../shared/music.js";
 import { Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useGlobal } from "../hooks.js";
+import styles from "./GlobalPanel.module.css";
 
 /** Editor for the global musical context: key (0..11) and scale id. */
 export function GlobalPanel(): ReactElement {
@@ -25,8 +26,8 @@ export function GlobalPanel(): ReactElement {
 
   return (
     <Panel title="Global">
-      <div className="global-controls">
-        <div className="readout-group">
+      <div className={styles.controls}>
+        <div className={styles.readoutGroup}>
           <ReadoutSelect label="Key" value={String(global.key)} onChange={onKeyChange}>
             {KEY_NAMES.map((name, i) => (
               <option key={name} value={i}>
@@ -36,7 +37,7 @@ export function GlobalPanel(): ReactElement {
           </ReadoutSelect>
           <button
             type="button"
-            className="reroll-button"
+            className={styles.rerollButton}
             title="Reroll key"
             aria-label="Reroll key"
             onClick={() => {
@@ -46,7 +47,7 @@ export function GlobalPanel(): ReactElement {
             ↻
           </button>
         </div>
-        <div className="readout-group">
+        <div className={styles.readoutGroup}>
           <ReadoutSelect label="Scale" value={global.scale} onChange={onScaleChange}>
             {SCALE_IDS.map((id) => (
               <option key={id} value={id}>
@@ -56,7 +57,7 @@ export function GlobalPanel(): ReactElement {
           </ReadoutSelect>
           <button
             type="button"
-            className="reroll-button"
+            className={styles.rerollButton}
             title="Reroll scale"
             aria-label="Reroll scale"
             onClick={() => {
@@ -88,9 +89,9 @@ function ReadoutSelect({
   children: ReactElement | ReactElement[];
 }): ReactElement {
   return (
-    <label className="readout-select">
-      <span className="readout-select-label">{label}</span>
-      <select className="readout-select-control" value={value} onChange={onChange}>
+    <label className={styles.readout}>
+      <span className={styles.readoutLabel}>{label}</span>
+      <select className={styles.readoutControl} value={value} onChange={onChange}>
         {children}
       </select>
     </label>

@@ -1,4 +1,5 @@
 import type { ReactElement, ReactNode } from "react";
+import styles from "./Panel.module.css";
 
 /**
  * A bordered panel with a Polyend/MC-707-style header strip and inset body.
@@ -15,14 +16,14 @@ export function Panel({
   children: ReactNode;
 }): ReactElement {
   return (
-    <section className="panel">
-      <header className="panel-header">
-        <span className="panel-title">{title}</span>
+    <section className={styles.panel}>
+      <header className={styles.header}>
+        <span className={styles.title}>{title}</span>
         {meta !== undefined ?
-          <span className="panel-meta">{meta}</span>
+          <span className={styles.meta}>{meta}</span>
         : null}
       </header>
-      <div className="panel-body">{children}</div>
+      <div className={styles.body}>{children}</div>
     </section>
   );
 }

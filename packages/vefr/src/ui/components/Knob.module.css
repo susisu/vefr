@@ -1,0 +1,62 @@
+.knob {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  user-select: none;
+}
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  line-height: 1;
+}
+.svg {
+  cursor: ns-resize;
+  touch-action: none;
+}
+.svg:focus {
+  outline: none;
+}
+.body {
+  fill: url(#knob-gradient);
+  fill: radial-gradient(circle at 35% 30%, #303030, #141414 80%);
+}
+.rim {
+  fill: none;
+  stroke: #2c2c2c;
+  stroke-width: 1.5;
+}
+.indicator {
+  stroke: var(--track-accent, var(--accent));
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px var(--track-accent-glow, rgba(255, 255, 255, 0.4)));
+}
+.focusRing {
+  fill: none;
+  stroke: var(--track-accent, var(--accent));
+  stroke-width: 1.5;
+  opacity: 0;
+  pointer-events: none;
+}
+.svg:focus-visible .focusRing {
+  opacity: 1;
+}
+.value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.7rem;
+  color: var(--fg);
+  line-height: 1.1;
+}
+.dragging .indicator {
+  stroke-width: 2.5;
+}
+
+/* SVG circle without a real <radialGradient> definition uses a fallback color. */
+.body {
+  fill: #1f1f1f;
+}

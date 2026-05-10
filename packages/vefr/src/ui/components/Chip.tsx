@@ -1,4 +1,6 @@
+import clsx from "clsx";
 import type { CSSProperties, ReactElement, ReactNode } from "react";
+import styles from "./Chip.module.css";
 
 /**
  * Small uppercase pill — used to label track kind/source, etc.
@@ -23,7 +25,7 @@ export function Chip({
   const style: CSSProperties | undefined =
     width !== undefined ? { width: `${width}px`, textAlign: "center" } : undefined;
   return (
-    <span className={`chip chip-tone-${tone}`} style={style}>
+    <span className={clsx(styles.chip, tone === "accent" && styles.toneAccent)} style={style}>
       {children}
     </span>
   );

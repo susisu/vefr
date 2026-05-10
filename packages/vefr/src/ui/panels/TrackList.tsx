@@ -30,9 +30,11 @@ import {
   type Track,
   type TrackColorId,
 } from "../../engine/types.js";
+import clsx from "clsx";
 import { Chip, Knob, LED, Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useTracks } from "../hooks.js";
+import styles from "./TrackList.module.css";
 import { buildNewTrackInput, type TrackKindChoice } from "./trackFactory.js";
 
 /** Vertical list of tracks with per-track controls and drag-to-reorder. */
@@ -58,7 +60,7 @@ export function TrackList(): ReactElement {
     <Panel title="Tracks" meta={<>{tracks.length} CH</>}>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-          <ul className="track-list">
+          <ul className={styles.list}>
             {tracks.map((track) => (
               <SortableTrackRow key={track.id} track={track} />
             ))}
@@ -81,10 +83,10 @@ function SortableTrackRow({ track }: { track: Track }): ReactElement {
     opacity: isDragging ? 0.6 : undefined,
   };
   return (
-    <li ref={setNodeRef} style={style} className={`track-row track-color-${track.color}`}>
+    <li ref={setNodeRef} style={style} className={clsx(styles.row, `track-color-${track.color}`)}>
       <button
         type="button"
-        className="drag-handle"
+        className={styles.dragHandle}
         aria-label={`Drag ${track.name}`}
         {...attributes}
         {...listeners}
@@ -115,12 +117,12 @@ function TrackColorButton({ track }: { track: Track }): ReactElement {
   return (
     <button
       type="button"
-      className="track-color-button"
+      className={styles.colorButton}
       onClick={onClick}
       aria-label={label}
       title={label}
     >
-      <span className="track-color-swatch" />
+      <span className={styles.colorSwatch} />
     </button>
   );
 }
@@ -162,7 +164,7 @@ function TrackRowBody({ track }: { track: Track }): ReactElement {
   return (
     <>
       <RenameField track={track} />
-      <span className="track-kind">
+      <span className={styles.kind}>
         <Chip tone="accent" width={72}>
           {kindLabel}
         </Chip>{" "}
@@ -170,7 +172,7 @@ function TrackRowBody({ track }: { track: Track }): ReactElement {
       </span>
       <button
         type="button"
-        className={`track-mute ${track.mute ? "is-muted" : ""}`}
+        className={clsx(styles.mute, track.mute && styles.muted)}
         onClick={onMuteToggle}
         aria-label={track.mute ? `Unmute ${track.name}` : `Mute ${track.name}`}
         title={track.mute ? "Unmute" : "Mute"}
@@ -192,7 +194,7 @@ function TrackRowBody({ track }: { track: Track }): ReactElement {
         size={30}
       />
       {confirmingDelete ?
-        <span className="track-delete-confirm">
+        <span className={styles.deleteConfirm}>
           <button type="button" className="danger" onClick={onDeleteClick}>
             Confirm
           </button>
@@ -202,7 +204,7 @@ function TrackRowBody({ track }: { track: Track }): ReactElement {
         </span>
       : <button
           type="button"
-          className="track-delete"
+          className={styles.delete}
           aria-label={`Delete ${track.name}`}
           onClick={onDeleteClick}
         >
@@ -279,10 +281,10 @@ function RenameField({ track }: { track: Track }): ReactElement {
   };
 
   return (
-    <span className="track-name-field">
+    <span className={styles.nameField}>
       <input
         ref={inputRef}
-        className="track-name-input"
+        className={styles.nameInput}
         value={value}
         onChange={onChange}
         onBlur={onBlur}
@@ -290,7 +292,7 @@ function RenameField({ track }: { track: Track }): ReactElement {
         aria-label={`Rename ${track.name}`}
       />
       {error !== undefined ?
-        <span className="track-name-error">{error}</span>
+        <span className={styles.nameError}>{error}</span>
       : null}
     </span>
   );
@@ -355,7 +357,7 @@ function AddTrackRow(): ReactElement {
   };
 
   return (
-    <div className="track-add-row">
+    <div className={styles.addRow}>
       <select
         value={choice}
         onChange={(e) => {

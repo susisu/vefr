@@ -6,6 +6,7 @@ import {
   type PitchedTrack,
 } from "../../engine/types.js";
 import { useControlApi } from "../context.js";
+import styles from "./InstrumentSelect.module.css";
 
 /**
  * Display label for each {@link InstrumentId}. Uppercase to match the
@@ -50,7 +51,7 @@ export function InstrumentSelect({ track }: { track: PitchedTrack }): ReactEleme
 
   return (
     <select
-      className="chip-select"
+      className={styles.select}
       value={track.instrumentId}
       onChange={onChange}
       aria-label="Instrument"

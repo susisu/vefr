@@ -1,0 +1,53 @@
+/* Top row: Transport + Global share one horizontal band. Transport stays at
+ * its natural width on the left; Global grows to absorb the slack. Flex
+ * (rather than grid) is used so a wide Global doesn't drag Transport's track
+ * wider than its content when Global wraps to its own row on narrow
+ * viewports. */
+.topRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  align-items: stretch;
+}
+.topRow > * {
+  margin-bottom: 0;
+  min-width: 0;
+}
+.topRow > :nth-child(2) {
+  flex: 1 1 0;
+}
+
+/* Narrow viewports: Transport can no longer share a row with Global without
+ * crushing the readouts, so Global drops onto its own full-width row
+ * underneath. Transport keeps its natural content width — stretching it to
+ * fill the row leaves a large dead zone inside the panel that fights the
+ * hardware metaphor, so the chassis just shows bare basket-weave to its
+ * right instead. */
+@media (max-width: 767px) {
+  .topRow > :nth-child(2) {
+    flex-basis: 100%;
+  }
+}
+
+/* Editors laid out two per row on wide viewports; falls back to one column
+ * below the breakpoint where 32 step cells would get unreadably narrow. */
+.editorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+@media (max-width: 1100px) {
+  .editorGrid {
+    grid-template-columns: 1fr;
+  }
+}
+.editorGrid > * {
+  margin-bottom: 0;
+  /* Without `min-width: 0`, grid items default to `min-width: auto`, which
+   * sizes them to their min-content. A long track name in the header would
+   * then push the editor box wider than its `minmax(0, 1fr)` column. Forcing
+   * 0 lets the column clip so the header's own `text-overflow: ellipsis`
+   * actually kicks in. */
+  min-width: 0;
+}

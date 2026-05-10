@@ -1,0 +1,30 @@
+/* Overlay is a positioning context for the playhead cell. The cell moves via
+ * transform on a CSS variable updated per 16th note, and `will-change:
+ * transform` promotes it to its own compositor layer — so playhead movement
+ * is GPU-only and never re-rasterizes the underlying step cells (whose
+ * box-shadow glows would otherwise dominate paint cost). */
+.overlay {
+  position: relative;
+  pointer-events: none;
+  --label-w: 0px;
+  --gap: 1px;
+}
+.labeled {
+  --label-w: 56px;
+}
+.cell {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* Cell width matches one data-grid step: the 32 1fr cells share the
+   * remaining space after the label column and 33 inter-track gaps. */
+  width: calc((100% - var(--label-w) - 33 * var(--gap)) / 32);
+  /* Step 0 sits just past the label column + its gap. */
+  left: calc(var(--label-w) + var(--gap));
+  /* Each step shifts by one cell width plus one gap. `100%` here is relative
+   * to the cell's own width, so this resolves to the same delta. */
+  transform: translateX(calc(var(--playhead-step, 0) * (100% + var(--gap))));
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 2px solid rgba(255, 255, 255, 0.6);
+  will-change: transform;
+}

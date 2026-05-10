@@ -1,0 +1,104 @@
+.editor {
+  margin-bottom: 0.5rem;
+  padding: 0.45rem;
+  background: var(--inset);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+}
+
+.header {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+.header > span:first-child {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.frame {
+  padding: 0.45rem 0.55rem;
+  background: #060606;
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.stack {
+  display: grid;
+  position: relative;
+  contain: paint;
+}
+.stack > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.grid {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 56px repeat(32, 1fr);
+  gap: 1px;
+  align-items: center;
+}
+
+.degreeLabel {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  padding-right: 0.4rem;
+}
+
+/* Step cell — see ManualDrumEditor.module.css for the rationale (intentionally
+ * duplicated rather than shared, so each editor module is self-contained). */
+.step {
+  background: #0a0a0a;
+  border: 1px solid #1d1d1d;
+  border-radius: 1px;
+  height: 18px;
+  padding: 0;
+  cursor: pointer;
+  min-width: 0;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
+  transition: none;
+  contain: layout style paint;
+}
+
+.row .step:nth-child(4n + 2) {
+  border-left-width: 2px;
+  border-left-color: #2a2a2a;
+}
+
+.row .step:nth-child(18) {
+  border-left: 2px solid #404040;
+}
+
+.step.on {
+  background: var(--track-accent, var(--accent));
+  border-color: var(--track-accent, var(--accent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.step:hover {
+  background: #1c1c1c;
+}
+.step.on:hover {
+  background: var(--track-accent-glow, rgba(255, 255, 255, 0.55));
+}

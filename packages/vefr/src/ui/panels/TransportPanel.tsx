@@ -1,7 +1,9 @@
+import clsx from "clsx";
 import type { ReactElement } from "react";
 import { Knob, LED, Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useTransport } from "../hooks.js";
+import styles from "./TransportPanel.module.css";
 
 /** Play / stop transport with a tempo knob, all driven through ControlApi. */
 export function TransportPanel(): ReactElement {
@@ -38,16 +40,16 @@ export function TransportPanel(): ReactElement {
         </>
       }
     >
-      <div className="transport-controls">
-        <div className="transport-buttons">
+      <div className={styles.controls}>
+        <div className={styles.buttons}>
           <button
             type="button"
-            className={`transport-play ${transport.playing ? "is-playing" : ""}`}
+            className={clsx(styles.play, transport.playing && styles.playing)}
             onClick={onPlayPause}
           >
             {transport.playing ? "Pause" : "Play"}
           </button>
-          <button type="button" className="transport-stop" onClick={onStop}>
+          <button type="button" onClick={onStop}>
             Stop
           </button>
         </div>

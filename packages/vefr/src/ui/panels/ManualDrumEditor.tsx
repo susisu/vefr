@@ -8,9 +8,11 @@ import {
   type Pattern,
   type PatternEvent,
 } from "../../engine/types.js";
+import clsx from "clsx";
 import { Chip, DrumPadMuteToggle, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { DrumKitSelect } from "./DrumKitSelect.js";
+import styles from "./ManualDrumEditor.module.css";
 
 /** Number of steps shown in the drum grid: 32 sixteenth-notes spanning 2 bars. */
 const STEPS_PER_PHRASE = 32;
@@ -48,8 +50,8 @@ function ManualDrumEditorInner({
   };
 
   return (
-    <div className={`editor track-color-${track.color}`}>
-      <div className="editor-header">
+    <div className={clsx(styles.editor, `track-color-${track.color}`)}>
+      <div className={styles.header}>
         <span>
           <Chip tone="accent" width={72}>
             DRUM
@@ -58,11 +60,11 @@ function ManualDrumEditorInner({
         </span>
         <DrumKitSelect track={track} />
       </div>
-      <div className="grid-frame">
-        <div className="grid-stack">
-          <div className="drum-grid">
+      <div className={styles.frame}>
+        <div className={styles.stack}>
+          <div className={styles.grid}>
             {DRUM_PADS.map((pad) => (
-              <div key={pad} className="drum-row">
+              <div key={pad} className={styles.row}>
                 <DrumPadMuteToggle track={track} pad={pad} />
                 {Array.from({ length: STEPS_PER_PHRASE }, (_, i) => {
                   const tick = i * STEP_TICKS;
@@ -73,7 +75,7 @@ function ManualDrumEditorInner({
                     <button
                       key={i}
                       type="button"
-                      className={`step ${on ? "on" : ""}`}
+                      className={clsx(styles.step, on && styles.on)}
                       onClick={() => {
                         toggle(pad, i);
                       }}

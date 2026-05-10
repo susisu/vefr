@@ -1,0 +1,119 @@
+.editor {
+  margin-bottom: 0.5rem;
+  padding: 0.45rem;
+  background: var(--inset);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+}
+
+.header {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+/* Title cell: chips followed by the (possibly long) track name. Force a single
+ * line and let the trailing name truncate with an ellipsis instead of wrapping
+ * the header onto a second row. `min-width: 0` lets the flex item shrink below
+ * its intrinsic content width. */
+.header > span:first-child {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Inset frame around the editor's step grid. */
+.frame {
+  padding: 0.45rem 0.55rem;
+  background: #060606;
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Stack the playhead overlay on top of the data grid using CSS grid; both
+ * children share the same `1 / 1` cell so they overlap, and the overlay's
+ * own grid template aligns with the row's so a single child placed by
+ * `grid-column` lands on the live step. The grid itself never re-renders
+ * per 16th note — only the overlay does.
+ *
+ * `contain: paint` scopes repaint invalidation to the stack so playhead
+ * movement doesn't force the rest of the editor (or other editors stacked
+ * below in the grid) to re-rasterize. */
+.stack {
+  display: grid;
+  position: relative;
+  contain: paint;
+}
+.stack > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.grid {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 56px repeat(32, 1fr);
+  gap: 1px;
+  align-items: center;
+}
+
+/* Step cell — recessed LED-lit pad. Explicitly cancel the transition so hover
+ * doesn't animate (each animated frame would repaint a glowy lit cell).
+ * `contain` scopes style recalc + paint to the cell so the browser doesn't
+ * have to re-evaluate the whole grid on every mouse move across 1000+
+ * buttons. */
+.step {
+  background: #0a0a0a;
+  border: 1px solid #1d1d1d;
+  border-radius: 1px;
+  height: 18px;
+  padding: 0;
+  cursor: pointer;
+  min-width: 0;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.6);
+  transition: none;
+  contain: layout style paint;
+}
+
+/* Beat-grouping marker every 4 steps. nth-child counts from 2 because the
+ * leading label column occupies child 1 in every row. */
+.row .step:nth-child(4n + 2) {
+  border-left-width: 2px;
+  border-left-color: #2a2a2a;
+}
+
+/* Stronger divider at the half-loop bar boundary. */
+.row .step:nth-child(18) {
+  border-left: 2px solid #404040;
+}
+
+/* Lit cell: solid colour + an inset highlight for the bevel feel. */
+.step.on {
+  background: var(--track-accent, var(--accent));
+  border-color: var(--track-accent, var(--accent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.step:hover {
+  background: #1c1c1c;
+}
+/* Hover tint piggybacks on the same --track-accent-glow rgba (which already
+ * carries an alpha < 1) so it lifts the lit cell without needing a hand-tuned
+ * color per palette entry. */
+.step.on:hover {
+  background: var(--track-accent-glow, rgba(255, 255, 255, 0.55));
+}

@@ -1,0 +1,26 @@
+/* Inline wrapper that hosts the trigger element and the floating-ui ref +
+ * mouse / focus handlers. `inline-flex` so its bounding box hugs the child
+ * exactly (instead of inheriting a wider line box) — this keeps mouseenter
+ * / mouseleave firing on the same area the user perceives as the trigger. */
+.anchor {
+  display: inline-flex;
+}
+
+/* Floating panel rendered into a portal by `Tooltip`. Mirrors the project's
+ * panel chrome (rim + faint highlight + drop shadow) so it reads as part of
+ * the same chassis even though it lives outside the main DOM tree. */
+.tooltip {
+  z-index: 100;
+  background: var(--panel);
+  border: 1px solid var(--panel-rim);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.65rem;
+  max-width: 360px;
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 4px 14px rgba(0, 0, 0, 0.55);
+}
