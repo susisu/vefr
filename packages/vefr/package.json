@@ -11,7 +11,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "cmk && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "typecheck": "cmk && tsc --noEmit",
     "test": "vitest run --passWithNoTests",
