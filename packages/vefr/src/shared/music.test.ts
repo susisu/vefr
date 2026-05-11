@@ -75,8 +75,8 @@ describe("keyLabel", () => {
     expect(keyLabel(11)).toBe("B");
   });
 
-  it("prefixes ↓ for negative keys", () => {
-    expect(keyLabel(-1)).toBe("↓B");
-    expect(keyLabel(-11)).toBe("↓C#");
+  it("postfixes ↓ for negative keys", () => {
+    expect(keyLabel(-1)).toBe("B↓");
+    expect(keyLabel(-11)).toBe("C#↓");
   });
 });
