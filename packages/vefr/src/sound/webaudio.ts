@@ -16,6 +16,14 @@ type WebAudioPatch = {
   filterQ: number;
   /** Exponential decay length (s) following the 4 ms attack. */
   decay: number;
+  /**
+   * Per-patch loudness compensation, applied as a final multiplier on the
+   * note peak amplitude. `1.0` is the reference (`keys`); brighter / more
+   * resonant / longer-sustaining patches are attenuated below 1.0 so that
+   * swapping `instrumentId` mid-performance does not jump in perceived
+   * loudness. Tuned by ear — not derived from peak/RMS math.
+   */
+  outputGain: number;
 };
 
 /**
@@ -30,18 +38,18 @@ type WebAudioPatch = {
  * synthesis template.
  */
 const INSTRUMENT_PATCHES: Record<InstrumentId, WebAudioPatch> = {
-  keys: { oscType: "triangle", filterFreq: 1400, filterQ: 0.5, decay: 0.2 },
-  bell: { oscType: "sine", filterFreq: 4000, filterQ: 0.5, decay: 0.6 },
-  pluck: { oscType: "triangle", filterFreq: 2200, filterQ: 0.7, decay: 0.13 },
-  bass: { oscType: "square", filterFreq: 700, filterQ: 3, decay: 0.18 },
-  pick: { oscType: "triangle", filterFreq: 1100, filterQ: 2, decay: 0.12 },
-  sub: { oscType: "sine", filterFreq: 200, filterQ: 1, decay: 0.25 },
-  acid: { oscType: "sawtooth", filterFreq: 600, filterQ: 8, decay: 0.2 },
-  growl: { oscType: "sawtooth", filterFreq: 380, filterQ: 4, decay: 0.28 },
-  lead: { oscType: "sawtooth", filterFreq: 3000, filterQ: 1, decay: 0.22 },
-  chip: { oscType: "square", filterFreq: 4000, filterQ: 0.5, decay: 0.1 },
-  stab: { oscType: "sawtooth", filterFreq: 2500, filterQ: 5, decay: 0.06 },
-  pad: { oscType: "sine", filterFreq: 1500, filterQ: 0.5, decay: 0.3 },
+  keys: { oscType: "triangle", filterFreq: 1400, filterQ: 0.5, decay: 0.2, outputGain: 1.0 },
+  bell: { oscType: "sine", filterFreq: 4000, filterQ: 0.5, decay: 0.6, outputGain: 0.55 },
+  pluck: { oscType: "triangle", filterFreq: 2200, filterQ: 0.7, decay: 0.13, outputGain: 1.0 },
+  bass: { oscType: "square", filterFreq: 700, filterQ: 3, decay: 0.18, outputGain: 0.6 },
+  pick: { oscType: "triangle", filterFreq: 1100, filterQ: 2, decay: 0.12, outputGain: 0.9 },
+  sub: { oscType: "sine", filterFreq: 200, filterQ: 1, decay: 0.25, outputGain: 1.0 },
+  acid: { oscType: "sawtooth", filterFreq: 600, filterQ: 8, decay: 0.2, outputGain: 0.5 },
+  growl: { oscType: "sawtooth", filterFreq: 380, filterQ: 4, decay: 0.28, outputGain: 0.75 },
+  lead: { oscType: "sawtooth", filterFreq: 3000, filterQ: 1, decay: 0.22, outputGain: 0.65 },
+  chip: { oscType: "square", filterFreq: 4000, filterQ: 0.5, decay: 0.1, outputGain: 0.6 },
+  stab: { oscType: "sawtooth", filterFreq: 2500, filterQ: 5, decay: 0.06, outputGain: 0.6 },
+  pad: { oscType: "sine", filterFreq: 1500, filterQ: 0.5, decay: 0.3, outputGain: 1.0 },
 };
 
 /**
@@ -231,7 +239,7 @@ export class WebAudioSoundOutput implements SoundOutput {
     filter.Q.value = patch.filterQ;
 
     const env = this.ctx.createGain();
-    const peak = Math.max(gain * velocity, 0.0001);
+    const peak = Math.max(gain * velocity * patch.outputGain, 0.0001);
     const attack = 0.004;
     const decay = patch.decay;
     env.gain.setValueAtTime(0.0001, t);

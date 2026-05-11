@@ -48,7 +48,7 @@ function defaultInitial(): EngineInitial {
     role: "bass",
     instrumentId: "sub",
     mute: false,
-    volume: 0.6,
+    volume: 0.8,
     color: "orange",
     source: "auto",
     phraseIds: ["bass.lofi.synco", "bass.lofi.dub", "bass.lofi.half-stab", "bass.lofi.pickup"],
