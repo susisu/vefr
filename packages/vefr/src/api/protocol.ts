@@ -11,6 +11,7 @@
  * only request/response (commands) are modelled here.
  */
 import * as v from "valibot";
+import { KEY_MAX, KEY_MIN } from "../shared/music.js";
 import {
   AutoParamsSchema,
   DrumAutoSchema,
@@ -113,7 +114,9 @@ export const OpSchema = v.variant("method", [
     method: v.literal("global.set"),
     params: v.object({
       partial: v.object({
-        key: v.exactOptional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(11))),
+        key: v.exactOptional(
+          v.pipe(v.number(), v.integer(), v.minValue(KEY_MIN), v.maxValue(KEY_MAX)),
+        ),
         scale: v.exactOptional(ScaleIdSchema),
       }),
     }),

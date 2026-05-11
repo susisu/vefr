@@ -160,6 +160,34 @@ describe("parseProject", () => {
     expect(r.ok).toBe(false);
   });
 
+  it("accepts negative keys within -11..11", () => {
+    const original = makeProject([makeDrumTrack()]);
+    for (const key of [-11, -1, 0, 11]) {
+      const project: unknown = {
+        schemaVersion: original.schemaVersion,
+        master: original.master,
+        global: { ...original.global, key },
+        tracks: original.tracks,
+      };
+      const r = parseProject(project, allKnown);
+      expect(r.ok).toBe(true);
+    }
+  });
+
+  it("rejects keys outside -11..11", () => {
+    const original = makeProject([makeDrumTrack()]);
+    for (const key of [-12, 12]) {
+      const broken: unknown = {
+        schemaVersion: original.schemaVersion,
+        master: original.master,
+        global: { ...original.global, key },
+        tracks: original.tracks,
+      };
+      const r = parseProject(broken, allKnown);
+      expect(r.ok).toBe(false);
+    }
+  });
+
   it("rejects out-of-range masterVolume", () => {
     const original = makeProject([makeDrumTrack()]);
     for (const bad of [-0.01, 1.01, 2, -1]) {

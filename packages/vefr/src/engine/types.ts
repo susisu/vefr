@@ -98,7 +98,7 @@ export type ScaleId =
 
 /** Global musical context shared by every pitched track. */
 export type GlobalMusicState = {
-  /** Tonic semitone offset 0..11 (0 = C). */
+  /** Tonic semitone offset -11..11 (0 = C); negative values transpose the tonic down. */
   key: number;
   scale: ScaleId;
 };

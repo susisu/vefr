@@ -1,11 +1,20 @@
 import type { ChangeEvent, ReactElement } from "react";
-import { asScaleId, KEY_NAMES, SCALE_IDS } from "../../shared/music.js";
+import { asScaleId, KEY_MAX, KEY_MIN, keyLabel, SCALE_IDS } from "../../shared/music.js";
 import { Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useGlobal } from "../hooks.js";
 import styles from "./GlobalPanel.module.css";
 
-/** Editor for the global musical context: key (0..11) and scale id. */
+/** Options for the Key dropdown, ordered low → high so the list visually rises. */
+const KEY_OPTIONS: ReadonlyArray<{ value: number; label: string }> = Array.from(
+  { length: KEY_MAX - KEY_MIN + 1 },
+  (_, i) => {
+    const value = i + KEY_MIN;
+    return { value, label: keyLabel(value) };
+  },
+);
+
+/** Editor for the global musical context: key (-11..11) and scale id. */
 export function GlobalPanel(): ReactElement {
   const api = useControlApi();
   const global = useGlobal();
@@ -29,9 +38,9 @@ export function GlobalPanel(): ReactElement {
       <div className={styles.controls}>
         <div className={styles.readoutGroup}>
           <ReadoutSelect label="Key" value={String(global.key)} onChange={onKeyChange}>
-            {KEY_NAMES.map((name, i) => (
-              <option key={name} value={i}>
-                {name}
+            {KEY_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
               </option>
             ))}
           </ReadoutSelect>

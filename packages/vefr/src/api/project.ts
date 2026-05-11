@@ -1,6 +1,7 @@
 import * as v from "valibot";
 import { DRUM_KIT_IDS, INSTRUMENT_IDS } from "../engine/sound-port.js";
 import { PITCHED_OCTAVE_MAX, PITCHED_OCTAVE_MIN, TRACK_COLOR_IDS } from "../engine/types.js";
+import { KEY_MAX, KEY_MIN } from "../shared/music.js";
 import type {
   DrumHit,
   GlobalMusicState,
@@ -236,7 +237,7 @@ export const MasterSchema = v.object({
 
 /** Schema for the saved global music state. */
 export const GlobalSchema = v.object({
-  key: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(11)),
+  key: v.pipe(v.number(), v.integer(), v.minValue(KEY_MIN), v.maxValue(KEY_MAX)),
   scale: ScaleIdSchema,
 });
 

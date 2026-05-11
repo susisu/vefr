@@ -37,6 +37,24 @@ describe("parseRpcRequest", () => {
     expect(result.ok).toBe(false);
   });
 
+  it("accepts global.set at the key range bounds", () => {
+    for (const key of [-11, 0, 11]) {
+      const result = parseRpcRequest({
+        ops: [{ method: "global.set", params: { partial: { key } } }],
+      });
+      expect(result.ok).toBe(true);
+    }
+  });
+
+  it("rejects global.set with a key outside -11..11", () => {
+    for (const key of [-12, 12, 1.5]) {
+      const result = parseRpcRequest({
+        ops: [{ method: "global.set", params: { partial: { key } } }],
+      });
+      expect(result.ok).toBe(false);
+    }
+  });
+
   it("rejects a negative bpm", () => {
     const result = parseRpcRequest({
       ops: [{ method: "master.setBpm", params: { bpm: -1 } }],

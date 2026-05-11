@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { degreeToMidi, intervalsOf, keyName, midiToFrequency } from "./music.js";
+import { degreeToMidi, intervalsOf, keyLabel, keyName, midiToFrequency } from "./music.js";
 
 describe("intervalsOf", () => {
   it("returns 7 intervals for diatonic scales", () => {
@@ -38,6 +38,11 @@ describe("degreeToMidi", () => {
     expect(degreeToMidi({ key: 7, scale: "major" }, 0, 0)).toBe(67); // G4
   });
 
+  it("transposes down for a negative key", () => {
+    expect(degreeToMidi({ key: -1, scale: "major" }, 0, 0)).toBe(59); // B3
+    expect(degreeToMidi({ key: -11, scale: "major" }, 0, 0)).toBe(49); // C#3
+  });
+
   it("uses pentatonic intervals for pentatonic scales", () => {
     const seq = [0, 1, 2, 3, 4].map((d) =>
       degreeToMidi({ key: 0, scale: "minor-pentatonic" }, d, 0),
@@ -61,5 +66,17 @@ describe("keyName", () => {
     expect(keyName(0)).toBe("C");
     expect(keyName(7)).toBe("G");
     expect(keyName(11)).toBe("B");
+  });
+});
+
+describe("keyLabel", () => {
+  it("returns the bare pitch class for non-negative keys", () => {
+    expect(keyLabel(0)).toBe("C");
+    expect(keyLabel(11)).toBe("B");
+  });
+
+  it("prefixes ↓ for negative keys", () => {
+    expect(keyLabel(-1)).toBe("↓B");
+    expect(keyLabel(-11)).toBe("↓C#");
   });
 });

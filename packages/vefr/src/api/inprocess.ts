@@ -15,7 +15,7 @@ import type {
   Track,
   TrackRef,
 } from "../engine/types.js";
-import { SCALE_IDS } from "../shared/music.js";
+import { KEY_MAX, KEY_MIN, SCALE_IDS } from "../shared/music.js";
 import {
   parseProject,
   type ImportError,
@@ -99,7 +99,8 @@ function makeGlobalApi(engine: Engine): GlobalApi {
       engine.setGlobal(partial);
     },
     rerollKey: (): void => {
-      engine.setGlobal({ key: Math.floor(Math.random() * 12) });
+      const span = KEY_MAX - KEY_MIN + 1;
+      engine.setGlobal({ key: Math.floor(Math.random() * span) + KEY_MIN });
     },
     rerollScale: (): void => {
       const idx = Math.floor(Math.random() * SCALE_IDS.length);

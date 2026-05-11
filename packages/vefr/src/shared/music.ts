@@ -106,7 +106,7 @@ export const SCALE_IDS: readonly ScaleId[] = [
 ];
 
 /** Human-readable labels for each key (0..11) using sharp accidentals. */
-export const KEY_NAMES: readonly string[] = [
+const KEY_NAMES: readonly string[] = [
   "C",
   "C#",
   "D",
@@ -121,9 +121,28 @@ export const KEY_NAMES: readonly string[] = [
   "B",
 ];
 
-/** Look up the human-readable name of a key (0..11); falls back to "?" out of range. */
+/**
+ * Minimum allowed value for the global `key` (inclusive). Negative values
+ * transpose the tonic down from the C4 reference.
+ */
+export const KEY_MIN = -11;
+
+/** Maximum allowed value for the global `key` (inclusive). */
+export const KEY_MAX = 11;
+
+/** Look up the human-readable name of a key; wraps modulo 12 so negative values are labeled by pitch class. */
 export function keyName(key: number): string {
   return KEY_NAMES[((key % 12) + 12) % 12] ?? "?";
+}
+
+/**
+ * Picker label for a key in {@link KEY_MIN}..{@link KEY_MAX}. Non-negative values
+ * use the bare pitch-class name (`C`..`B`); negative values get a `↓` prefix to
+ * mark that the tonic sits in the octave below C4.
+ */
+export function keyLabel(key: number): string {
+  const name = keyName(key);
+  return key < 0 ? `↓${name}` : name;
 }
 
 /**
