@@ -142,7 +142,7 @@ export function keyName(key: number): string {
  */
 export function keyLabel(key: number): string {
   const name = keyName(key);
-  return key < 0 ? `↓${name}` : name;
+  return key < 0 ? `${name}↓` : name;
 }
 
 /**
