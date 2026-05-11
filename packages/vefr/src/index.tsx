@@ -75,11 +75,12 @@ function defaultInitial(): EngineInitial {
     params: defaultAutoParamsFor("pitched", "melody"),
   };
   return {
-    transport: {
+    master: {
       playing: false,
       bpm: 120,
       signature: { numerator: 4, denominator: 4 },
       positionTick: 0,
+      masterVolume: 0.4,
     },
     global: { key: 0, scale: "minor" },
     tracks: [autoDrum, autoBass, autoMelody],

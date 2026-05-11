@@ -78,7 +78,7 @@ function makeAutoBassTrack(): PitchedTrack {
 function makeProject(tracks: Track[]): Project {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    transport: { bpm: 120, signature: { numerator: 4, denominator: 4 } },
+    master: { bpm: 120, signature: { numerator: 4, denominator: 4 }, masterVolume: 0.4 },
     global: { key: 0, scale: "minor" },
     tracks,
   };
@@ -116,7 +116,7 @@ describe("parseProject", () => {
   });
 
   it("rejects an unknown schemaVersion", () => {
-    const r = parseProject({ schemaVersion: 99, transport: {}, global: {}, tracks: [] }, allKnown);
+    const r = parseProject({ schemaVersion: 99, master: {}, global: {}, tracks: [] }, allKnown);
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.errors.some((e) => e.code === "unknown-schema-version")).toBe(true);
@@ -150,7 +150,7 @@ describe("parseProject", () => {
     const original = makeProject([makeDrumTrack()]);
     const broken: unknown = {
       schemaVersion: original.schemaVersion,
-      transport: { ...original.transport, bpm: -5 },
+      master: { ...original.master, bpm: -5 },
       global: { ...original.global, key: 99 },
       tracks: original.tracks,
     };
@@ -158,11 +158,25 @@ describe("parseProject", () => {
     expect(r.ok).toBe(false);
   });
 
+  it("rejects out-of-range masterVolume", () => {
+    const original = makeProject([makeDrumTrack()]);
+    for (const bad of [-0.01, 1.01, 2, -1]) {
+      const broken: unknown = {
+        schemaVersion: original.schemaVersion,
+        master: { ...original.master, masterVolume: bad },
+        global: original.global,
+        tracks: original.tracks,
+      };
+      const r = parseProject(broken, allKnown);
+      expect(r.ok).toBe(false);
+    }
+  });
+
   it("rejects a pitched track missing instrumentId", () => {
     const { instrumentId: _instrumentId, ...trackWithoutInstrument } = makeMelodyTrack();
     const broken: unknown = {
       schemaVersion: CURRENT_SCHEMA_VERSION,
-      transport: { bpm: 120, signature: { numerator: 4, denominator: 4 } },
+      master: { bpm: 120, signature: { numerator: 4, denominator: 4 }, masterVolume: 0.4 },
       global: { key: 0, scale: "minor" },
       tracks: [trackWithoutInstrument],
     };

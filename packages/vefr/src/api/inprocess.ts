@@ -8,12 +8,12 @@ import {
 import type {
   DrumHit,
   GlobalMusicState,
+  MasterState,
   Note,
   Pattern,
   Tick,
   Track,
   TrackRef,
-  TransportState,
 } from "../engine/types.js";
 import { SCALE_IDS } from "../shared/music.js";
 import {
@@ -26,11 +26,11 @@ import {
 import type {
   ControlApi,
   GlobalApi,
+  MasterApi,
   ProjectApi,
   Result,
   TrackApi,
   TrackUpdateError,
-  TransportApi,
 } from "./types.js";
 
 /**
@@ -47,21 +47,21 @@ export type InProcessHooks = {
  * implement the same interface against a network connection.
  */
 export class InProcessControlApi implements ControlApi {
-  readonly transport: TransportApi;
+  readonly master: MasterApi;
   readonly global: GlobalApi;
   readonly track: TrackApi;
   readonly project: ProjectApi;
 
   constructor(engine: Engine, phraseExists: PhraseResolver, hooks: InProcessHooks = {}) {
-    this.transport = makeTransportApi(engine, hooks);
+    this.master = makeMasterApi(engine, hooks);
     this.global = makeGlobalApi(engine);
     this.track = makeTrackApi(engine);
     this.project = makeProjectApi(engine, phraseExists);
   }
 }
 
-/** Build the transport sub-API around an Engine. */
-function makeTransportApi(engine: Engine, hooks: InProcessHooks): TransportApi {
+/** Build the master sub-API (play/pause/stop/seek + tempo + master gain) around an Engine. */
+function makeMasterApi(engine: Engine, hooks: InProcessHooks): MasterApi {
   return {
     play: (): void => {
       hooks.beforePlay?.();
@@ -76,12 +76,15 @@ function makeTransportApi(engine: Engine, hooks: InProcessHooks): TransportApi {
     setBpm: (bpm: number): void => {
       engine.setBpm(bpm);
     },
+    setMasterVolume: (gain: number): void => {
+      engine.setMasterVolume(gain);
+    },
     seek: (tick: Tick): void => {
       engine.seek(tick);
     },
-    getState: (): TransportState => engine.getTransport(),
-    onChange: (handler: (state: TransportState) => void): (() => void) =>
-      engine.transportChanged.on(handler),
+    getState: (): MasterState => engine.getMaster(),
+    onChange: (handler: (state: MasterState) => void): (() => void) =>
+      engine.masterChanged.on(handler),
     getPlayheadStep: (): number | undefined => engine.getPlayheadStep(),
     onPlayheadStepChange: (handler: (step: number | undefined) => void): (() => void) =>
       engine.playheadStepChanged.on(handler),
@@ -189,13 +192,13 @@ function makeTrackApi(engine: Engine): TrackApi {
       const offTracks = engine.tracksChanged.on(() => {
         handler();
       });
-      const offTransport = engine.transportChanged.on(() => {
+      const offMaster = engine.masterChanged.on(() => {
         handler();
       });
       return () => {
         offPhrase();
         offTracks();
-        offTransport();
+        offMaster();
       };
     },
   };
@@ -213,11 +216,12 @@ function makeProjectApi(engine: Engine, phraseExists: PhraseResolver): ProjectAp
     snapshot: (): Project => snapshotProject(engine),
     load: (project: Project): void => {
       engine.loadState({
-        transport: {
+        master: {
           playing: false,
-          bpm: project.transport.bpm,
-          signature: project.transport.signature,
+          bpm: project.master.bpm,
+          signature: project.master.signature,
           positionTick: 0,
+          masterVolume: project.master.masterVolume,
         },
         global: project.global,
         tracks: project.tracks,
@@ -227,11 +231,12 @@ function makeProjectApi(engine: Engine, phraseExists: PhraseResolver): ProjectAp
       const parsed = parseProject(raw, phraseExists);
       if (!parsed.ok) return { ok: false, error: parsed.errors };
       engine.loadState({
-        transport: {
+        master: {
           playing: false,
-          bpm: parsed.value.transport.bpm,
-          signature: parsed.value.transport.signature,
+          bpm: parsed.value.master.bpm,
+          signature: parsed.value.master.signature,
           positionTick: 0,
+          masterVolume: parsed.value.master.masterVolume,
         },
         global: parsed.value.global,
         tracks: parsed.value.tracks,
@@ -239,7 +244,7 @@ function makeProjectApi(engine: Engine, phraseExists: PhraseResolver): ProjectAp
       return { ok: true, value: undefined };
     },
     onAnyChange: (handler: () => void): (() => void) => {
-      const offT = engine.transportChanged.on(() => {
+      const offM = engine.masterChanged.on(() => {
         handler();
       });
       const offG = engine.globalChanged.on(() => {
@@ -249,7 +254,7 @@ function makeProjectApi(engine: Engine, phraseExists: PhraseResolver): ProjectAp
         handler();
       });
       return () => {
-        offT();
+        offM();
         offG();
         offTracks();
       };
@@ -300,10 +305,14 @@ function trackErrorToResult(e: TrackError, conflictName: string): TrackUpdateErr
 
 /** Build a portable {@link Project} from the engine's current state. */
 function snapshotProject(engine: Engine): Project {
-  const transport = engine.getTransport();
+  const master = engine.getMaster();
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    transport: { bpm: transport.bpm, signature: transport.signature },
+    master: {
+      bpm: master.bpm,
+      signature: master.signature,
+      masterVolume: master.masterVolume,
+    },
     global: engine.getGlobal(),
     tracks: engine.getTracks(),
   };

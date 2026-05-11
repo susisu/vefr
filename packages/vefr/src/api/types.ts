@@ -6,13 +6,13 @@ export type { NewTrackInput };
 import type {
   DrumHit,
   GlobalMusicState,
+  MasterState,
   Note,
   Pattern,
   PhraseId,
   Tick,
   Track,
   TrackRef,
-  TransportState,
 } from "../engine/types.js";
 import type { ImportError, Project } from "./project.js";
 
@@ -35,14 +35,17 @@ export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
  * unbound (e.g. into `useSyncExternalStore`).
  */
 export interface ControlApi {
-  transport: TransportApi;
+  master: MasterApi;
   global: GlobalApi;
   track: TrackApi;
   project: ProjectApi;
 }
 
-/** Transport sub-API: play/pause/stop/seek + tempo + state subscription. */
-export interface TransportApi {
+/**
+ * Master sub-API: play/pause/stop/seek + tempo + master gain + state
+ * subscription. Named after the "Master" UI section that owns these controls.
+ */
+export interface MasterApi {
   /** Begin playback from the saved play head. */
   play: () => void;
   /** Pause playback, remembering the current play head. */
@@ -51,12 +54,14 @@ export interface TransportApi {
   stop: () => void;
   /** Set tempo in BPM (must be > 0). */
   setBpm: (bpm: number) => void;
+  /** Set the master output gain (linear, 0..1). */
+  setMasterVolume: (gain: number) => void;
   /** Move the play head to `tick` (must be ≥ 0). */
   seek: (tick: Tick) => void;
-  /** Latest snapshot of {@link TransportState}. Stable reference until the next change. */
-  getState: () => TransportState;
-  /** Subscribe to transport-state changes; returns a detach function. */
-  onChange: (handler: (state: TransportState) => void) => () => void;
+  /** Latest snapshot of {@link MasterState}. Stable reference until the next change. */
+  getState: () => MasterState;
+  /** Subscribe to master-state changes; returns a detach function. */
+  onChange: (handler: (state: MasterState) => void) => () => void;
   /**
    * Most recent visual playhead step (= absolute 16th-note count since
    * tick 0), or `undefined` while not playing. UI grids mod by their step

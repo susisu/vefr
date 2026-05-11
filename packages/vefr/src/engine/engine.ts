@@ -25,7 +25,7 @@ import {
   type TrackColorId,
   type TrackId,
   type TrackRef,
-  type TransportState,
+  type MasterState,
 } from "./types.js";
 
 /**
@@ -48,7 +48,7 @@ const PLAYHEAD_STEP_TICKS = TICKS_PER_BEAT / 4;
 
 /** Initial state used to seed an {@link Engine}. */
 export type EngineInitial = {
-  transport: TransportState;
+  master: MasterState;
   global: GlobalMusicState;
   tracks: readonly Track[];
 };
@@ -109,7 +109,7 @@ export class TrackError extends Error {
  * directly — it goes through the Control API in {@link src/api}.
  */
 export class Engine {
-  private transport: TransportState;
+  private master: MasterState;
   private global: GlobalMusicState;
   private tracks: readonly Track[];
   private readonly scheduler: Scheduler;
@@ -122,8 +122,8 @@ export class Engine {
    */
   private readonly autoCache: Map<TrackId, AutoCacheEntry> = new Map();
 
-  /** Fires whenever transport state (playing / bpm / position / signature) changes. */
-  readonly transportChanged: Signal<TransportState> = new Signal();
+  /** Fires whenever master-section state (playing / bpm / position / signature / volume) changes. */
+  readonly masterChanged: Signal<MasterState> = new Signal();
   /** Fires whenever global musical context (key / scale) changes. */
   readonly globalChanged: Signal<GlobalMusicState> = new Signal();
   /** Fires whenever the track list or any track's fields change. */
@@ -152,7 +152,7 @@ export class Engine {
     initial: EngineInitial,
     opts: { clock: Clock; output: SoundOutput; resolvePhrase: PhraseLookup },
   ) {
-    this.transport = { ...initial.transport, playing: false };
+    this.master = { ...initial.master, playing: false };
     this.global = { ...initial.global };
     this.tracks = [...initial.tracks];
     this.output = opts.output;
@@ -163,11 +163,14 @@ export class Engine {
         this.dispatch(tick, time);
       },
     });
+    // Sync the SoundOutput master gain to the initial state value once at
+    // startup; subsequent changes flow through {@link setMasterVolume}.
+    this.output.setMasterVolume(this.master.masterVolume);
   }
 
-  /** Snapshot of the current transport state. */
-  getTransport(): TransportState {
-    return this.transport;
+  /** Snapshot of the current master-section state. */
+  getMaster(): MasterState {
+    return this.master;
   }
 
   /** Snapshot of the current global musical state. */
@@ -187,56 +190,71 @@ export class Engine {
   loadState(initial: EngineInitial): void {
     this.scheduler.stop();
     this.scheduler.seek(0);
-    this.transport = { ...initial.transport, playing: false };
+    this.master = { ...initial.master, playing: false };
     this.global = { ...initial.global };
     this.tracks = [...initial.tracks];
     this.autoCache.clear();
     this.setPlayheadStep(undefined);
-    this.transportChanged.emit(this.transport);
+    this.output.setMasterVolume(this.master.masterVolume);
+    this.masterChanged.emit(this.master);
     this.globalChanged.emit(this.global);
     this.tracksChanged.emit(this.tracks);
   }
 
   /** Begin playback from the saved play head position. */
   play(): void {
-    if (this.transport.playing) return;
-    this.scheduler.start(this.transport.positionTick, this.transport.bpm);
-    this.transport = { ...this.transport, playing: true };
-    this.transportChanged.emit(this.transport);
+    if (this.master.playing) return;
+    this.scheduler.start(this.master.positionTick, this.master.bpm);
+    this.master = { ...this.master, playing: true };
+    this.masterChanged.emit(this.master);
   }
 
   /** Stop playback and remember the current play head for the next play(). */
   pause(): void {
-    if (!this.transport.playing) return;
+    if (!this.master.playing) return;
     const positionTick = this.scheduler.stop();
-    this.transport = { ...this.transport, playing: false, positionTick };
+    this.master = { ...this.master, playing: false, positionTick };
     this.setPlayheadStep(undefined);
-    this.transportChanged.emit(this.transport);
+    this.masterChanged.emit(this.master);
   }
 
   /** Stop playback and rewind to the start. */
   stop(): void {
     this.scheduler.stop();
     this.scheduler.seek(0);
-    this.transport = { ...this.transport, playing: false, positionTick: 0 };
+    this.master = { ...this.master, playing: false, positionTick: 0 };
     this.setPlayheadStep(undefined);
-    this.transportChanged.emit(this.transport);
+    this.masterChanged.emit(this.master);
   }
 
   /** Set tempo in BPM. */
   setBpm(bpm: number): void {
     if (bpm <= 0) throw new RangeError(`bpm must be positive: ${bpm}`);
     this.scheduler.setBpm(bpm);
-    this.transport = { ...this.transport, bpm };
-    this.transportChanged.emit(this.transport);
+    this.master = { ...this.master, bpm };
+    this.masterChanged.emit(this.master);
   }
 
   /** Move the play head to `tick`. */
   seek(tick: Tick): void {
     if (tick < 0) throw new RangeError(`tick must be non-negative: ${tick}`);
     this.scheduler.seek(tick);
-    this.transport = { ...this.transport, positionTick: tick };
-    this.transportChanged.emit(this.transport);
+    this.master = { ...this.master, positionTick: tick };
+    this.masterChanged.emit(this.master);
+  }
+
+  /**
+   * Set the master output gain (linear 0..1). Pushes the value to the
+   * {@link SoundOutput} immediately so listeners hear the change without
+   * waiting for the next dispatched event.
+   */
+  setMasterVolume(gain: number): void {
+    if (!(gain >= 0 && gain <= 1)) {
+      throw new RangeError(`masterVolume must be in 0..1: ${gain}`);
+    }
+    this.master = { ...this.master, masterVolume: gain };
+    this.output.setMasterVolume(gain);
+    this.masterChanged.emit(this.master);
   }
 
   /** Patch the global musical state (key / scale). */
@@ -453,10 +471,10 @@ export class Engine {
   private dispatch(tick: Tick, time: number): void {
     // Advance the saved position so derived state (e.g. the auto-track
     // active phrase id, which floors the position into a loop index)
-    // reflects the live tick. We deliberately don't emit transportChanged
-    // — that's reserved for play / pause / stop / seek / setBpm and would
-    // re-render every transport-watching component on every tick.
-    this.transport = { ...this.transport, positionTick: tick };
+    // reflects the live tick. We deliberately don't emit masterChanged
+    // — that's reserved for play / pause / stop / seek / setBpm / setMasterVolume
+    // and would re-render every master-watching component on every tick.
+    this.master = { ...this.master, positionTick: tick };
     this.setPlayheadStep(Math.floor(tick / PLAYHEAD_STEP_TICKS));
     for (const track of this.tracks) {
       if (track.mute) continue;
@@ -518,7 +536,7 @@ export class Engine {
     time: number,
     gain: number,
   ): void {
-    const barLength = TICKS_PER_BEAT * this.transport.signature.numerator;
+    const barLength = TICKS_PER_BEAT * this.master.signature.numerator;
     const loopTicks = barLength * LOOP_BARS;
     const loop = Math.floor(tick / loopTicks);
     const localTick = tick - loop * loopTicks;
@@ -617,9 +635,9 @@ export class Engine {
   getActiveAutoPhraseId(ref: TrackRef): PhraseId | undefined {
     const track = this.resolveTrack(ref);
     if (!track || track.source !== "auto") return undefined;
-    const barLength = TICKS_PER_BEAT * this.transport.signature.numerator;
+    const barLength = TICKS_PER_BEAT * this.master.signature.numerator;
     const loopTicks = barLength * LOOP_BARS;
-    const loop = Math.floor(this.transport.positionTick / loopTicks);
+    const loop = Math.floor(this.master.positionTick / loopTicks);
     const phrases =
       track.kind === "drum" ?
         this.collectDrumPhrases(track.phraseIds)
@@ -630,7 +648,7 @@ export class Engine {
   /** Common pitched-event dispatch path shared by manual and auto tracks. */
   private playPitched(note: Note, time: number, gain: number, instrumentId: InstrumentId): void {
     const midi = degreeToMidi(this.global, note.degree, note.octave);
-    const lengthSec = (note.lengthTicks * 60) / (this.transport.bpm * TICKS_PER_BEAT);
+    const lengthSec = (note.lengthTicks * 60) / (this.master.bpm * TICKS_PER_BEAT);
     this.output.playNote(time, midi, lengthSec, note.velocity, instrumentId, gain);
   }
 }

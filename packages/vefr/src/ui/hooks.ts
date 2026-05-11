@@ -2,21 +2,22 @@ import { useCallback, useEffect, useSyncExternalStore } from "react";
 import {
   refById,
   type GlobalMusicState,
+  type MasterState,
   type PhraseId,
   type Track,
   type TrackRef,
-  type TransportState,
 } from "../engine/types.js";
 import { useControlApi, useRelay } from "./context.js";
 
 /**
- * Subscribe to transport-state updates from the {@link ControlApi}.
- * Snapshot identity changes only when the engine emits, so React re-renders
- * are driven by real state transitions rather than polling.
+ * Subscribe to master-section state updates (play/pause/tempo/volume/meter)
+ * from the {@link ControlApi}. Snapshot identity changes only when the engine
+ * emits, so React re-renders are driven by real state transitions rather than
+ * polling.
  */
-export function useTransport(): TransportState {
+export function useMaster(): MasterState {
   const api = useControlApi();
-  return useSyncExternalStore(api.transport.onChange, api.transport.getState);
+  return useSyncExternalStore(api.master.onChange, api.master.getState);
 }
 
 /** Subscribe to global musical state (key / scale). */
@@ -48,12 +49,12 @@ export function useActivePhraseId(ref: TrackRef): PhraseId | undefined {
 
 /**
  * Subscribe to the visual playhead step (absolute 16th-note count since
- * position 0). Returns `undefined` while the transport is not playing.
+ * position 0). Returns `undefined` while playback is paused / stopped.
  * Editors mod the value by their grid length to highlight the live cell.
  */
 export function usePlayheadStep(): number | undefined {
   const api = useControlApi();
-  return useSyncExternalStore(api.transport.onPlayheadStepChange, api.transport.getPlayheadStep);
+  return useSyncExternalStore(api.master.onPlayheadStepChange, api.master.getPlayheadStep);
 }
 
 /**

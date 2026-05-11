@@ -23,7 +23,7 @@ function makeProject(): Project {
   };
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    transport: { bpm: 100, signature: { numerator: 4, denominator: 4 } },
+    master: { bpm: 100, signature: { numerator: 4, denominator: 4 }, masterVolume: 0.4 },
     global: { key: 5, scale: "major" },
     tracks: [drum],
   };

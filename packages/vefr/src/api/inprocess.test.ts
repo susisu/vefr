@@ -26,11 +26,12 @@ function makeApi(): { api: InProcessControlApi; engine: Engine } {
   };
   const engine = new Engine(
     {
-      transport: {
+      master: {
         playing: false,
         bpm: 120,
         signature: { numerator: 4, denominator: 4 },
         positionTick: 0,
+        masterVolume: 0.4,
       },
       global: { key: 0, scale: "minor" },
       tracks: [drum],
@@ -52,7 +53,7 @@ function expectJsonRoundTrip(value: unknown): void {
 describe("ControlApi event payloads", () => {
   it("transport.getState() is JSON-serializable", () => {
     const { api } = makeApi();
-    expectJsonRoundTrip(api.transport.getState());
+    expectJsonRoundTrip(api.master.getState());
   });
 
   it("global.get() is JSON-serializable", () => {
@@ -73,10 +74,10 @@ describe("ControlApi event payloads", () => {
   it("transport onChange payload is JSON-serializable", () => {
     const { api } = makeApi();
     let captured: unknown;
-    const off = api.transport.onChange((s) => {
+    const off = api.master.onChange((s) => {
       captured = s;
     });
-    api.transport.setBpm(140);
+    api.master.setBpm(140);
     off();
     expect(captured).toBeDefined();
     expectJsonRoundTrip(captured);

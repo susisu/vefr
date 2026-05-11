@@ -4,16 +4,16 @@ import { PROTOCOL_VERSION, parseRpcRequest, parseWsFrame, type RpcRequest } from
 
 describe("parseRpcRequest", () => {
   it("accepts a no-params method", () => {
-    const result = parseRpcRequest({ ops: [{ method: "transport.play", params: {} }] });
+    const result = parseRpcRequest({ ops: [{ method: "master.play", params: {} }] });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.ops[0]?.method).toBe("transport.play");
+      expect(result.value.ops[0]?.method).toBe("master.play");
     }
   });
 
   it("accepts a method with typed params", () => {
     const result = parseRpcRequest({
-      ops: [{ method: "transport.setBpm", params: { bpm: 140 } }],
+      ops: [{ method: "master.setBpm", params: { bpm: 140 } }],
     });
     expect(result.ok).toBe(true);
   });
@@ -22,13 +22,13 @@ describe("parseRpcRequest", () => {
     const body: RpcRequest = {
       ops: [
         { method: "global.set", params: { partial: { key: 5, scale: "minor" } } },
-        { method: "transport.setBpm", params: { bpm: 140 } },
+        { method: "master.setBpm", params: { bpm: 140 } },
       ],
     };
     const result = parseRpcRequest(body);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.ops.map((o) => o.method)).toEqual(["global.set", "transport.setBpm"]);
+      expect(result.value.ops.map((o) => o.method)).toEqual(["global.set", "master.setBpm"]);
     }
   });
 
@@ -39,7 +39,7 @@ describe("parseRpcRequest", () => {
 
   it("rejects a negative bpm", () => {
     const result = parseRpcRequest({
-      ops: [{ method: "transport.setBpm", params: { bpm: -1 } }],
+      ops: [{ method: "master.setBpm", params: { bpm: -1 } }],
     });
     expect(result.ok).toBe(false);
   });
@@ -185,7 +185,7 @@ describe("parseWsFrame", () => {
       v: PROTOCOL_VERSION,
       kind: "req" as const,
       id: "abc",
-      ops: [{ method: "transport.play", params: {} }],
+      ops: [{ method: "master.play", params: {} }],
     };
     const result = parseWsFrame(frame);
     expect(result.ok).toBe(true);
@@ -210,7 +210,7 @@ describe("parseWsFrame", () => {
       v: 0,
       kind: "req",
       id: "abc",
-      ops: [{ method: "transport.play", params: {} }],
+      ops: [{ method: "master.play", params: {} }],
     });
     expect(result.ok).toBe(false);
   });

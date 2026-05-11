@@ -36,11 +36,12 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
     },
   };
   const initial: EngineInitial = {
-    transport: {
+    master: {
       playing: false,
       bpm: 60,
       signature: { numerator: 4, denominator: 4 },
       positionTick: 0,
+      masterVolume: 0.4,
     },
     global: { key: 0, scale: "minor" },
     tracks: [drumTrack],
@@ -55,25 +56,52 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
 describe("Engine", () => {
   it("starts paused with positionTick 0", () => {
     const { engine } = makeEngine();
-    expect(engine.getTransport().playing).toBe(false);
-    expect(engine.getTransport().positionTick).toBe(0);
+    expect(engine.getMaster().playing).toBe(false);
+    expect(engine.getMaster().positionTick).toBe(0);
   });
 
-  it("emits transportChanged on play / pause / stop", () => {
+  it("setMasterVolume updates state, pushes to SoundOutput, and emits masterChanged", () => {
+    const { engine, output } = makeEngine();
+    // Engine pushes the initial value on construction (here 0.4 — the
+    // test fixture's default), so we start from a known recorded entry.
+    const before = output.events.filter((e) => e.kind === "master").length;
+    let lastEmitted: number | undefined;
+    engine.masterChanged.on((s) => {
+      lastEmitted = s.masterVolume;
+    });
+    engine.setMasterVolume(0.7);
+    expect(engine.getMaster().masterVolume).toBeCloseTo(0.7);
+    expect(lastEmitted).toBeCloseTo(0.7);
+    const masterEvents = output.events.filter((e) => e.kind === "master");
+    expect(masterEvents.length).toBe(before + 1);
+    expect(masterEvents.at(-1)?.gain).toBeCloseTo(0.7);
+  });
+
+  it("setMasterVolume rejects values outside 0..1", () => {
+    const { engine } = makeEngine();
+    expect(() => {
+      engine.setMasterVolume(-0.1);
+    }).toThrow(RangeError);
+    expect(() => {
+      engine.setMasterVolume(1.5);
+    }).toThrow(RangeError);
+  });
+
+  it("emits masterChanged on play / pause / stop", () => {
     const { clock, engine } = makeEngine();
     let count = 0;
-    engine.transportChanged.on(() => {
+    engine.masterChanged.on(() => {
       count += 1;
     });
     engine.play();
-    expect(engine.getTransport().playing).toBe(true);
+    expect(engine.getMaster().playing).toBe(true);
     expect(count).toBe(1);
     clock.advanceTo(0.2);
     engine.pause();
-    expect(engine.getTransport().playing).toBe(false);
+    expect(engine.getMaster().playing).toBe(false);
     expect(count).toBe(2);
     engine.stop();
-    expect(engine.getTransport().positionTick).toBe(0);
+    expect(engine.getMaster().positionTick).toBe(0);
     expect(count).toBe(3);
   });
 
@@ -171,11 +199,12 @@ describe("Engine", () => {
       params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
     };
     const initial: EngineInitial = {
-      transport: {
+      master: {
         playing: false,
         bpm: 60,
         signature: { numerator: 4, denominator: 4 },
         positionTick: 0,
+        masterVolume: 0.4,
       },
       global: { key: 0, scale: "minor" },
       tracks: [drum],
@@ -219,11 +248,12 @@ describe("Engine", () => {
       params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
     };
     const initial: EngineInitial = {
-      transport: {
+      master: {
         playing: false,
         bpm: 60,
         signature: { numerator: 4, denominator: 4 },
         positionTick: 0,
+        masterVolume: 0.4,
       },
       global: { key: 0, scale: "minor" },
       tracks: [drum],
@@ -333,15 +363,15 @@ describe("Engine", () => {
 
   it("advances transport.positionTick during playback so derived state stays live", () => {
     const { clock, engine } = makeEngine();
-    expect(engine.getTransport().positionTick).toBe(0);
+    expect(engine.getMaster().positionTick).toBe(0);
     engine.play();
-    const initial = engine.getTransport().positionTick;
+    const initial = engine.getMaster().positionTick;
     clock.advanceTo(1.0);
     // 1 sec at 60 BPM ≈ 1 beat (TICKS_PER_BEAT ticks). Allow a few ticks
     // of slack for the scheduler's lookahead/polling cadence — what we're
     // really asserting is that the dispatched position is no longer
     // pinned to the play-start tick.
-    const advanced = engine.getTransport().positionTick - initial;
+    const advanced = engine.getMaster().positionTick - initial;
     expect(advanced).toBeGreaterThan(TICKS_PER_BEAT * 0.8);
   });
 
@@ -366,11 +396,12 @@ describe("Engine", () => {
       },
     };
     const initial: EngineInitial = {
-      transport: {
+      master: {
         playing: false,
         bpm: 60,
         signature: { numerator: 4, denominator: 4 },
         positionTick: 0,
+        masterVolume: 0.4,
       },
       global: { key: 0, scale: "minor" },
       tracks: [melody],
@@ -394,7 +425,7 @@ describe("Engine", () => {
     engine.play();
     clock.advanceTo(0.5);
     engine.pause();
-    const pausedAt = engine.getTransport().positionTick;
+    const pausedAt = engine.getMaster().positionTick;
     expect(pausedAt).toBeGreaterThan(0);
     expect(pausedAt).toBeLessThan(TICKS_PER_BEAT);
     output.events.length = 0;

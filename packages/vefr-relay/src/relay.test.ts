@@ -69,13 +69,13 @@ describe("relay HTTP→WS routing", () => {
   it("forwards a single op to the browser and returns its result", async () => {
     const browser = await attachBrowser();
     const httpDone = postRpc({
-      ops: [{ method: "transport.setBpm", params: { bpm: 144 } }],
+      ops: [{ method: "master.setBpm", params: { bpm: 144 } }],
     });
 
     const incoming = await nextReqFrame(browser);
     expect(incoming.kind).toBe("req");
     expect(incoming.ops).toHaveLength(1);
-    expect(incoming.ops[0]?.method).toBe("transport.setBpm");
+    expect(incoming.ops[0]?.method).toBe("master.setBpm");
 
     browser.send(
       JSON.stringify({
@@ -96,12 +96,12 @@ describe("relay HTTP→WS routing", () => {
     const httpDone = postRpc({
       ops: [
         { method: "global.set", params: { partial: { key: 5, scale: "minor" } } },
-        { method: "transport.setBpm", params: { bpm: 140 } },
+        { method: "master.setBpm", params: { bpm: 140 } },
       ],
     });
 
     const incoming = await nextReqFrame(browser);
-    expect(incoming.ops.map((o) => o.method)).toEqual(["global.set", "transport.setBpm"]);
+    expect(incoming.ops.map((o) => o.method)).toEqual(["global.set", "master.setBpm"]);
 
     browser.send(
       JSON.stringify({
@@ -128,7 +128,7 @@ describe("relay HTTP→WS routing", () => {
   it("propagates a fatalError surfaced by the browser", async () => {
     const browser = await attachBrowser();
     const httpDone = postRpc({
-      ops: [{ method: "transport.setBpm", params: { bpm: 999 } }],
+      ops: [{ method: "master.setBpm", params: { bpm: 999 } }],
     });
 
     const incoming = await nextReqFrame(browser);
@@ -152,7 +152,7 @@ describe("relay HTTP→WS routing", () => {
 
   it("returns 503 when no browser is connected", async () => {
     const { status, json } = await postRpc({
-      ops: [{ method: "transport.play", params: {} }],
+      ops: [{ method: "master.play", params: {} }],
     });
     expect(status).toBe(503);
     expect(json).toMatchObject({ error: { code: "browser-disconnected" } });
@@ -192,7 +192,7 @@ describe("relay HTTP→WS routing", () => {
 
   it("fails pending HTTP calls when the browser disconnects mid-flight", async () => {
     const browser = await attachBrowser();
-    const httpDone = postRpc({ ops: [{ method: "transport.play", params: {} }] });
+    const httpDone = postRpc({ ops: [{ method: "master.play", params: {} }] });
     // Wait until the relay has actually forwarded the request to the browser.
     await nextReqFrame(browser);
     browser.close();
@@ -204,7 +204,7 @@ describe("relay HTTP→WS routing", () => {
   it("times out HTTP calls if the browser never responds", async () => {
     await attachBrowser();
     const { status, json } = await postRpc({
-      ops: [{ method: "transport.play", params: {} }],
+      ops: [{ method: "master.play", params: {} }],
     });
     expect(status).toBe(502);
     expect(json).toMatchObject({ error: { code: "timeout" } });

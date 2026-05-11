@@ -18,12 +18,16 @@ export const CURRENT_SCHEMA_VERSION = 1;
 /**
  * The portable shape of a vefr project. Everything needed to round-trip the
  * full session — manual patterns, auto phrase ids/seed/params, mute/volume/name,
- * global key/scale, transport tempo/signature — fits in this object.
+ * global key/scale, master tempo/signature/volume — fits in this object.
  */
 export type Project = {
   schemaVersion: typeof CURRENT_SCHEMA_VERSION;
-  /** Saved transport: bpm + signature only (playing / position aren't stored). */
-  transport: { bpm: number; signature: TimeSignature };
+  /**
+   * Saved master section: bpm + signature + master output gain. `playing` and
+   * `positionTick` from {@link MasterState} aren't stored — sessions reload
+   * stopped at position 0.
+   */
+  master: { bpm: number; signature: TimeSignature; masterVolume: number };
   global: GlobalMusicState;
   tracks: readonly Track[];
   /** Optional global seed used to re-derive every auto track's seed at once. */
@@ -210,10 +214,11 @@ export const TrackSchema: v.GenericSchema<Track> = v.union([
   PitchedAutoSchema,
 ]);
 
-/** Schema for the saved transport sub-object. */
-export const TransportSchema = v.object({
+/** Schema for the saved master sub-object (tempo + meter + master gain). */
+export const MasterSchema = v.object({
   bpm: v.pipe(v.number(), v.minValue(1)),
   signature: TimeSignatureSchema,
+  masterVolume: NormalizedNumber,
 });
 
 /** Schema for the saved global music state. */
@@ -224,7 +229,7 @@ export const GlobalSchema = v.object({
 
 /** Schema for the v1 project body (everything below `schemaVersion`). */
 const ProjectV1BodySchema = v.object({
-  transport: TransportSchema,
+  master: MasterSchema,
   global: GlobalSchema,
   tracks: v.array(TrackSchema),
   globalSeed: v.optional(v.pipe(v.number(), v.integer())),
@@ -279,7 +284,7 @@ function parseV1(input: unknown, phraseExists: PhraseResolver): ParseResult {
 
   const project: Project = {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    transport: result.output.transport,
+    master: result.output.master,
     global: result.output.global,
     tracks: result.output.tracks,
   };

@@ -88,19 +88,23 @@ const RefOnlyParams = v.object({ ref: TrackRefSchema });
  * method = adding a new arm here + a dispatch case in `relay-client.ts`.
  */
 export const OpSchema = v.variant("method", [
-  v.object({ method: v.literal("transport.play"), params: NoParams }),
-  v.object({ method: v.literal("transport.pause"), params: NoParams }),
-  v.object({ method: v.literal("transport.stop"), params: NoParams }),
+  v.object({ method: v.literal("master.play"), params: NoParams }),
+  v.object({ method: v.literal("master.pause"), params: NoParams }),
+  v.object({ method: v.literal("master.stop"), params: NoParams }),
   v.object({
-    method: v.literal("transport.setBpm"),
+    method: v.literal("master.setBpm"),
     params: v.object({ bpm: v.pipe(v.number(), v.minValue(1)) }),
   }),
   v.object({
-    method: v.literal("transport.seek"),
+    method: v.literal("master.setMasterVolume"),
+    params: v.object({ gain: NormalizedNumber }),
+  }),
+  v.object({
+    method: v.literal("master.seek"),
     params: v.object({ tick: NonNegativeInteger }),
   }),
-  v.object({ method: v.literal("transport.getState"), params: NoParams }),
-  v.object({ method: v.literal("transport.getPlayheadStep"), params: NoParams }),
+  v.object({ method: v.literal("master.getState"), params: NoParams }),
+  v.object({ method: v.literal("master.getPlayheadStep"), params: NoParams }),
 
   v.object({ method: v.literal("global.get"), params: NoParams }),
   v.object({

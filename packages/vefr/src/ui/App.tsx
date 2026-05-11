@@ -8,11 +8,11 @@ import { GlobalPanel } from "./panels/GlobalPanel.js";
 import { ManualDrumEditor } from "./panels/ManualDrumEditor.js";
 import { ManualPitchedEditor } from "./panels/ManualPitchedEditor.js";
 import { TrackList } from "./panels/TrackList.js";
-import { TransportPanel } from "./panels/TransportPanel.js";
+import { MasterPanel } from "./panels/MasterPanel.js";
 import styles from "./App.module.css";
 import "./styles.css";
 
-/** Top-level UI: transport, global, project menu, track list, and per-track editors. */
+/** Top-level UI: master, global, project menu, track list, and per-track editors. */
 export function App(): ReactElement {
   const tracks = useTracks();
   useTrackMuteShortcuts();
@@ -21,7 +21,7 @@ export function App(): ReactElement {
       <TopBezel />
       <main>
         <div className={styles.topRow}>
-          <TransportPanel />
+          <MasterPanel />
           <GlobalPanel />
         </div>
         <TrackList />

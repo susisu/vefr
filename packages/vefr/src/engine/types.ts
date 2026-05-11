@@ -45,12 +45,19 @@ export type TimeSignature = {
   denominator: number;
 };
 
-/** Snapshot of the transport (play head + tempo + meter). */
-export type TransportState = {
+/**
+ * Snapshot of the "Master" section: play head, tempo, meter, and master gain.
+ * Named after the UI panel that hosts these (and on hardware the section that
+ * lumps tempo + master volume + start/stop together); not strictly DAW
+ * "transport" since master volume is mixer-side.
+ */
+export type MasterState = {
   playing: boolean;
   bpm: number;
   signature: TimeSignature;
   positionTick: Tick;
+  /** Linear gain applied to every voice at the {@link SoundOutput} boundary, 0..1. */
+  masterVolume: number;
 };
 
 /** Built-in scales recognised by the engine; intervals defined in {@link shared/music}. */

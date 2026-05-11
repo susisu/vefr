@@ -169,12 +169,15 @@ export class WebAudioSoundOutput implements SoundOutput {
 
   constructor(private readonly ctx: AudioContext) {
     this.master = ctx.createGain();
+    // Fallback start value used only until the Engine pushes the authoritative
+    // `MasterState.masterVolume` via {@link setMasterVolume} (constructor +
+    // `loadState`).
     this.master.gain.value = 0.4;
     this.master.connect(ctx.destination);
     this.drumNoiseBuffer = createNoiseBuffer(ctx, 0.5);
   }
 
-  /** Set the master gain (0..1). */
+  /** Set the master gain (linear, 0..1). */
   setMasterVolume(gain: number): void {
     this.master.gain.value = gain;
   }

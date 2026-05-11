@@ -184,25 +184,28 @@ export function dispatchBatch(api: ControlApi, id: string, ops: readonly Op[]): 
 /** Type-narrow on `op.method` and call the matching ControlApi method. */
 function dispatchOp(api: ControlApi, op: Op): unknown {
   switch (op.method) {
-    case "transport.play":
-      api.transport.play();
+    case "master.play":
+      api.master.play();
       return null;
-    case "transport.pause":
-      api.transport.pause();
+    case "master.pause":
+      api.master.pause();
       return null;
-    case "transport.stop":
-      api.transport.stop();
+    case "master.stop":
+      api.master.stop();
       return null;
-    case "transport.setBpm":
-      api.transport.setBpm(op.params.bpm);
+    case "master.setBpm":
+      api.master.setBpm(op.params.bpm);
       return null;
-    case "transport.seek":
-      api.transport.seek(op.params.tick);
+    case "master.setMasterVolume":
+      api.master.setMasterVolume(op.params.gain);
       return null;
-    case "transport.getState":
-      return api.transport.getState();
-    case "transport.getPlayheadStep":
-      return api.transport.getPlayheadStep() ?? null;
+    case "master.seek":
+      api.master.seek(op.params.tick);
+      return null;
+    case "master.getState":
+      return api.master.getState();
+    case "master.getPlayheadStep":
+      return api.master.getPlayheadStep() ?? null;
 
     case "global.get":
       return api.global.get();
