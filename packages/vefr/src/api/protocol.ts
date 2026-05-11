@@ -24,6 +24,7 @@ import {
   NoteSchema,
   PitchedAutoSchema,
   PitchedManualSchema,
+  PitchedOctaveSchema,
   ScaleIdSchema,
   TrackColorIdSchema,
   patternSchema,
@@ -52,11 +53,11 @@ const NewTrackInputSchema = v.union([
 ]);
 
 /**
- * `TrackPatch` on the wire (basic attributes only). `instrumentId` is
- * pitched-only; `kitId` and `mutedPads` are drum-only — the engine rejects
- * mismatched-kind patches with `kind-mismatch`. The schema accepts every
- * field on every track shape because the patch is applied after ref
- * resolution.
+ * `TrackPatch` on the wire (basic attributes only). `instrumentId` and
+ * `octave` are pitched-only; `kitId` and `mutedPads` are drum-only — the
+ * engine rejects mismatched-kind patches with `kind-mismatch`. The schema
+ * accepts every field on every track shape because the patch is applied
+ * after ref resolution.
  */
 const TrackPatchSchema = v.object({
   name: v.exactOptional(v.string()),
@@ -64,6 +65,7 @@ const TrackPatchSchema = v.object({
   volume: v.exactOptional(NormalizedNumber),
   color: v.exactOptional(TrackColorIdSchema),
   instrumentId: v.exactOptional(InstrumentIdSchema),
+  octave: v.exactOptional(PitchedOctaveSchema),
   kitId: v.exactOptional(DrumKitIdSchema),
   mutedPads: v.exactOptional(v.array(DrumPadSchema)),
 });

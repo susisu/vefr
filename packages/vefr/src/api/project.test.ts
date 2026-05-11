@@ -40,6 +40,7 @@ function makeMelodyTrack(): PitchedTrack {
     kind: "pitched",
     role: "melody",
     instrumentId: "pluck",
+    octave: 0,
     mute: false,
     volume: 0.7,
     color: "white",
@@ -49,7 +50,7 @@ function makeMelodyTrack(): PitchedTrack {
       events: [
         {
           tick: 0,
-          payload: { degree: 0, octave: 1, velocity: 0.8, lengthTicks: TICKS_PER_BEAT },
+          payload: { degree: 0, octave: 0, velocity: 0.8, lengthTicks: TICKS_PER_BEAT },
         },
       ],
     },
@@ -64,6 +65,7 @@ function makeAutoBassTrack(): PitchedTrack {
     kind: "pitched",
     role: "bass",
     instrumentId: "bass",
+    octave: -2,
     mute: false,
     volume: 0.9,
     color: "white",

@@ -149,6 +149,7 @@ describe("Engine", () => {
       kind: "pitched",
       role: "melody",
       instrumentId: "pluck",
+      octave: 0,
       mute: false,
       volume: 1,
       color: "white",
@@ -384,6 +385,7 @@ describe("Engine", () => {
       kind: "pitched",
       role: "melody",
       instrumentId: "lead",
+      octave: 1,
       mute: false,
       volume: 1,
       color: "white",
@@ -391,7 +393,7 @@ describe("Engine", () => {
       pattern: {
         lengthTicks: TICKS_PER_BEAT * 4,
         events: [
-          { tick: 0, payload: { degree: 0, octave: 1, velocity: 1, lengthTicks: TICKS_PER_BEAT } },
+          { tick: 0, payload: { degree: 0, octave: 0, velocity: 1, lengthTicks: TICKS_PER_BEAT } },
         ],
       },
     };
@@ -418,6 +420,65 @@ describe("Engine", () => {
     expect(() => {
       engine.updateTrack(refById("drum-1"), { instrumentId: "lead" });
     }).toThrow(/instrumentId/u);
+  });
+
+  it("applies the per-track octave when resolving pitched events to MIDI", () => {
+    // Snapshot the resolved MIDI for the same note (degree 0, octave 0) under
+    // three different track.octave settings. C minor, key 0 ⇒ scale root is
+    // MIDI 60 at track.octave 0, ±12 per whole octave above/below.
+    const cases: ReadonlyArray<{ trackOctave: number; expected: number }> = [
+      { trackOctave: 0, expected: 60 },
+      { trackOctave: 2, expected: 60 + 24 },
+      { trackOctave: -3, expected: 60 - 36 },
+    ];
+    for (const { trackOctave, expected } of cases) {
+      const clock = new TestClock();
+      const output = new RecordingSoundOutput();
+      const melody: PitchedTrack = {
+        id: "lead-2",
+        name: "Lead 2",
+        kind: "pitched",
+        role: "melody",
+        instrumentId: "lead",
+        octave: trackOctave,
+        mute: false,
+        volume: 1,
+        color: "white",
+        source: "manual",
+        pattern: {
+          lengthTicks: TICKS_PER_BEAT * 4,
+          events: [
+            {
+              tick: 0,
+              payload: { degree: 0, octave: 0, velocity: 1, lengthTicks: TICKS_PER_BEAT },
+            },
+          ],
+        },
+      };
+      const initial: EngineInitial = {
+        master: {
+          playing: false,
+          bpm: 60,
+          signature: { numerator: 4, denominator: 4 },
+          positionTick: 0,
+          masterVolume: 0.4,
+        },
+        global: { key: 0, scale: "minor" },
+        tracks: [melody],
+      };
+      const engine = new Engine(initial, { clock, output, resolvePhrase: () => undefined });
+      engine.play();
+      clock.advanceTo(0.5);
+      const note = output.events.find((e) => e.kind === "note");
+      expect(note?.midi).toBe(expected);
+    }
+  });
+
+  it("rejects updateTrack({ octave }) on a drum track with kind-mismatch", () => {
+    const { engine } = makeEngine();
+    expect(() => {
+      engine.updateTrack(refById("drum-1"), { octave: 1 });
+    }).toThrow(/octave/u);
   });
 
   it("resumes from paused position", () => {

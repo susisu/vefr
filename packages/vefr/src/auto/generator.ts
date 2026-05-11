@@ -14,11 +14,6 @@ const SIXTEENTH = TICKS_PER_BEAT / 4;
 /** Total ticks in one loop = 32 sixteenths = 2 bars in 4/4. */
 const LOOP_TICKS = LOOP_STEPS * SIXTEENTH;
 
-/** Octave constant for emitted bass notes (sub-bass register). */
-const BASS_OCTAVE = -2;
-/** Octave constant for emitted melody notes (over the global tonic). */
-const MELODY_OCTAVE = 0;
-
 /**
  * Drop probability per drum event when a micro slot rolls to drop. Kept low
  * so the kit's groove stays identifiable even when variation is "on".
@@ -87,7 +82,7 @@ export function generateBassLoop(input: PitchedGeneratorInput): PitchedLoop {
     if (rollDrop(input.seed, microSlot, 0, step, DROP_BASS)) continue;
     events.push({
       tick: step * SIXTEENTH,
-      payload: { degree: 0, octave: BASS_OCTAVE, velocity: v, lengthTicks: SIXTEENTH },
+      payload: { degree: 0, octave: 0, velocity: v, lengthTicks: SIXTEENTH },
     });
   }
   return { lengthTicks: LOOP_TICKS, events };
@@ -114,7 +109,7 @@ export function generateMelodyLoop(input: PitchedGeneratorInput): PitchedLoop {
         tick: step * SIXTEENTH,
         payload: {
           degree: walkDegrees[step] ?? 0,
-          octave: MELODY_OCTAVE,
+          octave: 0,
           velocity: tmplVel,
           lengthTicks: SIXTEENTH,
         },
@@ -125,7 +120,7 @@ export function generateMelodyLoop(input: PitchedGeneratorInput): PitchedLoop {
         tick: step * SIXTEENTH,
         payload: {
           degree: walkDegrees[step] ?? 0,
-          octave: MELODY_OCTAVE,
+          octave: 0,
           velocity: GHOST_VELOCITY,
           lengthTicks: SIXTEENTH,
         },

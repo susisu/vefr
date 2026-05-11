@@ -1,6 +1,6 @@
 import * as v from "valibot";
 import { DRUM_KIT_IDS, INSTRUMENT_IDS } from "../engine/sound-port.js";
-import { TRACK_COLOR_IDS } from "../engine/types.js";
+import { PITCHED_OCTAVE_MAX, PITCHED_OCTAVE_MIN, TRACK_COLOR_IDS } from "../engine/types.js";
 import type {
   DrumHit,
   GlobalMusicState,
@@ -111,6 +111,17 @@ export const DrumKitIdSchema = v.picklist(DRUM_KIT_IDS);
 /** Per-track decorative LED color id; mirrors `TRACK_COLOR_IDS` from the engine. */
 export const TrackColorIdSchema = v.picklist(TRACK_COLOR_IDS);
 
+/**
+ * Per-track octave offset accepted by pitched tracks. Whole octaves,
+ * inclusive `[PITCHED_OCTAVE_MIN, PITCHED_OCTAVE_MAX]` (currently -3..+3).
+ */
+export const PitchedOctaveSchema = v.pipe(
+  v.number(),
+  v.integer(),
+  v.minValue(PITCHED_OCTAVE_MIN),
+  v.maxValue(PITCHED_OCTAVE_MAX),
+);
+
 /** Schema for {@link DrumHit} payloads. */
 export const DrumHitSchema = v.object({
   pad: DrumPadSchema,
@@ -194,6 +205,7 @@ export const PitchedManualSchema = v.object({
   kind: v.literal("pitched"),
   role: PitchedRoleSchema,
   instrumentId: InstrumentIdSchema,
+  octave: PitchedOctaveSchema,
   source: v.literal("manual"),
   pattern: patternSchema<Note>(NoteSchema),
 });
@@ -204,6 +216,7 @@ export const PitchedAutoSchema = v.object({
   kind: v.literal("pitched"),
   role: PitchedRoleSchema,
   instrumentId: InstrumentIdSchema,
+  octave: PitchedOctaveSchema,
 });
 
 /** Top-level track schema, flat union of the four leaf shapes. */

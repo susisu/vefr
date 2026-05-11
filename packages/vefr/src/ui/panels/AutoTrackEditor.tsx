@@ -19,6 +19,7 @@ import { useControlApi } from "../context.js";
 import { useActivePhraseId } from "../hooks.js";
 import { DrumKitSelect } from "./DrumKitSelect.js";
 import { InstrumentSelect } from "./InstrumentSelect.js";
+import { PitchedOctaveKnob } from "./PitchedOctaveKnob.js";
 import styles from "./AutoTrackEditor.module.css";
 
 /** AutoParams fields that map to a numeric knob. */
@@ -142,6 +143,9 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
         </div>
       </details>
       <div className={styles.params}>
+        {track.kind === "pitched" ?
+          <PitchedOctaveKnob track={track} />
+        : null}
         {PARAM_SPECS.map((spec) => (
           <Knob
             key={spec.key}

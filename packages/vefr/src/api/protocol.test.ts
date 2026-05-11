@@ -110,6 +110,7 @@ describe("parseRpcRequest", () => {
               kind: "pitched",
               role: "melody",
               instrumentId: "lead",
+              octave: 0,
               source: "auto",
               mute: false,
               volume: 0.8,
@@ -123,6 +124,38 @@ describe("parseRpcRequest", () => {
       ],
     });
     expect(result.ok).toBe(true);
+  });
+
+  it("accepts a TrackPatch carrying octave", () => {
+    const result = parseRpcRequest({
+      ops: [
+        {
+          method: "track.update",
+          params: {
+            ref: { kind: "name", name: "Auto Lead" },
+            patch: { octave: 2 },
+          },
+        },
+      ],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects a TrackPatch with an out-of-range octave", () => {
+    for (const bad of [-4, 4, 1.5]) {
+      const result = parseRpcRequest({
+        ops: [
+          {
+            method: "track.update",
+            params: {
+              ref: { kind: "name", name: "Auto Lead" },
+              patch: { octave: bad },
+            },
+          },
+        ],
+      });
+      expect(result.ok).toBe(false);
+    }
   });
 
   it("rejects a pitched NewTrackInput missing instrumentId", () => {

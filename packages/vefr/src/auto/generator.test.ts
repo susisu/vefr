@@ -81,7 +81,7 @@ describe("generateDrumLoop", () => {
 });
 
 describe("generateBassLoop", () => {
-  it("emits root degree-0 events at sub-bass octave", () => {
+  it("emits root degree-0 events at the track-relative octave 0", () => {
     const out = generateBassLoop({
       loop: 0,
       seed: 99,
@@ -90,7 +90,9 @@ describe("generateBassLoop", () => {
     });
     for (const ev of out.events) {
       expect(ev.payload.degree).toBe(0);
-      expect(ev.payload.octave).toBe(-2);
+      // The sub-bass register comes from the owning PitchedTrack.octave at
+      // dispatch time; the generator itself always emits at octave 0.
+      expect(ev.payload.octave).toBe(0);
     }
   });
 

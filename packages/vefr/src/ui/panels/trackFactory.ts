@@ -3,6 +3,7 @@ import {
   DEFAULT_DRUM_KIT_ID,
   TICKS_PER_BEAT,
   defaultInstrumentForRole,
+  defaultOctaveForRole,
   type DrumHit,
   type Note,
   type Pattern,
@@ -79,12 +80,14 @@ export function buildNewTrackInput(api: ControlApi, choice: TrackKindChoice): Ne
     };
   }
   const instrumentId = defaultInstrumentForRole(choice.role);
+  const octave = defaultOctaveForRole(choice.role);
   if (choice.source === "manual") {
     return {
       ...base,
       kind: "pitched",
       role: choice.role,
       instrumentId,
+      octave,
       source: "manual",
       pattern: emptyPitchedPattern(),
     };
@@ -94,6 +97,7 @@ export function buildNewTrackInput(api: ControlApi, choice: TrackKindChoice): Ne
     kind: "pitched",
     role: choice.role,
     instrumentId,
+    octave,
     source: "auto",
     phraseIds: [],
     seed: randomSeed(),

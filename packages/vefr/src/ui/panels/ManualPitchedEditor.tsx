@@ -11,6 +11,7 @@ import clsx from "clsx";
 import { Chip, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { InstrumentSelect } from "./InstrumentSelect.js";
+import { PitchedOctaveKnob } from "./PitchedOctaveKnob.js";
 import styles from "./ManualPitchedEditor.module.css";
 
 /** Number of steps shown in the pitched grid: 32 sixteenth-notes spanning 2 bars. */
@@ -19,10 +20,6 @@ const STEPS_PER_PHRASE = 32;
 const STEP_TICKS = TICKS_PER_BEAT / 4;
 /** Scale-degree rows shown vertically (top = 7, bottom = 0). */
 const DEGREES: readonly number[] = [7, 6, 5, 4, 3, 2, 1, 0];
-/** Default octave assigned to newly placed melody notes. */
-const DEFAULT_MELODY_OCTAVE = 1;
-/** Default octave assigned to newly placed bass notes. */
-const DEFAULT_BASS_OCTAVE = -2;
 
 /** Editor for a manual pitched track: degree x step grid with at most one note per step. */
 export function ManualPitchedEditor({ track }: { track: PitchedTrack }): ReactElement | null {
@@ -39,12 +36,12 @@ function ManualPitchedEditorInner({
   pattern: Pattern<Note>;
 }): ReactElement {
   const api = useControlApi();
-  const defaultOctave = track.role === "bass" ? DEFAULT_BASS_OCTAVE : DEFAULT_MELODY_OCTAVE;
 
   /**
    * Toggle a (degree, step) cell: each step holds at most one note. Clicking
    * the same cell twice removes it; clicking a different degree at the same
-   * step replaces the existing note.
+   * step replaces the existing note. New notes are pinned to `octave: 0` —
+   * the audible register is controlled by the per-track {@link PitchedOctaveKnob}.
    */
   const toggle = (degree: number, stepIdx: number): void => {
     const tick = stepIdx * STEP_TICKS;
@@ -58,7 +55,7 @@ function ManualPitchedEditorInner({
         tick,
         payload: {
           degree,
-          octave: defaultOctave,
+          octave: 0,
           velocity: 0.8,
           lengthTicks: STEP_TICKS,
         },
@@ -108,6 +105,9 @@ function ManualPitchedEditorInner({
           </div>
           <PlayheadOverlay totalSteps={STEPS_PER_PHRASE} hasLabelColumn />
         </div>
+      </div>
+      <div className={styles.params}>
+        <PitchedOctaveKnob track={track} />
       </div>
     </div>
   );

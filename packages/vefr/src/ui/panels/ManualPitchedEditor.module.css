@@ -102,3 +102,16 @@
 .step.on:hover {
   background: var(--track-accent-glow, rgba(255, 255, 255, 0.55));
 }
+
+/* Per-track knob row sitting below the degree grid. Mirrors the layout used
+ * by AutoTrackEditor's `.params` so manual / auto pitched editors line their
+ * tuning controls up at the same place visually. */
+.params {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 0.5rem;
+  margin-top: 0.4rem;
+  border-top: 1px solid var(--panel-rim);
+}

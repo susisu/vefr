@@ -55,8 +55,9 @@ export type EngineInitial = {
 
 /**
  * Mutation applied via {@link Engine.updateTrack}; absent fields are left alone.
- * `instrumentId` is pitched-only; `kitId` and `mutedPads` are drum-only —
- * applying either to the wrong kind raises {@link TrackError} `kind-mismatch`.
+ * `instrumentId` and `octave` are pitched-only; `kitId` and `mutedPads` are
+ * drum-only — applying any to the wrong kind raises {@link TrackError}
+ * `kind-mismatch`.
  */
 export type TrackPatch = {
   name?: string;
@@ -64,6 +65,7 @@ export type TrackPatch = {
   volume?: number;
   color?: TrackColorId;
   instrumentId?: InstrumentId;
+  octave?: number;
   kitId?: DrumKitId;
   mutedPads?: readonly DrumPad[];
 };
@@ -392,6 +394,12 @@ export class Engine {
         "kind-mismatch",
       );
     }
+    if (patch.octave !== undefined && target.kind !== "pitched") {
+      throw new TrackError(
+        `octave is only valid on pitched tracks: ${target.name}`,
+        "kind-mismatch",
+      );
+    }
     if (patch.kitId !== undefined && target.kind !== "drum") {
       throw new TrackError(`kitId is only valid on drum tracks: ${target.name}`, "kind-mismatch");
     }
@@ -520,7 +528,7 @@ export class Engine {
     } else {
       for (const ev of track.pattern.events) {
         if (ev.tick !== localTick) continue;
-        this.playPitched(ev.payload, time, gain, track.instrumentId);
+        this.playPitched(ev.payload, time, gain, track.instrumentId, track.octave);
       }
     }
   }
@@ -557,7 +565,7 @@ export class Engine {
     } else if (track.kind === "pitched") {
       for (const ev of entry.events) {
         if (ev.tick !== localTick) continue;
-        this.playPitched(ev.payload, time, gain, track.instrumentId);
+        this.playPitched(ev.payload, time, gain, track.instrumentId, track.octave);
       }
     }
   }
@@ -645,9 +653,21 @@ export class Engine {
     return pickActivePhraseId(phrases, track.seed, loop, track.params.macroPeriodLoops);
   }
 
-  /** Common pitched-event dispatch path shared by manual and auto tracks. */
-  private playPitched(note: Note, time: number, gain: number, instrumentId: InstrumentId): void {
-    const midi = degreeToMidi(this.global, note.degree, note.octave);
+  /**
+   * Common pitched-event dispatch path shared by manual and auto tracks.
+   * `trackOctave` is the owning {@link PitchedTrack.octave}; it is added to
+   * each note's per-event `octave` before degree-to-MIDI resolution so the
+   * generator and manual editor can keep emitting at a fixed base while the
+   * UI octave knob alone shifts the audible range.
+   */
+  private playPitched(
+    note: Note,
+    time: number,
+    gain: number,
+    instrumentId: InstrumentId,
+    trackOctave: number,
+  ): void {
+    const midi = degreeToMidi(this.global, note.degree, note.octave + trackOctave);
     const lengthSec = (note.lengthTicks * 60) / (this.master.bpm * TICKS_PER_BEAT);
     this.output.playNote(time, midi, lengthSec, note.velocity, instrumentId, gain);
   }
@@ -708,6 +728,9 @@ function applyPatch(t: Track, patch: TrackPatch): Track {
   if (patch.color !== undefined) next.color = patch.color;
   if (patch.instrumentId !== undefined && next.kind === "pitched") {
     next.instrumentId = patch.instrumentId;
+  }
+  if (patch.octave !== undefined && next.kind === "pitched") {
+    next.octave = patch.octave;
   }
   if (patch.kitId !== undefined && next.kind === "drum") {
     next.kitId = patch.kitId;

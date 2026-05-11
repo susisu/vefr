@@ -218,12 +218,23 @@ export type PitchedRole = "melody" | "bass";
  * `instrumentId` selects the timbre at the {@link SoundOutput} boundary
  * and is independent of `role`: role drives auto-generation choice,
  * instrument drives sound.
+ *
+ * `octave` is a per-track transpose in whole octaves, added to each event's
+ * `Note.octave` at dispatch time. Constrained to {@link PITCHED_OCTAVE_MIN}
+ * .. {@link PITCHED_OCTAVE_MAX} by the Control API; the engine itself does
+ * not re-validate every dispatch.
  */
 export type PitchedTrack = TrackBase & {
   kind: "pitched";
   role: PitchedRole;
   instrumentId: InstrumentId;
+  octave: number;
 } & (ManualSource<Note> | AutoSource);
+
+/** Minimum value accepted by {@link PitchedTrack.octave} (whole octaves). */
+export const PITCHED_OCTAVE_MIN = -3;
+/** Maximum value accepted by {@link PitchedTrack.octave} (whole octaves). */
+export const PITCHED_OCTAVE_MAX = 3;
 
 /**
  * Default instrument for a {@link PitchedRole}. Picked so the legacy
@@ -233,6 +244,16 @@ export type PitchedTrack = TrackBase & {
  */
 export function defaultInstrumentForRole(role: PitchedRole): InstrumentId {
   return role === "bass" ? "bass" : "pluck";
+}
+
+/**
+ * Default {@link PitchedTrack.octave} for a new track of the given role.
+ * Mirrors the historical fixed octaves the auto generator used to bake
+ * in (`-2` for bass, `0` for melody), so a freshly-added track sounds
+ * the same as before the octave became a per-track setting.
+ */
+export function defaultOctaveForRole(role: PitchedRole): number {
+  return role === "bass" ? -2 : 0;
 }
 
 /**

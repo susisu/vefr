@@ -227,6 +227,12 @@ export class WebAudioSoundOutput implements SoundOutput {
     instrumentId: InstrumentId,
     gain: number,
   ): void {
+    // Stay silent for notes outside the MIDI 0..127 range. The per-track
+    // octave knob plus the auto-melody walk can together push the resolved
+    // pitch beyond either end of the spec; values past 127 in particular
+    // produce harsh ultrasonic content that is unpleasant rather than
+    // musical, so we just drop them.
+    if (!Number.isFinite(midi) || midi < 0 || midi > 127) return;
     const t = Math.max(time, this.ctx.currentTime);
     const patch = INSTRUMENT_PATCHES[instrumentId];
     const freq = 440 * 2 ** ((midi - 69) / 12);
