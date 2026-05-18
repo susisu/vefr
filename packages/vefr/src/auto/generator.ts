@@ -6,13 +6,11 @@ import {
   type Note,
   type PatternEvent,
 } from "../engine/types.js";
-import { LOOP_STEPS, type DrumTemplate, type RhythmTemplate } from "../phrases/types.js";
-import type { DrumLoop, DrumGeneratorInput, PitchedLoop, PitchedGeneratorInput } from "./types.js";
+import { LOOP_STEPS } from "../phrases/types.js";
+import type { DrumGeneratorInput, MaterializedPhrase, PitchedGeneratorInput } from "./types.js";
 
 /** One sixteenth-note in ticks; templates are authored at this resolution. */
 const SIXTEENTH = TICKS_PER_BEAT / 4;
-/** Total ticks in one loop = 32 sixteenths = 2 bars in 4/4. */
-const LOOP_TICKS = LOOP_STEPS * SIXTEENTH;
 
 /**
  * Drop probability per drum event when a micro slot rolls to drop. Kept low
@@ -43,91 +41,118 @@ const TAG_WALK = 0x574b; /* "WK" — melody walk step */
 const TAG_WALK_START = 0x5753; /* "WS" — melody walk starting degree */
 
 /**
- * Materialize one loop of drum events. The macro slot picks a template from
- * the candidate list; the micro slot seeds drop dice per event. Pure
+ * Materialize one loop of drum content as a {@link MaterializedPhrase}. The
+ * macro slot picks a phrase; the micro slot seeds drop dice per event. Pure
  * function — same input always returns the same output.
  */
-export function generateDrumLoop(input: DrumGeneratorInput): DrumLoop {
-  if (input.templates.length === 0) return emptyLoop();
+export function generateDrumLoop(input: DrumGeneratorInput): MaterializedPhrase {
+  if (input.phrases.length === 0) return emptyDrum();
   const macroSlot = slotFor(input.loop, input.params.macroPeriodLoops);
   const microSlot = slotFor(input.loop, input.params.microPeriodLoops);
-  const template = pickTemplate<DrumTemplate>(input.seed, macroSlot, input.templates);
-  const events: Array<PatternEvent<DrumHit>> = [];
+  const phrase = pickPhrase(input.seed, macroSlot, input.phrases);
+  const template: { [P in DrumPad]?: number[] } = {};
   for (const pad of DRUM_PADS) {
-    const row = template[pad];
+    const row = phrase.template[pad];
     if (!row) continue;
+    const out: number[] = new Array<number>(LOOP_STEPS).fill(0);
     for (let step = 0; step < LOOP_STEPS; step++) {
       const v = row[step] ?? 0;
       if (v <= 0) continue;
       if (rollDrop(input.seed, microSlot, padIdx(pad), step, DROP_DRUM)) continue;
-      events.push({ tick: step * SIXTEENTH, payload: { pad, velocity: v } });
+      out[step] = v;
     }
+    template[pad] = out;
   }
-  return { lengthTicks: LOOP_TICKS, events };
+  return { kind: "drum", phraseId: phrase.id, name: phrase.name, template };
 }
 
 /**
- * Materialize one loop of bass events. Bass stays on the root degree by
+ * Materialize one loop of bass content. Bass stays on the root degree by
  * design; rhythm + drop come from the template plus the micro slot's dice.
  */
-export function generateBassLoop(input: PitchedGeneratorInput): PitchedLoop {
-  if (input.templates.length === 0) return emptyLoop();
+export function generateBassLoop(input: PitchedGeneratorInput): MaterializedPhrase {
+  if (input.phrases.length === 0) return emptyPitched();
   const macroSlot = slotFor(input.loop, input.params.macroPeriodLoops);
   const microSlot = slotFor(input.loop, input.params.microPeriodLoops);
-  const template = pickTemplate<RhythmTemplate>(input.seed, macroSlot, input.templates);
-  const events: Array<PatternEvent<Note>> = [];
+  const phrase = pickPhrase(input.seed, macroSlot, input.phrases);
+  const template: number[] = new Array<number>(LOOP_STEPS).fill(0);
+  const notes: Array<Note | null> = new Array<Note | null>(LOOP_STEPS).fill(null);
   for (let step = 0; step < LOOP_STEPS; step++) {
-    const v = template[step] ?? 0;
+    const v = phrase.template[step] ?? 0;
     if (v <= 0) continue;
     if (rollDrop(input.seed, microSlot, 0, step, DROP_BASS)) continue;
-    events.push({
-      tick: step * SIXTEENTH,
-      payload: { degree: 0, octave: 0, velocity: v, lengthTicks: SIXTEENTH },
-    });
+    template[step] = v;
+    notes[step] = { degree: 0, octave: 0, velocity: v, lengthTicks: SIXTEENTH };
   }
-  return { lengthTicks: LOOP_TICKS, events };
+  return { kind: "pitched", phraseId: phrase.id, name: phrase.name, template, notes };
 }
 
 /**
- * Materialize one loop of melody events. The macro slot picks a template,
+ * Materialize one loop of melody content. The macro slot picks a phrase,
  * the micro slot seeds a fresh scale walk + drop / ghost dice. Same micro
  * slot always produces the same walk so loop repeats sound identical
  * within the slot; crossing a slot boundary yields a new walk.
  */
-export function generateMelodyLoop(input: PitchedGeneratorInput): PitchedLoop {
-  if (input.templates.length === 0) return emptyLoop();
+export function generateMelodyLoop(input: PitchedGeneratorInput): MaterializedPhrase {
+  if (input.phrases.length === 0) return emptyPitched();
   const macroSlot = slotFor(input.loop, input.params.macroPeriodLoops);
   const microSlot = slotFor(input.loop, input.params.microPeriodLoops);
-  const template = pickTemplate<RhythmTemplate>(input.seed, macroSlot, input.templates);
+  const phrase = pickPhrase(input.seed, macroSlot, input.phrases);
   const walkDegrees = computeWalk(input.seed, microSlot);
-  const events: Array<PatternEvent<Note>> = [];
+  const template: number[] = new Array<number>(LOOP_STEPS).fill(0);
+  const notes: Array<Note | null> = new Array<Note | null>(LOOP_STEPS).fill(null);
   for (let step = 0; step < LOOP_STEPS; step++) {
-    const tmplVel = template[step] ?? 0;
+    const tmplVel = phrase.template[step] ?? 0;
+    const degree = walkDegrees[step] ?? 0;
     if (tmplVel > 0) {
       if (rollDrop(input.seed, microSlot, 1, step, DROP_MELODY)) continue;
-      events.push({
-        tick: step * SIXTEENTH,
-        payload: {
-          degree: walkDegrees[step] ?? 0,
-          octave: 0,
-          velocity: tmplVel,
-          lengthTicks: SIXTEENTH,
-        },
-      });
+      template[step] = tmplVel;
+      notes[step] = { degree, octave: 0, velocity: tmplVel, lengthTicks: SIXTEENTH };
     } else {
       if (!rollInsert(input.seed, microSlot, step, INSERT_MELODY)) continue;
-      events.push({
-        tick: step * SIXTEENTH,
-        payload: {
-          degree: walkDegrees[step] ?? 0,
-          octave: 0,
-          velocity: GHOST_VELOCITY,
-          lengthTicks: SIXTEENTH,
-        },
-      });
+      template[step] = GHOST_VELOCITY;
+      notes[step] = { degree, octave: 0, velocity: GHOST_VELOCITY, lengthTicks: SIXTEENTH };
     }
   }
-  return { lengthTicks: LOOP_TICKS, events };
+  return { kind: "pitched", phraseId: phrase.id, name: phrase.name, template, notes };
+}
+
+/**
+ * Project a drum {@link MaterializedPhrase} into the time-ordered sparse
+ * event list the engine consumes per tick. Pure function — useful for both
+ * the dispatch path and tests that want to assert against expected events.
+ */
+export function drumPhraseToEvents(
+  phrase: Extract<MaterializedPhrase, { kind: "drum" }>,
+): ReadonlyArray<PatternEvent<DrumHit>> {
+  const events: Array<PatternEvent<DrumHit>> = [];
+  for (const pad of DRUM_PADS) {
+    const row = phrase.template[pad];
+    if (!row) continue;
+    for (let step = 0; step < LOOP_STEPS; step++) {
+      const v = row[step] ?? 0;
+      if (v <= 0) continue;
+      events.push({ tick: step * SIXTEENTH, payload: { pad, velocity: v } });
+    }
+  }
+  return events;
+}
+
+/**
+ * Project a pitched {@link MaterializedPhrase} into the time-ordered sparse
+ * event list. Iterates the per-step `notes` grid and emits one event per
+ * non-null entry.
+ */
+export function pitchedPhraseToEvents(
+  phrase: Extract<MaterializedPhrase, { kind: "pitched" }>,
+): ReadonlyArray<PatternEvent<Note>> {
+  const events: Array<PatternEvent<Note>> = [];
+  for (let step = 0; step < phrase.notes.length; step++) {
+    const note = phrase.notes[step];
+    if (note === null || note === undefined) continue;
+    events.push({ tick: step * SIXTEENTH, payload: note });
+  }
+  return events;
 }
 
 /**
@@ -139,19 +164,30 @@ function slotFor(loop: number, period: number): number {
   return Math.floor(loop / period);
 }
 
-/** Empty fallback for generators called with no usable templates. */
-function emptyLoop<T>(): { lengthTicks: number; events: ReadonlyArray<PatternEvent<T>> } {
-  return { lengthTicks: 0, events: [] };
+/** Empty fallback for the drum generator when no phrases are configured. */
+function emptyDrum(): MaterializedPhrase {
+  return { kind: "drum", phraseId: undefined, name: undefined, template: {} };
+}
+
+/** Empty fallback for the pitched generators when no phrases are configured. */
+function emptyPitched(): MaterializedPhrase {
+  return {
+    kind: "pitched",
+    phraseId: undefined,
+    name: undefined,
+    template: [],
+    notes: [],
+  };
 }
 
 /**
- * Pick a single template from the candidate list, deterministic in
+ * Pick a single phrase from the candidate list, deterministic in
  * `(seed, macro_slot)`. Caller must pass a non-empty list.
  */
-function pickTemplate<T>(seed: number, macroSlot: number, templates: readonly T[]): T {
-  const idx = pickIndex(seed, TAG_TEMPLATE, macroSlot, templates.length);
-  const picked = templates[idx];
-  if (picked === undefined) throw new Error("pickTemplate called on empty templates");
+function pickPhrase<P>(seed: number, macroSlot: number, phrases: readonly P[]): P {
+  const idx = pickIndex(seed, TAG_TEMPLATE, macroSlot, phrases.length);
+  const picked = phrases[idx];
+  if (picked === undefined) throw new Error("pickPhrase called on empty phrases");
   return picked;
 }
 
@@ -165,8 +201,9 @@ function pickIndex(seed: number, tag: number, slot: number, n: number): number {
 }
 
 /**
- * Public wrapper around the macro-tier template picker so the engine can
- * report "which phrase is currently selected" without re-running the full
+ * Public wrapper around the macro-tier picker. Retained so the engine's
+ * `getActiveAutoPhraseId` back-calculation path can derive the active
+ * phrase from the saved transport position without re-running the full
  * generator. Returns 0 when `count <= 0`.
  */
 export function pickAutoPhraseIndex(

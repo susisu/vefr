@@ -1,10 +1,12 @@
 import {
+  drumPhraseToEvents,
   generateBassLoop,
   generateDrumLoop,
   generateMelodyLoop,
   pickAutoPhraseIndex,
+  pitchedPhraseToEvents,
 } from "../auto/generator.js";
-import type { DrumLoop, PitchedLoop } from "../auto/types.js";
+import type { MaterializedPhrase } from "../auto/types.js";
 import type { DrumPhrase, Phrase, PitchedPhrase } from "../phrases/types.js";
 import { degreeToMidi } from "../shared/music.js";
 import { Signal } from "../shared/signal.js";
@@ -19,6 +21,7 @@ import {
   type GlobalMusicState,
   type Note,
   type Pattern,
+  type PatternEvent,
   type PhraseId,
   type Tick,
   type Track,
@@ -549,7 +552,8 @@ export class Engine {
     const loop = Math.floor(tick / loopTicks);
     const localTick = tick - loop * loopTicks;
     const cached = this.autoCache.get(track.id);
-    const entry = cached && cached.loop === loop ? cached : this.materializeAuto(track, loop);
+    const entry =
+      cached && cached.loop === loop ? cached : this.materializeAuto(track, loop, loopTicks);
     if (entry !== cached) this.autoCache.set(track.id, entry);
     if (entry.lengthTicks <= 0 || localTick >= entry.lengthTicks) return;
     if (entry.kind === "drum") {
@@ -572,43 +576,55 @@ export class Engine {
 
   /**
    * Run the appropriate generator and wrap the result in a cache entry.
-   * The generator is called once per loop boundary with the loop index.
-   * Phrase templates are pre-resolved so we can also report which phrase id
-   * was picked for the macro slot (used by the UI preview).
+   * The generator is called once per loop boundary with the loop index and
+   * returns a {@link MaterializedPhrase} carrying the picked phrase id (so
+   * the UI preview / `getActiveAutoPhraseId` don't have to re-run the
+   * picker). Events are derived from the materialized phrase via
+   * {@link drumPhraseToEvents} / {@link pitchedPhraseToEvents} and cached
+   * so the per-tick dispatch path stays a flat array scan.
    */
-  private materializeAuto(track: Extract<Track, { source: "auto" }>, loop: number): AutoCacheEntry {
+  private materializeAuto(
+    track: Extract<Track, { source: "auto" }>,
+    loop: number,
+    lengthTicks: Tick,
+  ): AutoCacheEntry {
     if (track.kind === "drum") {
       const phrases = this.collectDrumPhrases(track.phraseIds);
-      const phraseId = pickActivePhraseId(phrases, track.seed, loop, track.params.macroPeriodLoops);
-      this.maybeEmitPhraseChange(track.id, phraseId);
-      const templates = phrases.map((p) => p.template);
-      const out = generateDrumLoop({ loop, seed: track.seed, templates, params: track.params });
+      const phrase = generateDrumLoop({
+        loop,
+        seed: track.seed,
+        phrases,
+        params: track.params,
+      });
+      this.maybeEmitPhraseChange(track.id, phrase.phraseId);
+      if (phrase.kind !== "drum") throw new Error("generateDrumLoop returned non-drum phrase");
       return {
         kind: "drum",
         loop,
-        phraseId,
-        lengthTicks: out.lengthTicks,
-        events: out.events,
+        phrase,
+        lengthTicks,
+        events: drumPhraseToEvents(phrase),
       };
     }
     const phrases = this.collectPitchedPhrases(track.phraseIds, track.role);
-    const phraseId = pickActivePhraseId(phrases, track.seed, loop, track.params.macroPeriodLoops);
-    this.maybeEmitPhraseChange(track.id, phraseId);
-    const templates = phrases.map((p) => p.template);
-    const args = { loop, seed: track.seed, templates, params: track.params };
-    const out = track.role === "melody" ? generateMelodyLoop(args) : generateBassLoop(args);
+    const args = { loop, seed: track.seed, phrases, params: track.params };
+    const phrase = track.role === "melody" ? generateMelodyLoop(args) : generateBassLoop(args);
+    this.maybeEmitPhraseChange(track.id, phrase.phraseId);
+    if (phrase.kind !== "pitched") {
+      throw new Error("pitched generator returned non-pitched phrase");
+    }
     return {
       kind: "pitched",
       loop,
-      phraseId,
-      lengthTicks: out.lengthTicks,
-      events: out.events,
+      phrase,
+      lengthTicks,
+      events: pitchedPhraseToEvents(phrase),
     };
   }
 
   /** Emit `activePhraseChanged` only when the new id differs from the cached one. */
   private maybeEmitPhraseChange(trackId: TrackId, phraseId: PhraseId | undefined): void {
-    const prev = this.autoCache.get(trackId)?.phraseId;
+    const prev = this.autoCache.get(trackId)?.phrase.phraseId;
     if (prev !== phraseId) this.activePhraseChanged.emit({ trackId, phraseId });
   }
 
@@ -677,24 +693,24 @@ export class Engine {
  * Cached materialized loop (drum or pitched) plus the loop index it was
  * produced for. `loop` indexes whole {@link LOOP_BARS}-bar chunks of
  * playback, so a single materialization covers `LOOP_BARS` musical bars.
- * `phraseId` is the macro-tier picked phrase template used for that chunk;
- * the UI reads it via {@link Engine.getActiveAutoPhraseId} to render the
- * preview.
+ * `phrase` is the grid-form {@link MaterializedPhrase} (carries the picked
+ * phrase id + UI-facing template); `events` is the time-ordered projection
+ * the per-tick dispatch loop scans.
  */
 type AutoCacheEntry =
   | {
       kind: "drum";
       loop: number;
-      phraseId: PhraseId | undefined;
+      phrase: Extract<MaterializedPhrase, { kind: "drum" }>;
       lengthTicks: Tick;
-      events: DrumLoop["events"];
+      events: ReadonlyArray<PatternEvent<DrumHit>>;
     }
   | {
       kind: "pitched";
       loop: number;
-      phraseId: PhraseId | undefined;
+      phrase: Extract<MaterializedPhrase, { kind: "pitched" }>;
       lengthTicks: Tick;
-      events: PitchedLoop["events"];
+      events: ReadonlyArray<PatternEvent<Note>>;
     };
 
 /**
