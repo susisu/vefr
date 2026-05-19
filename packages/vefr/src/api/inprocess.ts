@@ -1,3 +1,4 @@
+import type { MaterializedPhrase } from "../auto/types.js";
 import {
   TrackError,
   type AutoConfigPatch,
@@ -8,7 +9,7 @@ import {
 import type {
   DrumHit,
   GlobalMusicState,
-  MasterState,
+  MasterConfig,
   Note,
   Pattern,
   Tick,
@@ -27,6 +28,7 @@ import type {
   ControlApi,
   GlobalApi,
   MasterApi,
+  PlaybackApi,
   ProjectApi,
   Result,
   TrackApi,
@@ -48,19 +50,21 @@ export type InProcessHooks = {
  */
 export class InProcessControlApi implements ControlApi {
   readonly master: MasterApi;
+  readonly playback: PlaybackApi;
   readonly global: GlobalApi;
   readonly track: TrackApi;
   readonly project: ProjectApi;
 
   constructor(engine: Engine, phraseExists: PhraseResolver, hooks: InProcessHooks = {}) {
     this.master = makeMasterApi(engine, hooks);
+    this.playback = makePlaybackApi(engine);
     this.global = makeGlobalApi(engine);
     this.track = makeTrackApi(engine);
     this.project = makeProjectApi(engine, phraseExists);
   }
 }
 
-/** Build the master sub-API (play/pause/stop/seek + tempo + master gain) around an Engine. */
+/** Build the master sub-API (transport commands + tempo + master gain) around an Engine. */
 function makeMasterApi(engine: Engine, hooks: InProcessHooks): MasterApi {
   return {
     play: (): void => {
@@ -82,13 +86,77 @@ function makeMasterApi(engine: Engine, hooks: InProcessHooks): MasterApi {
     seek: (tick: Tick): void => {
       engine.seek(tick);
     },
-    getState: (): MasterState => engine.getMaster(),
-    onChange: (handler: (state: MasterState) => void): (() => void) =>
-      engine.masterChanged.on(handler),
-    getPlayheadStep: (): number | undefined => engine.getPlayheadStep(),
-    onPlayheadStepChange: (handler: (step: number | undefined) => void): (() => void) =>
-      engine.playheadStepChanged.on(handler),
+    getState: (): MasterConfig => engine.getMaster(),
+    onChange: (handler: (state: MasterConfig) => void): (() => void) =>
+      engine.masterConfigChanged.on(handler),
   };
+}
+
+/** Build the playback (live transport observation) sub-API. */
+function makePlaybackApi(engine: Engine): PlaybackApi {
+  return {
+    isPlaying: (): boolean => engine.playback.isPlaying(),
+    onPlayingChange: (handler: (playing: boolean) => void): (() => void) =>
+      engine.playback.playingChanged.on(handler),
+    getPlayheadStep: (): number | undefined => engine.playback.getPlayheadStep(),
+    onPlayheadStepChange: (handler: (step: number | undefined) => void): (() => void) =>
+      engine.playback.playheadStepChanged.on(handler),
+    getActiveAutoPhrase: (ref: TrackRef): MaterializedPhrase | undefined => {
+      const cached = resolveCachedAutoPhrase(engine, ref);
+      if (cached !== undefined) return cached;
+      // Cache miss (track just added / config just changed / never dispatched).
+      // The engine's back-calculation derives the same phraseId from the saved
+      // position; for task-2 compatibility we fabricate a minimal placeholder
+      // so UI subscribers still see *something* until the next dispatch
+      // populates the cache. Lazy materialization will land in a later commit.
+      const phraseId = engine.getActiveAutoPhraseId(ref);
+      if (phraseId === undefined) return undefined;
+      const track = engine.resolveTrack(ref);
+      if (!track || track.source !== "auto") return undefined;
+      return placeholderForPhraseId(track.kind, phraseId);
+    },
+    subscribeActiveAutoPhrase: (ref: TrackRef, handler: () => void): (() => void) => {
+      // Fire on live active-phrase changes filtered to this track, plus on
+      // track-config changes (which can shuffle the picked phrase). The
+      // masterConfig listener is unnecessary because none of bpm / signature /
+      // masterVolume affect the picked phrase id.
+      const offPhrase = engine.playback.activePhraseChanged.on((e) => {
+        const target = engine.resolveTrack(ref);
+        if (target && e.trackId === target.id) handler();
+      });
+      const offTracks = engine.tracksChanged.on(() => {
+        handler();
+      });
+      return () => {
+        offPhrase();
+        offTracks();
+      };
+    },
+  };
+}
+
+/**
+ * Read the cached materialized phrase for `ref`, if any. Encapsulates the
+ * resolve-then-lookup pattern so the API surface only deals with `TrackRef`.
+ */
+function resolveCachedAutoPhrase(engine: Engine, ref: TrackRef): MaterializedPhrase | undefined {
+  const track = engine.resolveTrack(ref);
+  if (!track) return undefined;
+  return engine.playback.getAutoCacheEntry(track.id)?.phrase;
+}
+
+/**
+ * Minimal {@link MaterializedPhrase} placeholder used while the cache is
+ * empty (e.g. before the first dispatch tick after track config changes).
+ * Only carries `phraseId` so the UI can still render the phrase name;
+ * `template` / `notes` are empty until the next materialization. Real
+ * lazy materialization replaces this in a follow-up commit.
+ */
+function placeholderForPhraseId(kind: "drum" | "pitched", phraseId: string): MaterializedPhrase {
+  if (kind === "drum") {
+    return { kind: "drum", phraseId, name: undefined, template: {} };
+  }
+  return { kind: "pitched", phraseId, name: undefined, template: [], notes: [] };
 }
 
 /** Build the global sub-API around an Engine. */
@@ -181,27 +249,6 @@ function makeTrackApi(engine: Engine): TrackApi {
       ),
     onChange: (handler: (tracks: readonly Track[]) => void): (() => void) =>
       engine.tracksChanged.on(handler),
-    getActivePhraseId: (ref: TrackRef) => engine.getActiveAutoPhraseId(ref),
-    subscribeActivePhrase: (ref: TrackRef, handler: () => void): (() => void) => {
-      // Fire on live active-phrase changes filtered to this track, plus on
-      // track-config and transport changes since both shift the derived
-      // value `getActivePhraseId` returns.
-      const offPhrase = engine.activePhraseChanged.on((e) => {
-        const target = engine.resolveTrack(ref);
-        if (target && e.trackId === target.id) handler();
-      });
-      const offTracks = engine.tracksChanged.on(() => {
-        handler();
-      });
-      const offMaster = engine.masterChanged.on(() => {
-        handler();
-      });
-      return () => {
-        offPhrase();
-        offTracks();
-        offMaster();
-      };
-    },
   };
 }
 
@@ -217,13 +264,7 @@ function makeProjectApi(engine: Engine, phraseExists: PhraseResolver): ProjectAp
     snapshot: (): Project => snapshotProject(engine),
     load: (project: Project): void => {
       engine.loadState({
-        master: {
-          playing: false,
-          bpm: project.master.bpm,
-          signature: project.master.signature,
-          positionTick: 0,
-          masterVolume: project.master.masterVolume,
-        },
+        master: project.master,
         global: project.global,
         tracks: project.tracks,
       });
@@ -232,31 +273,25 @@ function makeProjectApi(engine: Engine, phraseExists: PhraseResolver): ProjectAp
       const parsed = parseProject(raw, phraseExists);
       if (!parsed.ok) return { ok: false, error: parsed.errors };
       engine.loadState({
-        master: {
-          playing: false,
-          bpm: parsed.value.master.bpm,
-          signature: parsed.value.master.signature,
-          positionTick: 0,
-          masterVolume: parsed.value.master.masterVolume,
-        },
+        master: parsed.value.master,
         global: parsed.value.global,
         tracks: parsed.value.tracks,
       });
       return { ok: true, value: undefined };
     },
     onAnyChange: (handler: () => void): (() => void) => {
-      const offM = engine.masterChanged.on(() => {
+      const offMaster = engine.masterConfigChanged.on(() => {
         handler();
       });
-      const offG = engine.globalChanged.on(() => {
+      const offGlobal = engine.globalChanged.on(() => {
         handler();
       });
       const offTracks = engine.tracksChanged.on(() => {
         handler();
       });
       return () => {
-        offM();
-        offG();
+        offMaster();
+        offGlobal();
         offTracks();
       };
     },

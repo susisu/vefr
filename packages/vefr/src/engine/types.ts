@@ -46,16 +46,18 @@ export type TimeSignature = {
 };
 
 /**
- * Snapshot of the "Master" section: play head, tempo, meter, and master gain.
- * Named after the UI panel that hosts these (and on hardware the section that
- * lumps tempo + master volume + start/stop together); not strictly DAW
- * "transport" since master volume is mixer-side.
+ * Persistent "Master" section config: tempo, meter, master gain. Named after
+ * the UI panel that hosts these (and on hardware the section that lumps
+ * tempo + master volume + start/stop together); not strictly DAW "transport"
+ * since master volume is mixer-side.
+ *
+ * Transient state (is-playing, current play head position, active phrase per
+ * auto track) lives in {@link PlaybackState}, not here — only this shape is
+ * persisted in the project snapshot.
  */
-export type MasterState = {
-  playing: boolean;
+export type MasterConfig = {
   bpm: number;
   signature: TimeSignature;
-  positionTick: Tick;
   /** Linear gain applied to every voice at the {@link SoundOutput} boundary, 0..1. */
   masterVolume: number;
 };

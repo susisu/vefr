@@ -3,13 +3,19 @@ import type { AutoConfigPatch, NewTrackInput, TrackPatch } from "../engine/engin
 // Re-exported so UI code can build NewTrackInput values without importing
 // directly from `engine/engine.js` (the lint boundary forbids that).
 export type { NewTrackInput };
+import type { MaterializedPhrase } from "../auto/types.js";
+/**
+ * Re-exported so UI components can consume `MaterializedPhrase` (returned by
+ * `playback.getActiveAutoPhrase`) without crossing the `auto/` import
+ * boundary that the UI lint rule forbids.
+ */
+export type { MaterializedPhrase };
 import type {
   DrumHit,
   GlobalMusicState,
-  MasterState,
+  MasterConfig,
   Note,
   Pattern,
-  PhraseId,
   Tick,
   Track,
   TrackRef,
@@ -36,14 +42,16 @@ export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
  */
 export interface ControlApi {
   master: MasterApi;
+  playback: PlaybackApi;
   global: GlobalApi;
   track: TrackApi;
   project: ProjectApi;
 }
 
 /**
- * Master sub-API: play/pause/stop/seek + tempo + master gain + state
- * subscription. Named after the "Master" UI section that owns these controls.
+ * Master sub-API: persistent master config (tempo, signature, master gain)
+ * plus the user-initiated transport commands. Live transport observation
+ * lives on {@link PlaybackApi}.
  */
 export interface MasterApi {
   /** Begin playback from the saved play head. */
@@ -58,10 +66,22 @@ export interface MasterApi {
   setMasterVolume: (gain: number) => void;
   /** Move the play head to `tick` (must be ≥ 0). */
   seek: (tick: Tick) => void;
-  /** Latest snapshot of {@link MasterState}. Stable reference until the next change. */
-  getState: () => MasterState;
-  /** Subscribe to master-state changes; returns a detach function. */
-  onChange: (handler: (state: MasterState) => void) => () => void;
+  /** Latest snapshot of the persistent master config. */
+  getState: () => MasterConfig;
+  /** Subscribe to master-config changes (bpm / signature / master gain). */
+  onChange: (handler: (state: MasterConfig) => void) => () => void;
+}
+
+/**
+ * Playback sub-API: live transport observation. Everything here is
+ * transient state (not persisted to project JSON). All getters are
+ * synchronous and safe to call from `useSyncExternalStore` snapshots.
+ */
+export interface PlaybackApi {
+  /** Whether the engine is currently playing. */
+  isPlaying: () => boolean;
+  /** Subscribe to play/pause/stop transitions; fires only on actual value changes. */
+  onPlayingChange: (handler: (playing: boolean) => void) => () => void;
   /**
    * Most recent visual playhead step (= absolute 16th-note count since
    * tick 0), or `undefined` while not playing. UI grids mod by their step
@@ -73,6 +93,21 @@ export interface MasterApi {
    * note while playing, plus once on pause/stop with `undefined`.
    */
   onPlayheadStepChange: (handler: (step: number | undefined) => void) => () => void;
+  /**
+   * Materialized phrase currently selected for `ref`'s auto track. Returns
+   * `undefined` for manual tracks, for unresolvable refs, or when the
+   * track has no usable phrases. Carries both the picked phrase id/name
+   * and the per-step grid (including micro variations) so UI previews can
+   * render the exact content the audio scheduler is firing.
+   */
+  getActiveAutoPhrase: (ref: TrackRef) => MaterializedPhrase | undefined;
+  /**
+   * Subscribe to "the active auto phrase for `ref` may have changed" events.
+   * Fires on live macro-tier rotation, on transport seeks, and on
+   * auto-config edits. Use with {@link getActiveAutoPhrase} for
+   * `useSyncExternalStore`.
+   */
+  subscribeActiveAutoPhrase: (ref: TrackRef, handler: () => void) => () => void;
 }
 
 /** Global sub-API: key/scale read+write, plus convenience random-pick helpers. */
@@ -131,18 +166,6 @@ export interface TrackApi {
   rerollPhrase: (ref: TrackRef) => Result<void, TrackUpdateError>;
   /** Subscribe to track-list changes. */
   onChange: (handler: (tracks: readonly Track[]) => void) => () => void;
-  /**
-   * Phrase id currently selected for the macro slot of an auto track at the
-   * current transport position. Returns `undefined` for manual tracks, for
-   * unresolvable refs, or when the track has no usable phrases.
-   */
-  getActivePhraseId: (ref: TrackRef) => PhraseId | undefined;
-  /**
-   * Subscribe to "the active phrase id for `ref` may have changed" events.
-   * Fires for live macro-tier rotation, transport seeks, and auto-config
-   * edits. Use with `getActivePhraseId` for `useSyncExternalStore`.
-   */
-  subscribeActivePhrase: (ref: TrackRef, handler: () => void) => () => void;
 }
 
 /** Project sub-API: snapshot, replace, and listen for changes. */

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
+import type { MaterializedPhrase } from "../api/types.js";
 import {
   refById,
   type GlobalMusicState,
-  type MasterState,
+  type MasterConfig,
   type PhraseId,
   type Track,
   type TrackRef,
@@ -10,14 +11,18 @@ import {
 import { useControlApi, useRelay } from "./context.js";
 
 /**
- * Subscribe to master-section state updates (play/pause/tempo/volume/meter)
- * from the {@link ControlApi}. Snapshot identity changes only when the engine
- * emits, so React re-renders are driven by real state transitions rather than
- * polling.
+ * Subscribe to persistent master config (tempo / signature / master gain).
+ * Live transport state (is-playing / playhead) lives on the playback hooks.
  */
-export function useMaster(): MasterState {
+export function useMaster(): MasterConfig {
   const api = useControlApi();
   return useSyncExternalStore(api.master.onChange, api.master.getState);
+}
+
+/** Subscribe to whether the engine is currently playing. */
+export function usePlaying(): boolean {
+  const api = useControlApi();
+  return useSyncExternalStore(api.playback.onPlayingChange, api.playback.isPlaying);
 }
 
 /** Subscribe to global musical state (key / scale). */
@@ -35,15 +40,25 @@ export function useTracks(): readonly Track[] {
 /**
  * Phrase id currently selected for the macro slot of an auto track. Updates
  * live when the active phrase changes, when the track's config is edited,
- * or when the transport seeks.
+ * or when the transport seeks. Thin wrapper over
+ * {@link useActiveAutoPhrase} for callers that only need the id.
  */
 export function useActivePhraseId(ref: TrackRef): PhraseId | undefined {
+  return useActiveAutoPhrase(ref)?.phraseId;
+}
+
+/**
+ * Materialized phrase currently scheduled for an auto track. Carries both
+ * the picked phrase id/name and the per-step grid so previews can render
+ * exactly what the audio scheduler is firing.
+ */
+export function useActiveAutoPhrase(ref: TrackRef): MaterializedPhrase | undefined {
   const api = useControlApi();
   const subscribe = useCallback(
-    (cb: () => void) => api.track.subscribeActivePhrase(ref, cb),
+    (cb: () => void) => api.playback.subscribeActiveAutoPhrase(ref, cb),
     [api, ref],
   );
-  const getSnapshot = useCallback(() => api.track.getActivePhraseId(ref), [api, ref]);
+  const getSnapshot = useCallback(() => api.playback.getActiveAutoPhrase(ref), [api, ref]);
   return useSyncExternalStore(subscribe, getSnapshot);
 }
 
@@ -54,7 +69,7 @@ export function useActivePhraseId(ref: TrackRef): PhraseId | undefined {
  */
 export function usePlayheadStep(): number | undefined {
   const api = useControlApi();
-  return useSyncExternalStore(api.master.onPlayheadStepChange, api.master.getPlayheadStep);
+  return useSyncExternalStore(api.playback.onPlayheadStepChange, api.playback.getPlayheadStep);
 }
 
 /**

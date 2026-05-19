@@ -2,17 +2,18 @@ import clsx from "clsx";
 import type { ReactElement } from "react";
 import { Knob, LED, Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";
-import { useMaster } from "../hooks.js";
+import { useMaster, usePlaying } from "../hooks.js";
 import styles from "./MasterPanel.module.css";
 
 /** Master section: play / stop + tempo knob + master volume knob, all driven through ControlApi. */
 export function MasterPanel(): ReactElement {
   const api = useControlApi();
   const master = useMaster();
+  const playing = usePlaying();
 
   /** Toggle play and pause based on current state. */
   const onPlayPause = (): void => {
-    if (master.playing) {
+    if (playing) {
       api.master.pause();
     } else {
       api.master.play();
@@ -43,7 +44,7 @@ export function MasterPanel(): ReactElement {
       title="Master"
       meta={
         <>
-          <LED on={master.playing} /> RUN
+          <LED on={playing} /> RUN
         </>
       }
     >
@@ -51,10 +52,10 @@ export function MasterPanel(): ReactElement {
         <div className={styles.buttons}>
           <button
             type="button"
-            className={clsx(styles.play, master.playing && styles.playing)}
+            className={clsx(styles.play, playing && styles.playing)}
             onClick={onPlayPause}
           >
-            {master.playing ? "Pause" : "Play"}
+            {playing ? "Pause" : "Play"}
           </button>
           <button type="button" onClick={onStop}>
             Stop

@@ -37,10 +37,8 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
   };
   const initial: EngineInitial = {
     master: {
-      playing: false,
       bpm: 60,
       signature: { numerator: 4, denominator: 4 },
-      positionTick: 0,
       masterVolume: 0.4,
     },
     global: { key: 0, scale: "minor" },
@@ -56,17 +54,17 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
 describe("Engine", () => {
   it("starts paused with positionTick 0", () => {
     const { engine } = makeEngine();
-    expect(engine.getMaster().playing).toBe(false);
-    expect(engine.getMaster().positionTick).toBe(0);
+    expect(engine.playback.isPlaying()).toBe(false);
+    expect(engine.playback.getPositionTick()).toBe(0);
   });
 
-  it("setMasterVolume updates state, pushes to SoundOutput, and emits masterChanged", () => {
+  it("setMasterVolume updates state, pushes to SoundOutput, and emits masterConfigChanged", () => {
     const { engine, output } = makeEngine();
     // Engine pushes the initial value on construction (here 0.4 — the
     // test fixture's default), so we start from a known recorded entry.
     const before = output.events.filter((e) => e.kind === "master").length;
     let lastEmitted: number | undefined;
-    engine.masterChanged.on((s) => {
+    engine.masterConfigChanged.on((s) => {
       lastEmitted = s.masterVolume;
     });
     engine.setMasterVolume(0.7);
@@ -87,22 +85,24 @@ describe("Engine", () => {
     }).toThrow(RangeError);
   });
 
-  it("emits masterChanged on play / pause / stop", () => {
+  it("emits playingChanged only on actual play/pause transitions", () => {
     const { clock, engine } = makeEngine();
     let count = 0;
-    engine.masterChanged.on(() => {
+    engine.playback.playingChanged.on(() => {
       count += 1;
     });
     engine.play();
-    expect(engine.getMaster().playing).toBe(true);
+    expect(engine.playback.isPlaying()).toBe(true);
     expect(count).toBe(1);
     clock.advanceTo(0.2);
     engine.pause();
-    expect(engine.getMaster().playing).toBe(false);
+    expect(engine.playback.isPlaying()).toBe(false);
     expect(count).toBe(2);
+    // stop() after pause() doesn't move the playing flag (already false), so
+    // the signal stays put — re-firing it would just spam UI re-renders.
     engine.stop();
-    expect(engine.getMaster().positionTick).toBe(0);
-    expect(count).toBe(3);
+    expect(engine.playback.getPositionTick()).toBe(0);
+    expect(count).toBe(2);
   });
 
   it("dispatches drum events on beat at 60 BPM", () => {
@@ -201,10 +201,8 @@ describe("Engine", () => {
     };
     const initial: EngineInitial = {
       master: {
-        playing: false,
         bpm: 60,
         signature: { numerator: 4, denominator: 4 },
-        positionTick: 0,
         masterVolume: 0.4,
       },
       global: { key: 0, scale: "minor" },
@@ -250,10 +248,8 @@ describe("Engine", () => {
     };
     const initial: EngineInitial = {
       master: {
-        playing: false,
         bpm: 60,
         signature: { numerator: 4, denominator: 4 },
-        positionTick: 0,
         masterVolume: 0.4,
       },
       global: { key: 0, scale: "minor" },
@@ -349,30 +345,30 @@ describe("Engine", () => {
   it("emits playheadStepChanged on 16th-step boundaries", () => {
     const { clock, engine } = makeEngine();
     const seen: Array<number | undefined> = [];
-    engine.playheadStepChanged.on((step) => {
+    engine.playback.playheadStepChanged.on((step) => {
       seen.push(step);
     });
     engine.play();
     // 60 BPM → one beat / sec → four 16th-steps / sec → ~4 advances by t=1.0
     clock.advanceTo(1.05);
     expect(seen.length).toBeGreaterThanOrEqual(4);
-    expect(engine.getPlayheadStep()).toBeGreaterThanOrEqual(3);
+    expect(engine.playback.getPlayheadStep()).toBeGreaterThanOrEqual(3);
     engine.pause();
-    expect(engine.getPlayheadStep()).toBeUndefined();
+    expect(engine.playback.getPlayheadStep()).toBeUndefined();
     expect(seen.at(-1)).toBeUndefined();
   });
 
   it("advances transport.positionTick during playback so derived state stays live", () => {
     const { clock, engine } = makeEngine();
-    expect(engine.getMaster().positionTick).toBe(0);
+    expect(engine.playback.getPositionTick()).toBe(0);
     engine.play();
-    const initial = engine.getMaster().positionTick;
+    const initial = engine.playback.getPositionTick();
     clock.advanceTo(1.0);
     // 1 sec at 60 BPM ≈ 1 beat (TICKS_PER_BEAT ticks). Allow a few ticks
     // of slack for the scheduler's lookahead/polling cadence — what we're
     // really asserting is that the dispatched position is no longer
     // pinned to the play-start tick.
-    const advanced = engine.getMaster().positionTick - initial;
+    const advanced = engine.playback.getPositionTick() - initial;
     expect(advanced).toBeGreaterThan(TICKS_PER_BEAT * 0.8);
   });
 
@@ -399,10 +395,8 @@ describe("Engine", () => {
     };
     const initial: EngineInitial = {
       master: {
-        playing: false,
         bpm: 60,
         signature: { numerator: 4, denominator: 4 },
-        positionTick: 0,
         masterVolume: 0.4,
       },
       global: { key: 0, scale: "minor" },
@@ -457,10 +451,8 @@ describe("Engine", () => {
       };
       const initial: EngineInitial = {
         master: {
-          playing: false,
           bpm: 60,
           signature: { numerator: 4, denominator: 4 },
-          positionTick: 0,
           masterVolume: 0.4,
         },
         global: { key: 0, scale: "minor" },
@@ -486,7 +478,7 @@ describe("Engine", () => {
     engine.play();
     clock.advanceTo(0.5);
     engine.pause();
-    const pausedAt = engine.getMaster().positionTick;
+    const pausedAt = engine.playback.getPositionTick();
     expect(pausedAt).toBeGreaterThan(0);
     expect(pausedAt).toBeLessThan(TICKS_PER_BEAT);
     output.events.length = 0;

@@ -107,7 +107,10 @@ export const OpSchema = v.variant("method", [
     params: v.object({ tick: NonNegativeInteger }),
   }),
   v.object({ method: v.literal("master.getState"), params: NoParams }),
-  v.object({ method: v.literal("master.getPlayheadStep"), params: NoParams }),
+
+  v.object({ method: v.literal("playback.isPlaying"), params: NoParams }),
+  v.object({ method: v.literal("playback.getPlayheadStep"), params: NoParams }),
+  v.object({ method: v.literal("playback.getActiveAutoPhrase"), params: RefOnlyParams }),
 
   v.object({ method: v.literal("global.get"), params: NoParams }),
   v.object({
@@ -159,7 +162,6 @@ export const OpSchema = v.variant("method", [
     params: v.object({ ref: TrackRefSchema, patch: AutoConfigPatchSchema }),
   }),
   v.object({ method: v.literal("track.rerollPhrase"), params: RefOnlyParams }),
-  v.object({ method: v.literal("track.getActivePhraseId"), params: RefOnlyParams }),
 
   v.object({ method: v.literal("project.snapshot"), params: NoParams }),
   // `project.importJson` is the only project mutator we expose on the wire:

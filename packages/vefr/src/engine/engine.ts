@@ -6,11 +6,11 @@ import {
   pickAutoPhraseIndex,
   pitchedPhraseToEvents,
 } from "../auto/generator.js";
-import type { MaterializedPhrase } from "../auto/types.js";
 import type { DrumPhrase, Phrase, PitchedPhrase } from "../phrases/types.js";
 import { degreeToMidi } from "../shared/music.js";
 import { Signal } from "../shared/signal.js";
 import type { Clock } from "./clock.js";
+import { PlaybackState, type AutoCacheEntry } from "./playback.js";
 import { Scheduler } from "./scheduler.js";
 import type { DrumKitId, InstrumentId, SoundOutput } from "./sound-port.js";
 import {
@@ -19,16 +19,15 @@ import {
   type DrumHit,
   type DrumPad,
   type GlobalMusicState,
+  type MasterConfig,
   type Note,
   type Pattern,
-  type PatternEvent,
   type PhraseId,
   type Tick,
   type Track,
   type TrackColorId,
   type TrackId,
   type TrackRef,
-  type MasterState,
 } from "./types.js";
 
 /**
@@ -41,17 +40,9 @@ import {
  */
 const LOOP_BARS = 2;
 
-/**
- * Visual playhead resolution: one "step" = one sixteenth note, matching the
- * step grids in the UI. The dispatcher emits {@link Engine.playheadStepChanged}
- * whenever this index advances, so React-side highlights tick once per 16th
- * regardless of the underlying tick cadence.
- */
-const PLAYHEAD_STEP_TICKS = TICKS_PER_BEAT / 4;
-
-/** Initial state used to seed an {@link Engine}. */
+/** Initial state used to seed an {@link Engine}. Only persistent config — the live transport state is constructed fresh per session. */
 export type EngineInitial = {
-  master: MasterState;
+  master: MasterConfig;
   global: GlobalMusicState;
   tracks: readonly Track[];
 };
@@ -109,55 +100,35 @@ export class TrackError extends Error {
 
 /**
  * Authoritative state holder + scheduler driver for a vefr session.
- * Owns transport / global / tracks and dispatches Pattern events to a
- * {@link SoundOutput} via the {@link Scheduler}. UI never touches this
+ *
+ * Persistent config (master / global / tracks) and the live transport state
+ * ({@link PlaybackState}) are kept on separate fields, so the project
+ * snapshot can serialize the former without dragging the latter, and the UI
+ * can subscribe to the two axes independently. UI never touches this
  * directly — it goes through the Control API in {@link src/api}.
  */
 export class Engine {
-  private master: MasterState;
+  private master: MasterConfig;
   private global: GlobalMusicState;
   private tracks: readonly Track[];
   private readonly scheduler: Scheduler;
   private readonly output: SoundOutput;
   private readonly resolvePhrase: PhraseLookup;
-  /**
-   * Cache of materialized auto-track loops keyed by track id. The dispatcher
-   * fires per tick; without this the 3-tier generator would re-run several
-   * hundred times per second per track.
-   */
-  private readonly autoCache: Map<TrackId, AutoCacheEntry> = new Map();
+  /** Live transport state — playing/positionTick/playheadStep + auto-loop cache. */
+  readonly playback: PlaybackState = new PlaybackState();
 
-  /** Fires whenever master-section state (playing / bpm / position / signature / volume) changes. */
-  readonly masterChanged: Signal<MasterState> = new Signal();
+  /** Fires whenever persistent master config (bpm / signature / volume) changes. */
+  readonly masterConfigChanged: Signal<MasterConfig> = new Signal();
   /** Fires whenever global musical context (key / scale) changes. */
   readonly globalChanged: Signal<GlobalMusicState> = new Signal();
   /** Fires whenever the track list or any track's fields change. */
   readonly tracksChanged: Signal<readonly Track[]> = new Signal();
-  /**
-   * Fires when the macro-tier phrase pick changes for an auto track. The
-   * UI uses this to refresh "now playing" displays without polling.
-   */
-  readonly activePhraseChanged: Signal<{
-    trackId: TrackId;
-    phraseId: PhraseId | undefined;
-  }> = new Signal();
-
-  /**
-   * Fires when the visual playhead crosses a {@link PLAYHEAD_STEP_TICKS}
-   * boundary (i.e. a 16th-note). Carries the absolute step index since
-   * tick 0, or `undefined` while the transport is paused / stopped. UI
-   * grids mod this by their step count to highlight the live position.
-   */
-  readonly playheadStepChanged: Signal<number | undefined> = new Signal();
-
-  /** Last value emitted on {@link playheadStepChanged}; UI snapshot source. */
-  private playheadStep: number | undefined = undefined;
 
   constructor(
     initial: EngineInitial,
     opts: { clock: Clock; output: SoundOutput; resolvePhrase: PhraseLookup },
   ) {
-    this.master = { ...initial.master, playing: false };
+    this.master = { ...initial.master };
     this.global = { ...initial.global };
     this.tracks = [...initial.tracks];
     this.output = opts.output;
@@ -168,13 +139,13 @@ export class Engine {
         this.dispatch(tick, time);
       },
     });
-    // Sync the SoundOutput master gain to the initial state value once at
-    // startup; subsequent changes flow through {@link setMasterVolume}.
+    // Sync the SoundOutput master gain to the initial value once at startup;
+    // subsequent changes flow through {@link setMasterVolume}.
     this.output.setMasterVolume(this.master.masterVolume);
   }
 
-  /** Snapshot of the current master-section state. */
-  getMaster(): MasterState {
+  /** Snapshot of the persistent master config. */
+  getMaster(): MasterConfig {
     return this.master;
   }
 
@@ -190,46 +161,48 @@ export class Engine {
 
   /**
    * Replace every piece of engine state in one shot. Used by project
-   * import / autosave restore.
+   * import / autosave restore. Transient transport state is reset to the
+   * stopped-at-zero baseline.
    */
   loadState(initial: EngineInitial): void {
     this.scheduler.stop();
     this.scheduler.seek(0);
-    this.master = { ...initial.master, playing: false };
+    this.master = { ...initial.master };
     this.global = { ...initial.global };
     this.tracks = [...initial.tracks];
-    this.autoCache.clear();
-    this.setPlayheadStep(undefined);
+    this.playback.clearAutoCache();
+    this.playback.setPositionTick(0);
+    this.playback.setPlayheadStep(undefined);
+    this.playback.setPlaying(false);
     this.output.setMasterVolume(this.master.masterVolume);
-    this.masterChanged.emit(this.master);
+    this.masterConfigChanged.emit(this.master);
     this.globalChanged.emit(this.global);
     this.tracksChanged.emit(this.tracks);
   }
 
   /** Begin playback from the saved play head position. */
   play(): void {
-    if (this.master.playing) return;
-    this.scheduler.start(this.master.positionTick, this.master.bpm);
-    this.master = { ...this.master, playing: true };
-    this.masterChanged.emit(this.master);
+    if (this.playback.isPlaying()) return;
+    this.scheduler.start(this.playback.getPositionTick(), this.master.bpm);
+    this.playback.setPlaying(true);
   }
 
   /** Stop playback and remember the current play head for the next play(). */
   pause(): void {
-    if (!this.master.playing) return;
+    if (!this.playback.isPlaying()) return;
     const positionTick = this.scheduler.stop();
-    this.master = { ...this.master, playing: false, positionTick };
-    this.setPlayheadStep(undefined);
-    this.masterChanged.emit(this.master);
+    this.playback.setPositionTick(positionTick);
+    this.playback.setPlayheadStep(undefined);
+    this.playback.setPlaying(false);
   }
 
   /** Stop playback and rewind to the start. */
   stop(): void {
     this.scheduler.stop();
     this.scheduler.seek(0);
-    this.master = { ...this.master, playing: false, positionTick: 0 };
-    this.setPlayheadStep(undefined);
-    this.masterChanged.emit(this.master);
+    this.playback.setPositionTick(0);
+    this.playback.setPlayheadStep(undefined);
+    this.playback.setPlaying(false);
   }
 
   /** Set tempo in BPM. */
@@ -237,15 +210,14 @@ export class Engine {
     if (bpm <= 0) throw new RangeError(`bpm must be positive: ${bpm}`);
     this.scheduler.setBpm(bpm);
     this.master = { ...this.master, bpm };
-    this.masterChanged.emit(this.master);
+    this.masterConfigChanged.emit(this.master);
   }
 
   /** Move the play head to `tick`. */
   seek(tick: Tick): void {
     if (tick < 0) throw new RangeError(`tick must be non-negative: ${tick}`);
     this.scheduler.seek(tick);
-    this.master = { ...this.master, positionTick: tick };
-    this.masterChanged.emit(this.master);
+    this.playback.setPositionTick(tick);
   }
 
   /**
@@ -259,7 +231,7 @@ export class Engine {
     }
     this.master = { ...this.master, masterVolume: gain };
     this.output.setMasterVolume(gain);
-    this.masterChanged.emit(this.master);
+    this.masterConfigChanged.emit(this.master);
   }
 
   /** Patch the global musical state (key / scale). */
@@ -316,7 +288,7 @@ export class Engine {
       throw new TrackError(`track not found: ${JSON.stringify(ref)}`, "not-found");
     }
     this.tracks = this.tracks.filter((t) => t.id !== target.id);
-    this.autoCache.delete(target.id);
+    this.playback.invalidateAutoCacheFor(target.id);
     this.tracksChanged.emit(this.tracks);
   }
 
@@ -468,7 +440,7 @@ export class Engine {
       params: patch.params ?? target.params,
     };
     this.tracks = this.tracks.map((t) => (t.id === target.id ? next : t));
-    this.autoCache.delete(target.id);
+    this.playback.invalidateAutoCacheFor(target.id);
     this.tracksChanged.emit(this.tracks);
   }
 
@@ -480,13 +452,12 @@ export class Engine {
    * of the 32-step (= 2 × 16-sixteenth-notes) preset variants.
    */
   private dispatch(tick: Tick, time: number): void {
-    // Advance the saved position so derived state (e.g. the auto-track
-    // active phrase id, which floors the position into a loop index)
-    // reflects the live tick. We deliberately don't emit masterChanged
-    // — that's reserved for play / pause / stop / seek / setBpm / setMasterVolume
-    // and would re-render every master-watching component on every tick.
-    this.master = { ...this.master, positionTick: tick };
-    this.setPlayheadStep(Math.floor(tick / PLAYHEAD_STEP_TICKS));
+    // `playback.advance` bumps the cached position to the live tick and
+    // emits playheadStepChanged on 16th-note boundaries. No other ambient
+    // signal fires here — masterConfigChanged / playingChanged are reserved
+    // for user-initiated changes so master-watching components don't
+    // re-render at audio rate.
+    this.playback.advance(tick);
     for (const track of this.tracks) {
       if (track.mute) continue;
       const gain = track.volume;
@@ -496,21 +467,6 @@ export class Engine {
         this.dispatchAuto(track, tick, time, gain);
       }
     }
-  }
-
-  /**
-   * Snapshot of the visual playhead step, or `undefined` while not playing.
-   * UI uses this with {@link playheadStepChanged} via `useSyncExternalStore`.
-   */
-  getPlayheadStep(): number | undefined {
-    return this.playheadStep;
-  }
-
-  /** Update the cached playhead step, emitting only when the value changes. */
-  private setPlayheadStep(value: number | undefined): void {
-    if (this.playheadStep === value) return;
-    this.playheadStep = value;
-    this.playheadStepChanged.emit(value);
   }
 
   /** Fire matching events from a manual track's pattern at the given tick. */
@@ -547,14 +503,13 @@ export class Engine {
     time: number,
     gain: number,
   ): void {
-    const barLength = TICKS_PER_BEAT * this.master.signature.numerator;
-    const loopTicks = barLength * LOOP_BARS;
+    const loopTicks = this.loopTicks();
     const loop = Math.floor(tick / loopTicks);
     const localTick = tick - loop * loopTicks;
-    const cached = this.autoCache.get(track.id);
+    const cached = this.playback.getAutoCacheEntry(track.id);
     const entry =
       cached && cached.loop === loop ? cached : this.materializeAuto(track, loop, loopTicks);
-    if (entry !== cached) this.autoCache.set(track.id, entry);
+    if (entry !== cached) this.playback.writeAutoCacheEntry(track.id, entry);
     if (entry.lengthTicks <= 0 || localTick >= entry.lengthTicks) return;
     if (entry.kind === "drum") {
       for (const ev of entry.events) {
@@ -572,6 +527,11 @@ export class Engine {
         this.playPitched(ev.payload, time, gain, track.instrumentId, track.octave);
       }
     }
+  }
+
+  /** Ticks per auto-track loop, derived from the time signature. */
+  private loopTicks(): Tick {
+    return TICKS_PER_BEAT * this.master.signature.numerator * LOOP_BARS;
   }
 
   /**
@@ -596,7 +556,7 @@ export class Engine {
         phrases,
         params: track.params,
       });
-      this.maybeEmitPhraseChange(track.id, phrase.phraseId);
+      this.playback.maybeEmitPhraseChange(track.id, phrase.phraseId);
       if (phrase.kind !== "drum") throw new Error("generateDrumLoop returned non-drum phrase");
       return {
         kind: "drum",
@@ -609,7 +569,7 @@ export class Engine {
     const phrases = this.collectPitchedPhrases(track.phraseIds, track.role);
     const args = { loop, seed: track.seed, phrases, params: track.params };
     const phrase = track.role === "melody" ? generateMelodyLoop(args) : generateBassLoop(args);
-    this.maybeEmitPhraseChange(track.id, phrase.phraseId);
+    this.playback.maybeEmitPhraseChange(track.id, phrase.phraseId);
     if (phrase.kind !== "pitched") {
       throw new Error("pitched generator returned non-pitched phrase");
     }
@@ -620,12 +580,6 @@ export class Engine {
       lengthTicks,
       events: pitchedPhraseToEvents(phrase),
     };
-  }
-
-  /** Emit `activePhraseChanged` only when the new id differs from the cached one. */
-  private maybeEmitPhraseChange(trackId: TrackId, phraseId: PhraseId | undefined): void {
-    const prev = this.autoCache.get(trackId)?.phrase.phraseId;
-    if (prev !== phraseId) this.activePhraseChanged.emit({ trackId, phraseId });
   }
 
   /** Resolve phrase ids into drum phrase records, dropping unknown / wrong-kind ids. */
@@ -659,9 +613,8 @@ export class Engine {
   getActiveAutoPhraseId(ref: TrackRef): PhraseId | undefined {
     const track = this.resolveTrack(ref);
     if (!track || track.source !== "auto") return undefined;
-    const barLength = TICKS_PER_BEAT * this.master.signature.numerator;
-    const loopTicks = barLength * LOOP_BARS;
-    const loop = Math.floor(this.master.positionTick / loopTicks);
+    const loopTicks = this.loopTicks();
+    const loop = Math.floor(this.playback.getPositionTick() / loopTicks);
     const phrases =
       track.kind === "drum" ?
         this.collectDrumPhrases(track.phraseIds)
@@ -688,30 +641,6 @@ export class Engine {
     this.output.playNote(time, midi, lengthSec, note.velocity, instrumentId, gain);
   }
 }
-
-/**
- * Cached materialized loop (drum or pitched) plus the loop index it was
- * produced for. `loop` indexes whole {@link LOOP_BARS}-bar chunks of
- * playback, so a single materialization covers `LOOP_BARS` musical bars.
- * `phrase` is the grid-form {@link MaterializedPhrase} (carries the picked
- * phrase id + UI-facing template); `events` is the time-ordered projection
- * the per-tick dispatch loop scans.
- */
-type AutoCacheEntry =
-  | {
-      kind: "drum";
-      loop: number;
-      phrase: Extract<MaterializedPhrase, { kind: "drum" }>;
-      lengthTicks: Tick;
-      events: ReadonlyArray<PatternEvent<DrumHit>>;
-    }
-  | {
-      kind: "pitched";
-      loop: number;
-      phrase: Extract<MaterializedPhrase, { kind: "pitched" }>;
-      lengthTicks: Tick;
-      events: ReadonlyArray<PatternEvent<Note>>;
-    };
 
 /**
  * Run the macro-tier picker and translate the index back into a phrase id.

@@ -204,8 +204,13 @@ function dispatchOp(api: ControlApi, op: Op): unknown {
       return null;
     case "master.getState":
       return api.master.getState();
-    case "master.getPlayheadStep":
-      return api.master.getPlayheadStep() ?? null;
+
+    case "playback.isPlaying":
+      return api.playback.isPlaying();
+    case "playback.getPlayheadStep":
+      return api.playback.getPlayheadStep() ?? null;
+    case "playback.getActiveAutoPhrase":
+      return api.playback.getActiveAutoPhrase(op.params.ref) ?? null;
 
     case "global.get":
       return api.global.get();
@@ -241,8 +246,6 @@ function dispatchOp(api: ControlApi, op: Op): unknown {
       return api.track.setAutoConfig(op.params.ref, op.params.patch);
     case "track.rerollPhrase":
       return api.track.rerollPhrase(op.params.ref);
-    case "track.getActivePhraseId":
-      return api.track.getActivePhraseId(op.params.ref) ?? null;
 
     case "project.snapshot":
       return api.project.snapshot();
