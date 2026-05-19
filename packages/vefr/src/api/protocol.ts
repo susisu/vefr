@@ -109,7 +109,7 @@ export const OpSchema = v.variant("method", [
   v.object({ method: v.literal("master.getState"), params: NoParams }),
 
   v.object({ method: v.literal("playback.isPlaying"), params: NoParams }),
-  v.object({ method: v.literal("playback.getPlayheadStep"), params: NoParams }),
+  v.object({ method: v.literal("playback.getAudibleTick"), params: NoParams }),
   v.object({ method: v.literal("playback.getActiveAutoPhrase"), params: RefOnlyParams }),
 
   v.object({ method: v.literal("global.get"), params: NoParams }),

@@ -98,9 +98,7 @@ function makePlaybackApi(engine: Engine): PlaybackApi {
     isPlaying: (): boolean => engine.playback.isPlaying(),
     onPlayingChange: (handler: (playing: boolean) => void): (() => void) =>
       engine.playback.playingChanged.on(handler),
-    getPlayheadStep: (): number | undefined => engine.playback.getPlayheadStep(),
-    onPlayheadStepChange: (handler: (step: number | undefined) => void): (() => void) =>
-      engine.playback.playheadStepChanged.on(handler),
+    getAudibleTick: (): Tick | undefined => engine.playback.getAudibleTick(),
     getActiveAutoPhrase: (ref: TrackRef): MaterializedPhrase | undefined => {
       const cached = resolveCachedAutoPhrase(engine, ref);
       if (cached !== undefined) return cached;

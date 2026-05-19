@@ -207,8 +207,8 @@ function dispatchOp(api: ControlApi, op: Op): unknown {
 
     case "playback.isPlaying":
       return api.playback.isPlaying();
-    case "playback.getPlayheadStep":
-      return api.playback.getPlayheadStep() ?? null;
+    case "playback.getAudibleTick":
+      return api.playback.getAudibleTick() ?? null;
     case "playback.getActiveAutoPhrase":
       return api.playback.getActiveAutoPhrase(op.params.ref) ?? null;
 

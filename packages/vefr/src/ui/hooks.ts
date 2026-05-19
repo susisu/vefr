@@ -2,6 +2,7 @@ import { useCallback, useEffect, useSyncExternalStore } from "react";
 import type { MaterializedPhrase } from "../api/types.js";
 import {
   refById,
+  TICKS_PER_BEAT,
   type GlobalMusicState,
   type MasterConfig,
   type PhraseId,
@@ -9,6 +10,12 @@ import {
   type TrackRef,
 } from "../engine/types.js";
 import { useControlApi, useRelay } from "./context.js";
+
+/**
+ * 16th-note resolution for the visual playhead. Lives UI-side so the
+ * engine doesn't bake a UI-rendering choice into its API surface.
+ */
+const PLAYHEAD_STEP_TICKS = TICKS_PER_BEAT / 4;
 
 /**
  * Subscribe to persistent master config (tempo / signature / master gain).
@@ -63,13 +70,57 @@ export function useActiveAutoPhrase(ref: TrackRef): MaterializedPhrase | undefin
 }
 
 /**
- * Subscribe to the visual playhead step (absolute 16th-note count since
- * position 0). Returns `undefined` while playback is paused / stopped.
- * Editors mod the value by their grid length to highlight the live cell.
+ * Visual playhead step (absolute 16th-note count since position 0).
+ * Returns `undefined` while playback is paused / stopped. Editors mod the
+ * value by their grid length to highlight the live cell.
+ *
+ * Implemented as an rAF-driven pull off {@link PlaybackApi.getAudibleTick}
+ * rather than a push subscription: aligned to the display refresh, frozen
+ * automatically when the tab is in the background, and read off the
+ * audible side of the scheduler so the indicator matches what the user
+ * is actually hearing (rather than running ~100ms ahead of audio, as the
+ * old per-dispatch push did).
+ *
+ * The store callback fires only when the floored step *actually* moves,
+ * so React re-renders at the natural 16th-note cadence (~8 Hz at 120 BPM)
+ * even though the rAF loop runs every frame.
  */
 export function usePlayheadStep(): number | undefined {
   const api = useControlApi();
-  return useSyncExternalStore(api.playback.onPlayheadStepChange, api.playback.getPlayheadStep);
+  const playing = usePlaying();
+  const subscribe = useCallback(
+    (cb: () => void): (() => void) => {
+      if (!playing) return () => undefined;
+      let raf = 0;
+      let lastStep = audibleStep(api);
+      const loop = (): void => {
+        const next = audibleStep(api);
+        if (next !== lastStep) {
+          lastStep = next;
+          cb();
+        }
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+      return () => {
+        cancelAnimationFrame(raf);
+      };
+    },
+    [api, playing],
+  );
+  const getSnapshot = useCallback((): number | undefined => audibleStep(api), [api]);
+  return useSyncExternalStore(subscribe, getSnapshot);
+}
+
+/**
+ * Project the audibly-playing tick to a 16th-note step index, returning
+ * `undefined` when the transport is stopped.
+ */
+function audibleStep(api: {
+  playback: { getAudibleTick: () => number | undefined };
+}): number | undefined {
+  const tick = api.playback.getAudibleTick();
+  return tick === undefined ? undefined : Math.floor(tick / PLAYHEAD_STEP_TICKS);
 }
 
 /**

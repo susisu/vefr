@@ -342,20 +342,21 @@ describe("Engine", () => {
     expect(engine.proposeUniqueName("Manual Drum")).toBe("Manual Drum 2");
   });
 
-  it("emits playheadStepChanged on 16th-step boundaries", () => {
+  it("getAudibleTick tracks the audibly-playing position while playing", () => {
     const { clock, engine } = makeEngine();
-    const seen: Array<number | undefined> = [];
-    engine.playback.playheadStepChanged.on((step) => {
-      seen.push(step);
-    });
+    // Stopped → undefined regardless of saved position.
+    expect(engine.playback.getAudibleTick()).toBeUndefined();
     engine.play();
-    // 60 BPM → one beat / sec → four 16th-steps / sec → ~4 advances by t=1.0
-    clock.advanceTo(1.05);
-    expect(seen.length).toBeGreaterThanOrEqual(4);
-    expect(engine.playback.getPlayheadStep()).toBeGreaterThanOrEqual(3);
+    clock.advanceTo(1.0);
+    // 60 BPM → one beat / sec → roughly TICKS_PER_BEAT after 1s. The
+    // start offset gives the scheduler a brief delay before the audible
+    // tick starts climbing, so allow generous slack.
+    const tick = engine.playback.getAudibleTick();
+    expect(tick).toBeDefined();
+    expect(tick).toBeGreaterThan(TICKS_PER_BEAT * 0.8);
+    expect(tick).toBeLessThan(TICKS_PER_BEAT * 1.2);
     engine.pause();
-    expect(engine.playback.getPlayheadStep()).toBeUndefined();
-    expect(seen.at(-1)).toBeUndefined();
+    expect(engine.playback.getAudibleTick()).toBeUndefined();
   });
 
   it("advances transport.positionTick during playback so derived state stays live", () => {

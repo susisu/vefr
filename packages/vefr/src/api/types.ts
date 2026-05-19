@@ -83,16 +83,12 @@ export interface PlaybackApi {
   /** Subscribe to play/pause/stop transitions; fires only on actual value changes. */
   onPlayingChange: (handler: (playing: boolean) => void) => () => void;
   /**
-   * Most recent visual playhead step (= absolute 16th-note count since
-   * tick 0), or `undefined` while not playing. UI grids mod by their step
-   * count to highlight the live position.
+   * Audibly-playing tick at the moment of call, or `undefined` while not
+   * playing. Pure getter — no signal counterpart; UI components poll this
+   * from an rAF loop (driven by {@link isPlaying} edges) so they choose
+   * the display cadence rather than reacting to per-16th pushes.
    */
-  getPlayheadStep: () => number | undefined;
-  /**
-   * Subscribe to playhead-step boundary crossings. Fires once per 16th
-   * note while playing, plus once on pause/stop with `undefined`.
-   */
-  onPlayheadStepChange: (handler: (step: number | undefined) => void) => () => void;
+  getAudibleTick: () => Tick | undefined;
   /**
    * Materialized phrase currently selected for `ref`'s auto track. Returns
    * `undefined` for manual tracks, for unresolvable refs, or when the

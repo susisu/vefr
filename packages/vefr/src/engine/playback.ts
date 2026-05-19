@@ -1,21 +1,6 @@
 import type { MaterializedPhrase } from "../auto/types.js";
 import { Signal } from "../shared/signal.js";
-import {
-  TICKS_PER_BEAT,
-  type DrumHit,
-  type Note,
-  type PatternEvent,
-  type PhraseId,
-  type Tick,
-  type TrackId,
-} from "./types.js";
-
-/**
- * Visual playhead resolution: one "step" = one sixteenth note, matching the
- * step grids in the UI. {@link PlaybackState.advance} bumps the cached step
- * by `floor(tick / PLAYHEAD_STEP_TICKS)` and emits when that index moves.
- */
-const PLAYHEAD_STEP_TICKS = TICKS_PER_BEAT / 4;
+import type { DrumHit, Note, PatternEvent, PhraseId, Tick, TrackId } from "./types.js";
 
 /** Payload of {@link PlaybackState.activePhraseChanged}. */
 export type ActivePhrasePayload = {
@@ -46,6 +31,15 @@ export type AutoCacheEntry =
     };
 
 /**
+ * Source for the "audibly playing right now" tick: clock.now() ↔ scheduler
+ * math, kept behind a callback so {@link PlaybackState} doesn't need a
+ * scheduler reference of its own. Returns the saved position when the
+ * scheduler is stopped; {@link PlaybackState.getAudibleTick} additionally
+ * guards on the playing flag to return `undefined` in that case.
+ */
+export type AudibleTickProvider = () => Tick;
+
+/**
  * Live transport state for a session: are we playing, where is the play
  * head, which materialized phrase is currently scheduled per auto track.
  * None of this is persisted — the {@link Project} snapshot only carries
@@ -58,19 +52,11 @@ export type AutoCacheEntry =
 export class PlaybackState {
   private playingFlag: boolean = false;
   private positionTickValue: Tick = 0;
-  private playheadStepValue: number | undefined = undefined;
   private readonly autoLoops: Map<TrackId, AutoCacheEntry> = new Map();
+  private readonly audibleTickProvider: AudibleTickProvider;
 
   /** Fires when {@link isPlaying} flips. No-op when set to the current value. */
   readonly playingChanged: Signal<boolean> = new Signal();
-
-  /**
-   * Fires when the visual playhead crosses a {@link PLAYHEAD_STEP_TICKS}
-   * boundary (i.e. a 16th-note). Carries the absolute step index since
-   * tick 0, or `undefined` while not playing. UI grids mod by their step
-   * count to highlight the live position.
-   */
-  readonly playheadStepChanged: Signal<number | undefined> = new Signal();
 
   /**
    * Fires when the macro-tier phrase pick changes for an auto track. The
@@ -78,27 +64,37 @@ export class PlaybackState {
    */
   readonly activePhraseChanged: Signal<ActivePhrasePayload> = new Signal();
 
+  constructor(opts: { audibleTickProvider?: AudibleTickProvider } = {}) {
+    // Default to a no-op provider so unit tests can construct a bare
+    // PlaybackState without a real scheduler; the engine always wires up
+    // a live one in production paths.
+    this.audibleTickProvider = opts.audibleTickProvider ?? ((): Tick => 0);
+  }
+
   /** Whether the engine is currently playing. */
   isPlaying(): boolean {
     return this.playingFlag;
   }
 
   /**
-   * Saved play-head position in ticks (full PPQN resolution). Used by the
-   * engine internally for `play()` resume and for deriving per-loop state;
-   * not exposed to the UI directly (the UI reads the coarser
-   * {@link getPlayheadStep} or — once pull-mode lands — the audible tick).
+   * Saved play-head position in ticks (full PPQN resolution). This is the
+   * scheduler's *scheduled* cursor (lookahead-included), so it can be a few
+   * tens of ms ahead of what is audibly playing. Used by the engine
+   * internally for `play()` resume and for projecting positionTick → loop
+   * index in the auto pipeline.
    */
   getPositionTick(): Tick {
     return this.positionTickValue;
   }
 
   /**
-   * Snapshot of the visual playhead step, or `undefined` while not playing.
-   * UI uses this with {@link playheadStepChanged} via `useSyncExternalStore`.
+   * Audibly-playing tick at the moment of call (derived from `clock.now()`
+   * via the scheduler), or `undefined` while not playing. UI pulls this
+   * from an rAF loop and derives whichever grid resolution it needs.
    */
-  getPlayheadStep(): number | undefined {
-    return this.playheadStepValue;
+  getAudibleTick(): Tick | undefined {
+    if (!this.playingFlag) return undefined;
+    return this.audibleTickProvider();
   }
 
   /** Lookup the cached materialized loop for an auto track, if any. */
@@ -114,30 +110,21 @@ export class PlaybackState {
   }
 
   /**
-   * Write the saved play-head position. Does not emit (the visible playhead
-   * advances via {@link advance} / {@link setPlayheadStep} instead).
+   * Write the saved play-head position. Does not emit any signal — UI
+   * components observe the audibly-playing position by pulling via
+   * {@link getAudibleTick} rather than subscribing to per-tick pushes.
    */
   setPositionTick(tick: Tick): void {
     this.positionTickValue = tick;
   }
 
-  /** Update the cached playhead step, emitting only when the value changes. */
-  setPlayheadStep(value: number | undefined): void {
-    if (this.playheadStepValue === value) return;
-    this.playheadStepValue = value;
-    this.playheadStepChanged.emit(value);
-  }
-
   /**
-   * Per-dispatch advance: bump the saved position to `tick` and update the
-   * coarse playhead step. Called once per scheduled tick from
-   * {@link Engine.dispatch}. Does not emit any "position changed" signal —
-   * that is reserved for `play / pause / stop / seek` so subscribers don't
-   * re-render at audio-rate.
+   * Per-dispatch advance: bump the saved position to `tick`. Called once
+   * per scheduled tick from {@link Engine.dispatch}. Emits nothing — see
+   * the rationale on {@link setPositionTick}.
    */
   advance(tick: Tick): void {
     this.positionTickValue = tick;
-    this.setPlayheadStep(Math.floor(tick / PLAYHEAD_STEP_TICKS));
   }
 
   /**

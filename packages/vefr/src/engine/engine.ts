@@ -114,8 +114,8 @@ export class Engine {
   private readonly scheduler: Scheduler;
   private readonly output: SoundOutput;
   private readonly resolvePhrase: PhraseLookup;
-  /** Live transport state — playing/positionTick/playheadStep + auto-loop cache. */
-  readonly playback: PlaybackState = new PlaybackState();
+  /** Live transport state — playing/positionTick + auto-loop cache. */
+  readonly playback: PlaybackState;
 
   /** Fires whenever persistent master config (bpm / signature / volume) changes. */
   readonly masterConfigChanged: Signal<MasterConfig> = new Signal();
@@ -138,6 +138,12 @@ export class Engine {
       onTick: (tick, time) => {
         this.dispatch(tick, time);
       },
+    });
+    // Pull-side playhead: the scheduler's audible-tick getter feeds the UI
+    // rAF loop via `playback.getAudibleTick()`, so playback doesn't need a
+    // scheduler reference of its own.
+    this.playback = new PlaybackState({
+      audibleTickProvider: () => this.scheduler.positionTick(),
     });
     // Sync the SoundOutput master gain to the initial value once at startup;
     // subsequent changes flow through {@link setMasterVolume}.
@@ -172,7 +178,6 @@ export class Engine {
     this.tracks = [...initial.tracks];
     this.playback.clearAutoCache();
     this.playback.setPositionTick(0);
-    this.playback.setPlayheadStep(undefined);
     this.playback.setPlaying(false);
     this.output.setMasterVolume(this.master.masterVolume);
     this.masterConfigChanged.emit(this.master);
@@ -192,7 +197,6 @@ export class Engine {
     if (!this.playback.isPlaying()) return;
     const positionTick = this.scheduler.stop();
     this.playback.setPositionTick(positionTick);
-    this.playback.setPlayheadStep(undefined);
     this.playback.setPlaying(false);
   }
 
@@ -201,7 +205,6 @@ export class Engine {
     this.scheduler.stop();
     this.scheduler.seek(0);
     this.playback.setPositionTick(0);
-    this.playback.setPlayheadStep(undefined);
     this.playback.setPlaying(false);
   }
 
@@ -452,11 +455,11 @@ export class Engine {
    * of the 32-step (= 2 × 16-sixteenth-notes) preset variants.
    */
   private dispatch(tick: Tick, time: number): void {
-    // `playback.advance` bumps the cached position to the live tick and
-    // emits playheadStepChanged on 16th-note boundaries. No other ambient
-    // signal fires here — masterConfigChanged / playingChanged are reserved
-    // for user-initiated changes so master-watching components don't
-    // re-render at audio rate.
+    // `playback.advance` bumps the cached position to the live tick.
+    // No signal fires here — UI components observe playback position by
+    // pulling `getAudibleTick()` from an rAF loop instead of subscribing
+    // to per-tick pushes, and master / playing only emit for
+    // user-initiated changes.
     this.playback.advance(tick);
     for (const track of this.tracks) {
       if (track.mute) continue;
