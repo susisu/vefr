@@ -99,20 +99,8 @@ function makePlaybackApi(engine: Engine): PlaybackApi {
     onPlayingChange: (handler: (playing: boolean) => void): (() => void) =>
       engine.playback.playingChanged.on(handler),
     getAudibleTick: (): Tick | undefined => engine.playback.getAudibleTick(),
-    getActiveAutoPhrase: (ref: TrackRef): MaterializedPhrase | undefined => {
-      const cached = resolveCachedAutoPhrase(engine, ref);
-      if (cached !== undefined) return cached;
-      // Cache miss (track just added / config just changed / never dispatched).
-      // The engine's back-calculation derives the same phraseId from the saved
-      // position; for task-2 compatibility we fabricate a minimal placeholder
-      // so UI subscribers still see *something* until the next dispatch
-      // populates the cache. Lazy materialization will land in a later commit.
-      const phraseId = engine.getActiveAutoPhraseId(ref);
-      if (phraseId === undefined) return undefined;
-      const track = engine.resolveTrack(ref);
-      if (!track || track.source !== "auto") return undefined;
-      return placeholderForPhraseId(track.kind, phraseId);
-    },
+    getActiveAutoPhrase: (ref: TrackRef): MaterializedPhrase | undefined =>
+      engine.getActiveAutoPhrase(ref),
     subscribeActiveAutoPhrase: (ref: TrackRef, handler: () => void): (() => void) => {
       // Fire on live active-phrase changes filtered to this track, plus on
       // track-config changes (which can shuffle the picked phrase). The
@@ -131,30 +119,6 @@ function makePlaybackApi(engine: Engine): PlaybackApi {
       };
     },
   };
-}
-
-/**
- * Read the cached materialized phrase for `ref`, if any. Encapsulates the
- * resolve-then-lookup pattern so the API surface only deals with `TrackRef`.
- */
-function resolveCachedAutoPhrase(engine: Engine, ref: TrackRef): MaterializedPhrase | undefined {
-  const track = engine.resolveTrack(ref);
-  if (!track) return undefined;
-  return engine.playback.getAutoCacheEntry(track.id)?.phrase;
-}
-
-/**
- * Minimal {@link MaterializedPhrase} placeholder used while the cache is
- * empty (e.g. before the first dispatch tick after track config changes).
- * Only carries `phraseId` so the UI can still render the phrase name;
- * `template` / `notes` are empty until the next materialization. Real
- * lazy materialization replaces this in a follow-up commit.
- */
-function placeholderForPhraseId(kind: "drum" | "pitched", phraseId: string): MaterializedPhrase {
-  if (kind === "drum") {
-    return { kind: "drum", phraseId, name: undefined, template: {} };
-  }
-  return { kind: "pitched", phraseId, name: undefined, template: [], notes: [] };
 }
 
 /** Build the global sub-API around an Engine. */

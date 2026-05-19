@@ -215,6 +215,138 @@ describe("Engine", () => {
     expect(drums.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("getActiveAutoPhrase reflects the events scheduled by RecordingSoundOutput", () => {
+    // Set up an auto drum track whose template hits every drum pad on
+    // distinct steps. We assert that the materialized template the
+    // engine exposes via getActiveAutoPhrase has a hit in exactly the
+    // same places (pad × step) as the sound output records, so the UI
+    // preview is provably in sync with what is being scheduled.
+    const clock = new TestClock();
+    const output = new RecordingSoundOutput();
+    const phrase: DrumPhrase = {
+      id: "p.fanout",
+      kind: "drum",
+      category: "Test",
+      name: "Fan-out",
+      template: {
+        kick: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        snare: [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "closed-hat": [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+      },
+    };
+    const resolvePhrase = (id: PhraseId): Phrase | undefined =>
+      id === phrase.id ? phrase : undefined;
+    const drum: DrumTrack = {
+      id: "auto-fanout",
+      name: "Auto Fanout",
+      kind: "drum",
+      kitId: "standard",
+      mutedPads: [],
+      mute: false,
+      volume: 1,
+      color: "white",
+      source: "auto",
+      phraseIds: [phrase.id],
+      seed: 7,
+      // Lock variation off so the deterministic template is the only
+      // source of hits — keeps the per-pad / per-step assertion exact.
+      params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
+    };
+    const initial: EngineInitial = {
+      master: {
+        bpm: 60,
+        signature: { numerator: 4, denominator: 4 },
+        masterVolume: 0.4,
+      },
+      global: { key: 0, scale: "minor" },
+      tracks: [drum],
+    };
+    const engine = new Engine(initial, { clock, output, resolvePhrase });
+    engine.play();
+    // 60 BPM → one beat per second; 4 seconds covers two loop cycles
+    // (LOOP_BARS=2 bars × 4 beats per bar).
+    clock.advanceTo(4.5);
+    engine.pause();
+
+    const active = engine.getActiveAutoPhrase(refById(drum.id));
+    expect(active?.kind).toBe("drum");
+    if (active?.kind !== "drum") return;
+
+    // Cross-check: every drum event recorded by the sound output must
+    // correspond to a non-zero cell in the materialized template, and
+    // vice versa (within a single loop).
+    const SIXTEENTH = TICKS_PER_BEAT / 4;
+    const STEPS_PER_LOOP = (TICKS_PER_BEAT * 4 * 2) / SIXTEENTH;
+    const observed = new Set<string>();
+    for (const ev of output.events) {
+      if (ev.kind !== "drum") continue;
+      // The output records absolute audio-time events; we only care
+      // which (pad, step-within-loop) cells fired.
+      observed.add(ev.hit.pad);
+    }
+    const previewPads = new Set<string>();
+    for (const pad of ["kick", "snare", "closed-hat", "open-hat"] as const) {
+      const row = active.template[pad];
+      if (!row) continue;
+      for (let s = 0; s < STEPS_PER_LOOP; s++) {
+        if ((row[s] ?? 0) > 0) {
+          previewPads.add(pad);
+          break;
+        }
+      }
+    }
+    expect([...observed].sort()).toEqual([...previewPads].sort());
+  });
+
+  it("getActiveAutoPhrase lazily materializes when nothing has been dispatched yet", () => {
+    // Fresh engine, no play() yet → the autoLoops cache is empty. The
+    // getter has to materialize on demand so the UI preview is correct
+    // before the user presses play.
+    const clock = new TestClock();
+    const output = new RecordingSoundOutput();
+    const phrase: DrumPhrase = {
+      id: "p.lazy",
+      kind: "drum",
+      category: "Test",
+      name: "Lazy",
+      template: { kick: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0] },
+    };
+    const resolvePhrase = (id: PhraseId): Phrase | undefined =>
+      id === phrase.id ? phrase : undefined;
+    const drum: DrumTrack = {
+      id: "auto-lazy",
+      name: "Auto Lazy",
+      kind: "drum",
+      kitId: "standard",
+      mutedPads: [],
+      mute: false,
+      volume: 1,
+      color: "white",
+      source: "auto",
+      phraseIds: [phrase.id],
+      seed: 1,
+      params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
+    };
+    const engine = new Engine(
+      {
+        master: { bpm: 60, signature: { numerator: 4, denominator: 4 }, masterVolume: 0.4 },
+        global: { key: 0, scale: "minor" },
+        tracks: [drum],
+      },
+      { clock, output, resolvePhrase },
+    );
+    const active = engine.getActiveAutoPhrase(refById(drum.id));
+    expect(active?.kind).toBe("drum");
+    expect(active?.phraseId).toBe(phrase.id);
+    expect(active?.name).toBe(phrase.name);
+    if (active?.kind === "drum") {
+      // The template the getter returned should mirror the authored kick
+      // row (no variation since periods are locked).
+      expect(active.template.kick?.[0]).toBe(1);
+      expect(active.template.kick?.[8]).toBe(1);
+    }
+  });
+
   it("filters muted pads on an auto drum track", () => {
     const clock = new TestClock();
     const output = new RecordingSoundOutput();

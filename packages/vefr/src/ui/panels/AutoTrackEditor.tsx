@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import type { ChangeEvent, ReactElement } from "react";
+import type { MaterializedPhrase } from "../../api/types.js";
 import {
   refById,
   type DrumPad,
@@ -7,16 +8,11 @@ import {
   type PhraseId,
   type Track,
 } from "../../engine/types.js";
-import {
-  getPhrase,
-  listDrumPhrases,
-  listPitchedPhrases,
-  type Phrase,
-} from "../../phrases/index.js";
+import { listDrumPhrases, listPitchedPhrases, type Phrase } from "../../phrases/index.js";
 import type { DrumTemplate, RhythmTemplate } from "../../phrases/types.js";
 import { Chip, DrumPadMuteToggle, Knob, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
-import { useActivePhraseId } from "../hooks.js";
+import { useActiveAutoPhrase } from "../hooks.js";
 import { DrumKitSelect } from "./DrumKitSelect.js";
 import { InstrumentSelect } from "./InstrumentSelect.js";
 import { PitchedOctaveKnob } from "./PitchedOctaveKnob.js";
@@ -58,8 +54,7 @@ export function AutoTrackEditor({ track }: { track: Track }): ReactElement | nul
 /** Inner view once `source === "auto"` has been narrowed at the call site. */
 function Inner({ track }: { track: AutoTrack }): ReactElement {
   const api = useControlApi();
-  const activeId = useActivePhraseId(refById(track.id));
-  const activePhrase = activeId !== undefined ? getPhrase(activeId) : undefined;
+  const activePhrase = useActiveAutoPhrase(refById(track.id));
   const phrases: readonly Phrase[] =
     track.kind === "drum" ? listDrumPhrases() : listPitchedPhrases(track.role);
   const selected = new Set<PhraseId>(track.phraseIds);
@@ -201,22 +196,25 @@ function groupByCategory(phrases: readonly Phrase[]): ReadonlyArray<{
 }
 
 /**
- * Read-only step-grid preview of the phrase the engine is currently playing
- * for this track. Uses the same row-and-cell layout as the manual editors so
- * the visual language is consistent. The live playhead column is painted by
- * a sibling {@link PlayheadOverlay} so this preview doesn't have to re-render
- * once per 16th note.
+ * Read-only step-grid preview of the materialized phrase the engine is
+ * currently scheduling for this track. The grid reflects the live
+ * post-materialization template (so drop / walk / ghost variations appear
+ * in the preview at the same moment the audio scheduler is firing them),
+ * not the static authored template. Layout matches the manual editors so
+ * the visual language stays consistent; the live playhead column is
+ * painted by a sibling {@link PlayheadOverlay} so this preview doesn't
+ * re-render once per 16th note.
  */
 function ActivePhrasePreview({
   phrase,
   drumTrack,
 }: {
-  phrase: Phrase | undefined;
+  phrase: MaterializedPhrase | undefined;
   /** Owning drum track, threaded through so the preview's pad labels can
    * double as per-pad mute toggles. `undefined` for pitched tracks. */
   drumTrack: DrumTrack | undefined;
 }): ReactElement {
-  if (phrase === undefined) {
+  if (phrase === undefined || phrase.phraseId === undefined) {
     return (
       <div className={clsx(styles.preview, styles.previewEmpty, styles.frame)}>
         No phrase selected
@@ -225,7 +223,7 @@ function ActivePhrasePreview({
   }
   return (
     <div className={clsx(styles.preview, styles.frame)}>
-      <div className={styles.previewName}>{phrase.name}</div>
+      <div className={styles.previewName}>{phrase.name ?? ""}</div>
       <div className={styles.stack}>
         {phrase.kind === "drum" && drumTrack ?
           <DrumPreview template={phrase.template} track={drumTrack} />

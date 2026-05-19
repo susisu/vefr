@@ -3,9 +3,9 @@ import {
   generateBassLoop,
   generateDrumLoop,
   generateMelodyLoop,
-  pickAutoPhraseIndex,
   pitchedPhraseToEvents,
 } from "../auto/generator.js";
+import type { MaterializedPhrase } from "../auto/types.js";
 import type { DrumPhrase, Phrase, PitchedPhrase } from "../phrases/types.js";
 import { degreeToMidi } from "../shared/music.js";
 import { Signal } from "../shared/signal.js";
@@ -609,20 +609,24 @@ export class Engine {
   }
 
   /**
-   * Compute which phrase id is selected for `ref`'s auto track at the
-   * current transport position. Pure derivation — no caching — so the UI
-   * can call this from `getSnapshot` with stable results.
+   * Materialized phrase currently scheduled for `ref`'s auto track. Reads
+   * from {@link PlaybackState.getAutoCacheEntry}; on a cache miss (track
+   * just added, config just changed, or never dispatched yet) lazily runs
+   * {@link materializeAuto} for the current loop and writes the result so
+   * UI snapshots match what {@link dispatchAuto} would produce on the
+   * next scheduler tick. Returns `undefined` for manual tracks or
+   * unresolvable refs.
    */
-  getActiveAutoPhraseId(ref: TrackRef): PhraseId | undefined {
+  getActiveAutoPhrase(ref: TrackRef): MaterializedPhrase | undefined {
     const track = this.resolveTrack(ref);
     if (!track || track.source !== "auto") return undefined;
     const loopTicks = this.loopTicks();
     const loop = Math.floor(this.playback.getPositionTick() / loopTicks);
-    const phrases =
-      track.kind === "drum" ?
-        this.collectDrumPhrases(track.phraseIds)
-      : this.collectPitchedPhrases(track.phraseIds, track.role);
-    return pickActivePhraseId(phrases, track.seed, loop, track.params.macroPeriodLoops);
+    const cached = this.playback.getAutoCacheEntry(track.id);
+    if (cached && cached.loop === loop) return cached.phrase;
+    const entry = this.materializeAuto(track, loop, loopTicks);
+    this.playback.writeAutoCacheEntry(track.id, entry);
+    return entry.phrase;
   }
 
   /**
@@ -643,21 +647,6 @@ export class Engine {
     const lengthSec = (note.lengthTicks * 60) / (this.master.bpm * TICKS_PER_BEAT);
     this.output.playNote(time, midi, lengthSec, note.velocity, instrumentId, gain);
   }
-}
-
-/**
- * Run the macro-tier picker and translate the index back into a phrase id.
- * Returns `undefined` when the candidate list is empty.
- */
-function pickActivePhraseId(
-  phrases: ReadonlyArray<{ id: PhraseId }>,
-  seed: number,
-  loop: number,
-  macroPeriodLoops: number,
-): PhraseId | undefined {
-  if (phrases.length === 0) return undefined;
-  const idx = pickAutoPhraseIndex(seed, loop, macroPeriodLoops, phrases.length);
-  return phrases[idx]?.id;
 }
 
 /**

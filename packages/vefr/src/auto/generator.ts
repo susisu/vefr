@@ -201,22 +201,6 @@ function pickIndex(seed: number, tag: number, slot: number, n: number): number {
 }
 
 /**
- * Public wrapper around the macro-tier picker. Retained so the engine's
- * `getActiveAutoPhraseId` back-calculation path can derive the active
- * phrase from the saved transport position without re-running the full
- * generator. Returns 0 when `count <= 0`.
- */
-export function pickAutoPhraseIndex(
-  seed: number,
-  loop: number,
-  macroPeriodLoops: number,
-  count: number,
-): number {
-  if (count <= 0) return 0;
-  return pickIndex(seed, TAG_TEMPLATE, slotFor(loop, macroPeriodLoops), count);
-}
-
-/**
  * Roll the drop dice for a single event. Returns true when the event
  * should be dropped. The `voice` argument keeps the streams between
  * different pad types / pitched roles independent.
