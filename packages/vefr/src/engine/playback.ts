@@ -128,13 +128,14 @@ export class PlaybackState {
   }
 
   /**
-   * Emit {@link activePhraseChanged} only when the new id differs from the
-   * cached one. Called by the engine just before writing a new cache entry
-   * so subscribers see the change exactly when materialization happens.
+   * Notify subscribers that a new materialized phrase has been produced
+   * for `trackId`. Called by the engine on every materialize — UI
+   * previews need to re-fetch on micro-variation loops too (drop / walk /
+   * ghost shift cell-by-cell while `phraseId` stays the same), not just
+   * when the macro-tier picked phrase changes.
    */
-  maybeEmitPhraseChange(trackId: TrackId, phraseId: PhraseId | undefined): void {
-    const prev = this.autoLoops.get(trackId)?.phrase.phraseId;
-    if (prev !== phraseId) this.activePhraseChanged.emit({ trackId, phraseId });
+  notifyMaterialized(trackId: TrackId, phraseId: PhraseId | undefined): void {
+    this.activePhraseChanged.emit({ trackId, phraseId });
   }
 
   /** Replace the cache entry for a track (after re-materialization). */

@@ -512,7 +512,14 @@ export class Engine {
     const cached = this.playback.getAutoCacheEntry(track.id);
     const entry =
       cached && cached.loop === loop ? cached : this.materializeAuto(track, loop, loopTicks);
-    if (entry !== cached) this.playback.writeAutoCacheEntry(track.id, entry);
+    if (entry !== cached) {
+      this.playback.writeAutoCacheEntry(track.id, entry);
+      // Notify on every fresh materialization, not just when phraseId
+      // shifts: drop / walk / ghost micro variation rewrites the
+      // template in place under a stable phraseId, and UI previews
+      // need to re-fetch to see those per-loop changes.
+      this.playback.notifyMaterialized(track.id, entry.phrase.phraseId);
+    }
     if (entry.lengthTicks <= 0 || localTick >= entry.lengthTicks) return;
     if (entry.kind === "drum") {
       for (const ev of entry.events) {
@@ -539,12 +546,12 @@ export class Engine {
 
   /**
    * Run the appropriate generator and wrap the result in a cache entry.
-   * The generator is called once per loop boundary with the loop index and
-   * returns a {@link MaterializedPhrase} carrying the picked phrase id (so
-   * the UI preview / `getActiveAutoPhraseId` don't have to re-run the
-   * picker). Events are derived from the materialized phrase via
-   * {@link drumPhraseToEvents} / {@link pitchedPhraseToEvents} and cached
-   * so the per-tick dispatch path stays a flat array scan.
+   * Pure: callers decide whether to notify subscribers (dispatch does;
+   * the on-demand getter doesn't, since its caller already has the value).
+   * The generator returns a {@link MaterializedPhrase} carrying the picked
+   * phrase id; events are derived via {@link drumPhraseToEvents} /
+   * {@link pitchedPhraseToEvents} and cached so the per-tick dispatch
+   * path stays a flat array scan.
    */
   private materializeAuto(
     track: Extract<Track, { source: "auto" }>,
@@ -559,7 +566,6 @@ export class Engine {
         phrases,
         params: track.params,
       });
-      this.playback.maybeEmitPhraseChange(track.id, phrase.phraseId);
       if (phrase.kind !== "drum") throw new Error("generateDrumLoop returned non-drum phrase");
       return {
         kind: "drum",
@@ -572,7 +578,6 @@ export class Engine {
     const phrases = this.collectPitchedPhrases(track.phraseIds, track.role);
     const args = { loop, seed: track.seed, phrases, params: track.params };
     const phrase = track.role === "melody" ? generateMelodyLoop(args) : generateBassLoop(args);
-    this.playback.maybeEmitPhraseChange(track.id, phrase.phraseId);
     if (phrase.kind !== "pitched") {
       throw new Error("pitched generator returned non-pitched phrase");
     }
