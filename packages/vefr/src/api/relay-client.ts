@@ -4,7 +4,7 @@
  * Holds a {@link WebSocket} to the relay's `/browser` endpoint, dispatches
  * incoming RPC batches against an {@link InProcessControlApi}, and writes
  * back a single response frame per batch. Subscriptions / state push are not
- * implemented (see PHASE1 §M5 plan: req/res only).
+ * implemented; the relay is req/res only.
  *
  * Reconnection is exponential-backoff and entirely local — the relay is
  * stateless about subscriptions, so we just need to dial again. The

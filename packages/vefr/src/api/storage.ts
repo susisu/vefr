@@ -7,7 +7,7 @@ export const DB_VERSION = 1;
 /** Object store that holds the most recent persisted project. */
 export const STORE_PROJECTS = "projects";
 
-/** Stable id used for the single autosave slot in this Phase 1 build. */
+/** Stable id used for the single autosave slot. */
 export const AUTOSAVE_ID = "autosave";
 /** Scratch id used by the atomic-swap autosave to land a write before promoting it. */
 const PENDING_ID = "autosave.pending";
@@ -139,7 +139,7 @@ export function debounceAutosave(
       pending = undefined;
       if (next) {
         saveAutosave(db, next).catch(() => {
-          /* swallow — best effort autosave; surface via UI in M4 */
+          /* swallow — best effort autosave */
         });
       }
     }, delayMs);

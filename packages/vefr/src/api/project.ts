@@ -365,5 +365,5 @@ function formatPath(path: v.BaseIssue<unknown>["path"]): string {
 }
 
 // Re-export Tick so `engine/types` consumers that go through this module also
-// pick it up — keeps the dependency direction in PHASE1.md §2 explicit.
+// pick it up — keeps the UI → api → engine dependency direction explicit.
 export type { Tick };
