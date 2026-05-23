@@ -56,16 +56,31 @@ export class InProcessControlApi implements ControlApi {
   readonly project: ProjectApi;
 
   constructor(engine: Engine, phraseExists: PhraseResolver, hooks: InProcessHooks = {}) {
-    this.master = makeMasterApi(engine, hooks);
-    this.playback = makePlaybackApi(engine);
+    this.master = makeMasterApi(engine);
+    this.playback = makePlaybackApi(engine, hooks);
     this.global = makeGlobalApi(engine);
     this.track = makeTrackApi(engine);
     this.project = makeProjectApi(engine, phraseExists);
   }
 }
 
-/** Build the master sub-API (transport commands + tempo + master gain) around an Engine. */
-function makeMasterApi(engine: Engine, hooks: InProcessHooks): MasterApi {
+/** Build the master sub-API (persistent master config) around an Engine. */
+function makeMasterApi(engine: Engine): MasterApi {
+  return {
+    setBpm: (bpm: number): void => {
+      engine.setBpm(bpm);
+    },
+    setMasterVolume: (gain: number): void => {
+      engine.setMasterVolume(gain);
+    },
+    getState: (): MasterConfig => engine.getMaster(),
+    onChange: (handler: (state: MasterConfig) => void): (() => void) =>
+      engine.masterConfigChanged.on(handler),
+  };
+}
+
+/** Build the playback (transport commands + live observation) sub-API. */
+function makePlaybackApi(engine: Engine, hooks: InProcessHooks): PlaybackApi {
   return {
     play: (): void => {
       hooks.beforePlay?.();
@@ -77,24 +92,9 @@ function makeMasterApi(engine: Engine, hooks: InProcessHooks): MasterApi {
     stop: (): void => {
       engine.stop();
     },
-    setBpm: (bpm: number): void => {
-      engine.setBpm(bpm);
-    },
-    setMasterVolume: (gain: number): void => {
-      engine.setMasterVolume(gain);
-    },
     seek: (tick: Tick): void => {
       engine.seek(tick);
     },
-    getState: (): MasterConfig => engine.getMaster(),
-    onChange: (handler: (state: MasterConfig) => void): (() => void) =>
-      engine.masterConfigChanged.on(handler),
-  };
-}
-
-/** Build the playback (live transport observation) sub-API. */
-function makePlaybackApi(engine: Engine): PlaybackApi {
-  return {
     isPlaying: (): boolean => engine.playback.isPlaying(),
     onPlayingChange: (handler: (playing: boolean) => void): (() => void) =>
       engine.playback.playingChanged.on(handler),

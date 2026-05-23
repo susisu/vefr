@@ -14,15 +14,15 @@ export function MasterPanel(): ReactElement {
   /** Toggle play and pause based on current state. */
   const onPlayPause = (): void => {
     if (playing) {
-      api.master.pause();
+      api.playback.pause();
     } else {
-      api.master.play();
+      api.playback.play();
     }
   };
 
   /** Stop and rewind. */
   const onStop = (): void => {
-    api.master.stop();
+    api.playback.stop();
   };
 
   /** Forward a knob update to the engine, clamping is already done by the knob. */

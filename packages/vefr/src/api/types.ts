@@ -42,23 +42,15 @@ export interface ControlApi {
 }
 
 /**
- * Master sub-API: persistent master config (tempo, signature, master gain)
- * plus the user-initiated transport commands. Live transport observation
- * lives on {@link PlaybackApi}.
+ * Master sub-API: persistent master config (tempo, signature, master gain).
+ * Mirrors the engine's `MasterConfig` shape. Transient transport state and
+ * its commands live on {@link PlaybackApi}.
  */
 export interface MasterApi {
-  /** Begin playback from the saved play head. */
-  play: () => void;
-  /** Pause playback, remembering the current play head. */
-  pause: () => void;
-  /** Stop playback and rewind to position 0. */
-  stop: () => void;
   /** Set tempo in BPM (must be > 0). */
   setBpm: (bpm: number) => void;
   /** Set the master output gain (linear, 0..1). */
   setMasterVolume: (gain: number) => void;
-  /** Move the play head to `tick` (must be ≥ 0). */
-  seek: (tick: Tick) => void;
   /** Latest snapshot of the persistent master config. */
   getState: () => MasterConfig;
   /** Subscribe to master-config changes (bpm / signature / master gain). */
@@ -66,11 +58,20 @@ export interface MasterApi {
 }
 
 /**
- * Playback sub-API: live transport observation. Everything here is
- * transient state (not persisted to project JSON). All getters are
- * synchronous and safe to call from `useSyncExternalStore` snapshots.
+ * Playback sub-API: transient transport state plus the commands that move
+ * it. Everything here is non-persistent (not written to project JSON). All
+ * getters are synchronous and safe to call from `useSyncExternalStore`
+ * snapshots.
  */
 export interface PlaybackApi {
+  /** Begin playback from the saved play head. */
+  play: () => void;
+  /** Pause playback, remembering the current play head. */
+  pause: () => void;
+  /** Stop playback and rewind to position 0. */
+  stop: () => void;
+  /** Move the play head to `tick` (must be ≥ 0). */
+  seek: (tick: Tick) => void;
   /** Whether the engine is currently playing. */
   isPlaying: () => boolean;
   /** Subscribe to play/pause/stop transitions; fires only on actual value changes. */

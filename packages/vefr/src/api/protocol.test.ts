@@ -4,10 +4,10 @@ import { PROTOCOL_VERSION, parseRpcRequest, parseWsFrame, type RpcRequest } from
 
 describe("parseRpcRequest", () => {
   it("accepts a no-params method", () => {
-    const result = parseRpcRequest({ ops: [{ method: "master.play", params: {} }] });
+    const result = parseRpcRequest({ ops: [{ method: "playback.play", params: {} }] });
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.ops[0]?.method).toBe("master.play");
+      expect(result.value.ops[0]?.method).toBe("playback.play");
     }
   });
 
@@ -236,7 +236,7 @@ describe("parseWsFrame", () => {
       v: PROTOCOL_VERSION,
       kind: "req" as const,
       id: "abc",
-      ops: [{ method: "master.play", params: {} }],
+      ops: [{ method: "playback.play", params: {} }],
     };
     const result = parseWsFrame(frame);
     expect(result.ok).toBe(true);
@@ -261,7 +261,7 @@ describe("parseWsFrame", () => {
       v: 0,
       kind: "req",
       id: "abc",
-      ops: [{ method: "master.play", params: {} }],
+      ops: [{ method: "playback.play", params: {} }],
     });
     expect(result.ok).toBe(false);
   });
