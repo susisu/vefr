@@ -92,8 +92,9 @@ export interface PlaybackApi {
   getActiveAutoPhrase: (ref: TrackRef) => MaterializedPhrase | undefined;
   /**
    * Subscribe to "the active auto phrase for `ref` may have changed" events.
-   * Fires on live macro-tier rotation, on transport seeks, and on
-   * auto-config edits. Use with {@link getActiveAutoPhrase} for
+   * Fires on every materialization (loop boundary) of `ref`'s track — both
+   * macro-tier rotation and micro-variation re-rolls — and on any
+   * track-list change. Use with {@link getActiveAutoPhrase} for
    * `useSyncExternalStore`.
    */
   subscribeActiveAutoPhrase: (ref: TrackRef, handler: () => void) => () => void;
