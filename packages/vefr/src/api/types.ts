@@ -1,15 +1,5 @@
 import type { AutoConfigPatch, NewTrackInput, TrackPatch } from "../engine/engine.js";
-
-// Re-exported so UI code can build NewTrackInput values without importing
-// directly from `engine/engine.js` (the lint boundary forbids that).
-export type { NewTrackInput };
 import type { MaterializedPhrase } from "../auto/types.js";
-/**
- * Re-exported so UI components can consume `MaterializedPhrase` (returned by
- * `playback.getActiveAutoPhrase`) without crossing the `auto/` import
- * boundary that the UI lint rule forbids.
- */
-export type { MaterializedPhrase };
 import type {
   DrumHit,
   GlobalMusicState,
@@ -21,6 +11,9 @@ import type {
   TrackRef,
 } from "../engine/types.js";
 import type { ImportError, Project } from "./project.js";
+
+// Re-exported so the UI can use these types without depending on engine / auto.
+export type { NewTrackInput, MaterializedPhrase };
 
 /** Reason a {@link ControlApi.track.update} call failed. */
 export type TrackUpdateError =
