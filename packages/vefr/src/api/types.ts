@@ -106,7 +106,7 @@ export interface GlobalApi {
   get: () => GlobalMusicState;
   /** Patch the global musical context (key/scale). Absent fields are left alone. */
   set: (partial: Partial<GlobalMusicState>) => void;
-  /** Pick a fresh random tonic key 0..11. */
+  /** Pick a fresh random tonic key in the supported range (-11..11). */
   rerollKey: () => void;
   /** Pick a fresh random scale from the engine's scale list. */
   rerollScale: () => void;
