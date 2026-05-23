@@ -102,13 +102,15 @@ async function bootstrap(): Promise<void> {
     output,
     resolvePhrase: getPhrase,
   });
-  // AudioContext starts suspended in most browsers; resume it on the first
-  // user gesture (the Play button click) per the autoplay policy.
   const api = new InProcessControlApi(engine, phraseExists, {
     beforePlay: () => {
+      // AudioContext starts suspended in most browsers; resume it on the first
+      // user gesture (the Play button click) per the autoplay policy.
       if (audioCtx.state === "suspended") {
-        audioCtx.resume().catch(() => {
-          /* ignored — best effort; subsequent plays will retry */
+        audioCtx.resume().catch((err: unknown) => {
+          // Log and continue so a subsequent Play click can retry.
+          // eslint-disable-next-line no-console
+          console.warn("AudioContext resume failed", err);
         });
       }
     },
@@ -137,8 +139,11 @@ async function bootstrap(): Promise<void> {
       api.project.onAnyChange(() => {
         save(api.project.snapshot());
       });
-    } catch {
-      // IndexedDB might be blocked (file://, private mode); fall back silently.
+    } catch (err) {
+      // IndexedDB might be blocked (file://, private mode); skip autosave and
+      // run as an ephemeral session.
+      // eslint-disable-next-line no-console
+      console.warn("IndexedDB is not available", err);
     }
   }
 
