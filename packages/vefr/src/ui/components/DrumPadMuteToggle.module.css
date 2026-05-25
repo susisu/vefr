@@ -21,7 +21,10 @@
   cursor: pointer;
   width: 100%;
 }
+/* Cancel the global `button:hover` gradient so the cell stays transparent and
+ * only the text colour shifts. */
 .button:hover {
+  background: transparent;
   color: var(--fg);
 }
 .button.muted {

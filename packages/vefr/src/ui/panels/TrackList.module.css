@@ -90,6 +90,17 @@
   color: var(--fg-faint);
   border-color: #2a2a2a;
 }
+/* Cancel the global `button:hover` gradient + border lift so the row stays
+ * flat; per-state border colour (default vs muted) has to be re-asserted
+ * because `button:hover` (0,1,1) otherwise outranks the `.mute` (0,1,0) /
+ * `.mute.muted` (0,2,0) base rules for `border-color`. */
+.mute:hover {
+  background: transparent;
+  border-color: var(--inset-rim);
+}
+.mute.muted:hover {
+  border-color: #2a2a2a;
+}
 
 .delete {
   background: transparent;
