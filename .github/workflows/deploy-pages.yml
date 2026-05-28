@@ -34,7 +34,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build static bundle
-        run: pnpm --filter @susisu/vefr build -- --base=/vefr/
+        run: pnpm --filter @susisu/vefr build
+        env:
+          VEFR_BASE: /vefr/
 
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
