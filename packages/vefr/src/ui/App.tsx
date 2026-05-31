@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import type { Track } from "../engine/types.js";
+import type { Track } from "../domain/track.js";
 import { Panel } from "./components/index.js";
 import { useTracks, useTrackMuteShortcuts } from "./hooks.js";
 import { AutoTrackEditor } from "./panels/AutoTrackEditor.js";

@@ -1,5 +1,5 @@
 import type { ChangeEvent, ReactElement } from "react";
-import { asScaleId, KEY_MAX, KEY_MIN, keyLabel, SCALE_IDS } from "../../shared/music.js";
+import { asScaleId, KEY_MAX, KEY_MIN, keyLabel, SCALE_IDS } from "../../domain/music.js";
 import { Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useGlobal } from "../hooks.js";

@@ -1,10 +1,10 @@
 import type { ReactElement } from "react";
 import {
-  refById,
   PITCHED_OCTAVE_MAX,
   PITCHED_OCTAVE_MIN,
   type PitchedTrack,
-} from "../../engine/types.js";
+  refById,
+} from "../../domain/track.js";
 import { Knob } from "../components/index.js";
 import { useControlApi } from "../context.js";
 

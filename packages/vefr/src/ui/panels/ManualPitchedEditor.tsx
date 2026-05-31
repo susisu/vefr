@@ -1,12 +1,7 @@
 import type { ReactElement } from "react";
-import {
-  refById,
-  TICKS_PER_BEAT,
-  type Note,
-  type Pattern,
-  type PatternEvent,
-  type PitchedTrack,
-} from "../../engine/types.js";
+import type { Note, Pattern, PatternEvent } from "../../domain/pattern.js";
+import { TICKS_PER_BEAT } from "../../domain/timing.js";
+import { type PitchedTrack, refById } from "../../domain/track.js";
 import clsx from "clsx";
 import { Chip, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";

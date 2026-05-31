@@ -1,17 +1,15 @@
 import * as v from "valibot";
-import { DRUM_KIT_IDS, INSTRUMENT_IDS } from "../engine/sound-port.js";
-import { PITCHED_OCTAVE_MAX, PITCHED_OCTAVE_MIN, TRACK_COLOR_IDS } from "../engine/types.js";
-import { KEY_MAX, KEY_MIN } from "../shared/music.js";
-import type {
-  DrumHit,
-  GlobalMusicState,
-  Note,
-  Pattern,
-  PhraseId,
-  Tick,
-  TimeSignature,
-  Track,
-} from "../engine/types.js";
+import { DRUM_KIT_IDS, INSTRUMENT_IDS } from "../domain/instrument.js";
+import { KEY_MAX, KEY_MIN, type GlobalMusicState } from "../domain/music.js";
+import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
+import type { PhraseId } from "../domain/phrase/types.js";
+import type { Tick, TimeSignature } from "../domain/timing.js";
+import {
+  PITCHED_OCTAVE_MAX,
+  PITCHED_OCTAVE_MIN,
+  TRACK_COLOR_IDS,
+  type Track,
+} from "../domain/track.js";
 
 /** Schema version baked into every saved project; bump when migrations are required. */
 export const CURRENT_SCHEMA_VERSION = 1;

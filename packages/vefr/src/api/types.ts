@@ -1,15 +1,14 @@
-import type { AutoConfigPatch, NewTrackInput, TrackPatch } from "../engine/engine.js";
-import type { MaterializedPhrase } from "../auto/types.js";
+import type { MaterializedPhrase } from "../domain/auto/types.js";
+import type { GlobalMusicState } from "../domain/music.js";
+import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
+import type { MasterConfig, Tick } from "../domain/timing.js";
 import type {
-  DrumHit,
-  GlobalMusicState,
-  MasterConfig,
-  Note,
-  Pattern,
-  Tick,
+  AutoConfigPatch,
+  NewTrackInput,
   Track,
+  TrackPatch,
   TrackRef,
-} from "../engine/types.js";
+} from "../domain/track.js";
 import type { ImportError, Project } from "./project.js";
 
 // Re-exported so the UI can use these types without depending on engine / auto.

@@ -1,15 +1,13 @@
 import type { ControlApi, NewTrackInput } from "../../api/types.js";
 import {
   DEFAULT_DRUM_KIT_ID,
-  TICKS_PER_BEAT,
   defaultInstrumentForRole,
   defaultOctaveForRole,
-  type DrumHit,
-  type Note,
-  type Pattern,
   type PitchedRole,
-} from "../../engine/types.js";
-import { defaultAutoParamsFor } from "../../phrases/index.js";
+} from "../../domain/instrument.js";
+import type { DrumHit, Note, Pattern } from "../../domain/pattern.js";
+import { TICKS_PER_BEAT } from "../../domain/timing.js";
+import { defaultAutoParamsFor } from "../../domain/auto/params.js";
 
 /**
  * Default loop length for fresh manual patterns: 2 musical bars in 4/4

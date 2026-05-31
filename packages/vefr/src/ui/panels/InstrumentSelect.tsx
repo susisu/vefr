@@ -1,10 +1,6 @@
 import type { ChangeEvent, ReactElement } from "react";
-import {
-  INSTRUMENT_IDS,
-  refById,
-  type InstrumentId,
-  type PitchedTrack,
-} from "../../engine/types.js";
+import { INSTRUMENT_IDS, type InstrumentId } from "../../domain/instrument.js";
+import { type PitchedTrack, refById } from "../../domain/track.js";
 import { useControlApi } from "../context.js";
 import styles from "./InstrumentSelect.module.css";
 

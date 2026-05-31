@@ -11,7 +11,7 @@
  * only request/response (commands) are modelled here.
  */
 import * as v from "valibot";
-import { KEY_MAX, KEY_MIN } from "../shared/music.js";
+import { KEY_MAX, KEY_MIN } from "../domain/music.js";
 import {
   AutoParamsSchema,
   DrumAutoSchema,

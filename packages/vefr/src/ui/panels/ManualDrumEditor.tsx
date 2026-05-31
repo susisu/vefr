@@ -1,13 +1,7 @@
 import type { ReactElement } from "react";
-import {
-  refById,
-  TICKS_PER_BEAT,
-  type DrumHit,
-  type DrumPad,
-  type DrumTrack,
-  type Pattern,
-  type PatternEvent,
-} from "../../engine/types.js";
+import type { DrumHit, DrumPad, Pattern, PatternEvent } from "../../domain/pattern.js";
+import { TICKS_PER_BEAT } from "../../domain/timing.js";
+import { type DrumTrack, refById } from "../../domain/track.js";
 import clsx from "clsx";
 import { Chip, DrumPadMuteToggle, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";

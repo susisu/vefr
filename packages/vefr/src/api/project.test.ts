@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  refById,
-  TICKS_PER_BEAT,
-  type DrumTrack,
-  type PitchedTrack,
-  type Track,
-} from "../engine/types.js";
+import { TICKS_PER_BEAT } from "../domain/timing.js";
+import { type DrumTrack, type PitchedTrack, refById, type Track } from "../domain/track.js";
 import { CURRENT_SCHEMA_VERSION, parseProject, type Project } from "./project.js";
 
 /** Always-true phrase resolver used in tests when phrase references are valid. */

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TestClock } from "../engine/clock.js";
 import { Engine } from "../engine/engine.js";
-import { TICKS_PER_BEAT } from "../engine/types.js";
-import { phraseExists } from "../phrases/index.js";
+import { TICKS_PER_BEAT } from "../domain/timing.js";
+import { phraseExists } from "../domain/phrase/registry.js";
 import { RecordingSoundOutput } from "../sound/mock.js";
 import { InProcessControlApi } from "./inprocess.js";
 import { PROTOCOL_VERSION, type Op } from "./protocol.js";

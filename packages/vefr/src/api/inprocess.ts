@@ -1,22 +1,16 @@
-import type { MaterializedPhrase } from "../auto/types.js";
+import type { MaterializedPhrase } from "../domain/auto/types.js";
+import { KEY_MAX, KEY_MIN, SCALE_IDS, type GlobalMusicState } from "../domain/music.js";
+import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
+import type { MasterConfig, Tick } from "../domain/timing.js";
 import {
   TrackError,
   type AutoConfigPatch,
-  type Engine,
   type NewTrackInput,
+  type Track,
   type TrackPatch,
-} from "../engine/engine.js";
-import type {
-  DrumHit,
-  GlobalMusicState,
-  MasterConfig,
-  Note,
-  Pattern,
-  Tick,
-  Track,
-  TrackRef,
-} from "../engine/types.js";
-import { KEY_MAX, KEY_MIN, SCALE_IDS } from "../shared/music.js";
+  type TrackRef,
+} from "../domain/track.js";
+import type { Engine } from "../engine/engine.js";
 import {
   parseProject,
   type ImportError,

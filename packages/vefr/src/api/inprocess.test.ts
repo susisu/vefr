@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { TestClock } from "../engine/clock.js";
 import { Engine } from "../engine/engine.js";
-import { TICKS_PER_BEAT, type DrumTrack } from "../engine/types.js";
+import { TICKS_PER_BEAT } from "../domain/timing.js";
+import type { DrumTrack } from "../domain/track.js";
 import { RecordingSoundOutput } from "../sound/mock.js";
 import { InProcessControlApi } from "./inprocess.js";
 

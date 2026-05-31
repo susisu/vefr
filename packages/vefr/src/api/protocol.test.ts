@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TICKS_PER_BEAT } from "../engine/types.js";
+import { TICKS_PER_BEAT } from "../domain/timing.js";
 import { PROTOCOL_VERSION, parseRpcRequest, parseWsFrame, type RpcRequest } from "./protocol.js";
 
 describe("parseRpcRequest", () => {

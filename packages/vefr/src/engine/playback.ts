@@ -1,6 +1,9 @@
-import type { MaterializedPhrase } from "../auto/types.js";
+import type { MaterializedPhrase } from "../domain/auto/types.js";
 import { Signal } from "../shared/signal.js";
-import type { DrumHit, Note, PatternEvent, PhraseId, Tick, TrackId } from "./types.js";
+import type { DrumHit, Note, PatternEvent } from "../domain/pattern.js";
+import type { PhraseId } from "../domain/phrase/types.js";
+import type { Tick } from "../domain/timing.js";
+import type { TrackId } from "../domain/track.js";
 
 /** Payload of {@link PlaybackState.activePhraseChanged}. */
 export type ActivePhrasePayload = {

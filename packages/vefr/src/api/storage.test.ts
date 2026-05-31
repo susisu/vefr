@@ -1,6 +1,7 @@
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it } from "vitest";
-import { TICKS_PER_BEAT, type DrumTrack } from "../engine/types.js";
+import { TICKS_PER_BEAT } from "../domain/timing.js";
+import type { DrumTrack } from "../domain/track.js";
 import { CURRENT_SCHEMA_VERSION, type Project } from "./project.js";
 import { AUTOSAVE_ID, loadAutosave, openDatabase, saveAutosave } from "./storage.js";
 

@@ -1,5 +1,6 @@
 import type { ChangeEvent, ReactElement } from "react";
-import { DRUM_KIT_IDS, refById, type DrumKitId, type DrumTrack } from "../../engine/types.js";
+import { DRUM_KIT_IDS, type DrumKitId } from "../../domain/instrument.js";
+import { type DrumTrack, refById } from "../../domain/track.js";
 import { useControlApi } from "../context.js";
 import styles from "./DrumKitSelect.module.css";
 

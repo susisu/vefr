@@ -1,5 +1,11 @@
 import type { Note } from "../pattern.js";
-import type { DrumPhrase, DrumTemplate, PhraseId, PitchedPhrase, RhythmTemplate } from "../phrase/types.js";
+import type {
+  DrumPhrase,
+  DrumTemplate,
+  PhraseId,
+  PitchedPhrase,
+  RhythmTemplate,
+} from "../phrase/types.js";
 import type { AutoParams } from "./params.js";
 
 /**

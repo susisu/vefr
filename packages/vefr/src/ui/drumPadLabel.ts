@@ -1,4 +1,4 @@
-import type { DrumPad } from "../engine/types.js";
+import type { DrumPad } from "../domain/pattern.js";
 
 /**
  * Compact display label for each drum pad — short enough to fit on one

@@ -8,9 +8,11 @@ import {
   openDatabase,
 } from "./api/storage.js";
 import { WebAudioClock } from "./engine/clock.js";
-import { Engine, type EngineInitial } from "./engine/engine.js";
-import type { DrumTrack, PitchedTrack } from "./engine/types.js";
-import { defaultAutoParamsFor, getPhrase, phraseExists } from "./phrases/index.js";
+import type { EngineInitial } from "./domain/track.js";
+import { Engine } from "./engine/engine.js";
+import type { DrumTrack, PitchedTrack } from "./domain/track.js";
+import { defaultAutoParamsFor } from "./domain/auto/params.js";
+import { getPhrase, phraseExists } from "./domain/phrase/registry.js";
 import { WebAudioSoundOutput } from "./sound/webaudio.js";
 import type { RelayClientHandle } from "./api/relay-client.js";
 import { App } from "./ui/App.js";

@@ -5,12 +5,11 @@ import {
   generateMelodyLoop,
   pitchedPhraseToEvents,
 } from "../domain/auto/generator.js";
-import type { AutoParams } from "../domain/auto/params.js";
 import type { MaterializedPhrase } from "../domain/auto/types.js";
-import type { DrumKitId, InstrumentId } from "../domain/instrument.js";
+import type { InstrumentId } from "../domain/instrument.js";
 import { degreeToMidi, type GlobalMusicState } from "../domain/music.js";
-import type { DrumHit, DrumPad, Note, Pattern } from "../domain/pattern.js";
-import type { DrumPhrase, Phrase, PhraseId, PitchedPhrase } from "../domain/phrase/types.js";
+import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
+import type { DrumPhrase, PhraseId, PitchedPhrase } from "../domain/phrase/types.js";
 import { TICKS_PER_BEAT, type MasterConfig, type Tick } from "../domain/timing.js";
 import {
   TrackError,
@@ -19,7 +18,6 @@ import {
   type NewTrackInput,
   type PhraseLookup,
   type Track,
-  type TrackColorId,
   type TrackId,
   type TrackPatch,
   type TrackRef,
