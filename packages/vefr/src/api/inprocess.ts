@@ -11,13 +11,7 @@ import {
   type TrackRef,
 } from "../domain/track.js";
 import type { Engine } from "../engine/engine.js";
-import {
-  parseProject,
-  type ImportError,
-  type PhraseResolver,
-  type Project,
-  CURRENT_SCHEMA_VERSION,
-} from "./project.js";
+import { parseProject, type ImportError, type Project, CURRENT_SCHEMA_VERSION } from "./project.js";
 import type {
   ControlApi,
   GlobalApi,
@@ -49,12 +43,12 @@ export class InProcessControlApi implements ControlApi {
   readonly track: TrackApi;
   readonly project: ProjectApi;
 
-  constructor(engine: Engine, phraseExists: PhraseResolver, hooks: InProcessHooks = {}) {
+  constructor(engine: Engine, hooks: InProcessHooks = {}) {
     this.master = makeMasterApi(engine);
     this.playback = makePlaybackApi(engine, hooks);
     this.global = makeGlobalApi(engine);
     this.track = makeTrackApi(engine);
-    this.project = makeProjectApi(engine, phraseExists);
+    this.project = makeProjectApi(engine);
   }
 }
 
@@ -215,7 +209,7 @@ function randomSeed(): number {
 }
 
 /** Build the project sub-API: snapshot, load, import, and a coarse change feed. */
-function makeProjectApi(engine: Engine, phraseExists: PhraseResolver): ProjectApi {
+function makeProjectApi(engine: Engine): ProjectApi {
   return {
     snapshot: (): Project => snapshotProject(engine),
     load: (project: Project): void => {
@@ -226,7 +220,7 @@ function makeProjectApi(engine: Engine, phraseExists: PhraseResolver): ProjectAp
       });
     },
     importJson: (raw: unknown): Result<void, ImportError[]> => {
-      const parsed = parseProject(raw, phraseExists);
+      const parsed = parseProject(raw);
       if (!parsed.ok) return { ok: false, error: parsed.errors };
       engine.loadState({
         master: parsed.value.master,

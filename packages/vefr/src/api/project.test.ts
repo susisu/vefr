@@ -3,10 +3,8 @@ import { TICKS_PER_BEAT } from "../domain/timing.js";
 import { type DrumTrack, type PitchedTrack, refById, type Track } from "../domain/track.js";
 import { CURRENT_SCHEMA_VERSION, parseProject, type Project } from "./project.js";
 
-/** Always-true phrase resolver used in tests when phrase references are valid. */
-const allKnown = (): boolean => true;
-/** Always-false phrase resolver used in tests that assert missing-phrase errors. */
-const noneKnown = (): boolean => false;
+/** A real built-in bass phrase id, so valid-project fixtures pass the catalog check. */
+const REAL_BASS_PHRASE = "bass.techno.eighth-pulse";
 
 /** Build a minimal manual drum track for round-tripping tests. */
 function makeDrumTrack(): DrumTrack {
@@ -53,7 +51,7 @@ function makeMelodyTrack(): PitchedTrack {
 }
 
 /** Build a minimal auto bass track for round-tripping tests. */
-function makeAutoBassTrack(): PitchedTrack {
+function makeAutoBassTrack(phraseIds: readonly string[] = [REAL_BASS_PHRASE]): PitchedTrack {
   return {
     id: "ab1",
     name: "Auto Bass 1",
@@ -65,7 +63,7 @@ function makeAutoBassTrack(): PitchedTrack {
     volume: 0.9,
     color: "white",
     source: "auto",
-    phraseIds: ["bass.phrase"],
+    phraseIds,
     seed: 42,
     params: { microPeriodLoops: 1, macroPeriodLoops: 4 },
   };
@@ -85,7 +83,7 @@ describe("parseProject", () => {
   it("round-trips a manual-only project", () => {
     const original = makeProject([makeDrumTrack(), makeMelodyTrack()]);
     const json: unknown = JSON.parse(JSON.stringify(original));
-    const r = parseProject(json, allKnown);
+    const r = parseProject(json);
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.value).toEqual(original);
@@ -95,7 +93,7 @@ describe("parseProject", () => {
   it("round-trips a project with auto tracks", () => {
     const original = makeProject([makeDrumTrack(), makeAutoBassTrack()]);
     const json: unknown = JSON.parse(JSON.stringify(original));
-    const r = parseProject(json, allKnown);
+    const r = parseProject(json);
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.value.tracks).toHaveLength(2);
@@ -105,7 +103,7 @@ describe("parseProject", () => {
   });
 
   it("rejects a non-object root", () => {
-    const r = parseProject("nope", allKnown);
+    const r = parseProject("nope");
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.errors[0]?.code).toBe("not-an-object");
@@ -113,7 +111,7 @@ describe("parseProject", () => {
   });
 
   it("rejects an unknown schemaVersion", () => {
-    const r = parseProject({ schemaVersion: 99, master: {}, global: {}, tracks: [] }, allKnown);
+    const r = parseProject({ schemaVersion: 99, master: {}, global: {}, tracks: [] });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.errors.some((e) => e.code === "unknown-schema-version")).toBe(true);
@@ -121,9 +119,9 @@ describe("parseProject", () => {
   });
 
   it("flags missing phrases on auto tracks", () => {
-    const original = makeProject([makeAutoBassTrack()]);
+    const original = makeProject([makeAutoBassTrack(["bass.does-not-exist"])]);
     const json: unknown = JSON.parse(JSON.stringify(original));
-    const r = parseProject(json, noneKnown);
+    const r = parseProject(json);
     expect(r.ok).toBe(false);
     if (!r.ok) {
       const missing = r.errors.find((e) => e.code === "missing-phrase");
@@ -136,7 +134,7 @@ describe("parseProject", () => {
     const b: DrumTrack = { ...makeDrumTrack(), id: "d2", name: a.name };
     const original = makeProject([a, b]);
     const json: unknown = JSON.parse(JSON.stringify(original));
-    const r = parseProject(json, allKnown);
+    const r = parseProject(json);
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.errors.some((e) => e.code === "duplicate-name")).toBe(true);
@@ -151,7 +149,7 @@ describe("parseProject", () => {
       global: { ...original.global, key: 99 },
       tracks: original.tracks,
     };
-    const r = parseProject(broken, allKnown);
+    const r = parseProject(broken);
     expect(r.ok).toBe(false);
   });
 
@@ -164,7 +162,7 @@ describe("parseProject", () => {
         global: { ...original.global, key },
         tracks: original.tracks,
       };
-      const r = parseProject(project, allKnown);
+      const r = parseProject(project);
       expect(r.ok).toBe(true);
     }
   });
@@ -178,7 +176,7 @@ describe("parseProject", () => {
         global: { ...original.global, key },
         tracks: original.tracks,
       };
-      const r = parseProject(broken, allKnown);
+      const r = parseProject(broken);
       expect(r.ok).toBe(false);
     }
   });
@@ -192,7 +190,7 @@ describe("parseProject", () => {
         global: original.global,
         tracks: original.tracks,
       };
-      const r = parseProject(broken, allKnown);
+      const r = parseProject(broken);
       expect(r.ok).toBe(false);
     }
   });
@@ -205,7 +203,7 @@ describe("parseProject", () => {
       global: { key: 0, scale: "minor" },
       tracks: [trackWithoutInstrument],
     };
-    const r = parseProject(broken, allKnown);
+    const r = parseProject(broken);
     expect(r.ok).toBe(false);
   });
 

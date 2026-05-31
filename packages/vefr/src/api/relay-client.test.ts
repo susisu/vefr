@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TestClock } from "../engine/clock.js";
 import { Engine } from "../engine/engine.js";
 import { TICKS_PER_BEAT } from "../domain/timing.js";
-import { phraseExists } from "../domain/phrase/registry.js";
 import { RecordingSoundOutput } from "../sound/mock.js";
 import { InProcessControlApi } from "./inprocess.js";
 import { PROTOCOL_VERSION, type Op } from "./protocol.js";
@@ -30,7 +29,7 @@ function makeApi(): InProcessControlApi {
       resolvePhrase: () => undefined,
     },
   );
-  return new InProcessControlApi(engine, phraseExists);
+  return new InProcessControlApi(engine);
 }
 
 describe("dispatchBatch", () => {

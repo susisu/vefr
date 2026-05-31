@@ -12,7 +12,7 @@ import type { EngineInitial } from "./domain/track.js";
 import { Engine } from "./engine/engine.js";
 import type { DrumTrack, PitchedTrack } from "./domain/track.js";
 import { defaultAutoParamsFor } from "./domain/auto/params.js";
-import { getPhrase, phraseExists } from "./domain/phrase/registry.js";
+import { getPhrase } from "./domain/phrase/registry.js";
 import { WebAudioSoundOutput } from "./sound/webaudio.js";
 import type { RelayClientHandle } from "./api/relay-client.js";
 import { App } from "./ui/App.js";
@@ -104,7 +104,7 @@ async function bootstrap(): Promise<void> {
     output,
     resolvePhrase: getPhrase,
   });
-  const api = new InProcessControlApi(engine, phraseExists, {
+  const api = new InProcessControlApi(engine, {
     beforePlay: () => {
       // AudioContext starts suspended in most browsers; resume it on the first
       // user gesture (the Play button click) per the autoplay policy.

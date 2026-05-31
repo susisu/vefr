@@ -29,7 +29,7 @@ import {
   ScaleIdSchema,
   TrackColorIdSchema,
   patternSchema,
-} from "./project.js";
+} from "./schema.js";
 
 /** Current wire-protocol version. Bump together with any breaking frame change. */
 export const PROTOCOL_VERSION = 1;

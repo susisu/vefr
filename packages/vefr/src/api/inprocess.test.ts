@@ -37,7 +37,7 @@ function makeApi(): { api: InProcessControlApi; engine: Engine } {
     },
     { clock, output, resolvePhrase: () => undefined },
   );
-  const api = new InProcessControlApi(engine, () => false);
+  const api = new InProcessControlApi(engine);
   return { api, engine };
 }
 
