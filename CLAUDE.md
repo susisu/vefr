@@ -40,14 +40,16 @@ Clean up ESLint warnings, not just errors. Use `eslint-disable` only at unavoida
 
 ## Architecture
 
-Layered, with a strict dependency direction enforced by code review and (for the UI) by ESLint. Paths below are relative to `packages/vefr/`.
+Layered, with a strict dependency direction enforced by code review **and** by ESLint (`no-restricted-imports` per layer in `eslint.config.js`). Each layer may depend only on layers below it. Paths below are relative to `packages/vefr/`.
 
 ```
-ui ──► api ──► engine ◄── auto
+ui ──► api ──► engine ──► domain   (domain = pure model + auto + phrases; bottom of the graph)
                   ▲
                   │
-                sound  (engine pushes events into a SoundOutput port)
+                sound  (adapter implementing the engine's SoundOutput port; reads domain too)
 ```
+
+The single real boundary is **pure domain (no time, no IO) vs runtime**: `domain/` is timeless and side-effect-free; `engine/` drives it through time and pushes into a `SoundOutput` port. `auto/` and `phrases/` are _inside_ the domain — they are domain services / reference data, not a layer between domain and engine.
 
 External-control overlay (optional, opt-in at build):
 
@@ -57,19 +59,24 @@ External-control overlay (optional, opt-in at build):
                                                  into InProcessControlApi
 ```
 
-- **`src/engine/`** — pure timing + state core. `Engine` owns transport, global music state, the track list, and the dispatch loop. `Scheduler` look-aheads ~100 ms via `setTimeout` and converts `Tick`s to `AudioContext.currentTime` seconds; `Clock` wraps the audio clock so tests can swap in a fake. `sound-port.ts` is the interface the engine pushes events into — engine never touches WebAudio directly. Time grid is `TICKS_PER_BEAT = 96` (PPQN 96).
-- **`src/auto/`** — pure functions that take `(seed, loop, params, phraseTemplates)` and return a loop of events. The variation model collapses to two periods, both counted in loops: `microPeriodLoops` (per-event drop / walk / ghost dice re-roll) and `macroPeriodLoops` (template rotation slot). `0` means "infinity" (lock). Variation strengths are constants in `generator.ts`, not user-tunable. One loop = `LOOP_BARS` musical bars (currently 2); this is the only place `bar` enters the auto pipeline.
-- **`src/sound/`** — `SoundOutput` implementations. `webaudio.ts` is the production sink (Oscillator + ADSR for pitched, noise-based drums); `mock.ts` is for tests. Engine uses only the port, so swapping in Web MIDI later is an additional adapter, not a refactor.
+- **`src/domain/`** — the pure domain model: types, constants, defaults and behaviour, organised by concept (no catch-all "types" module). Each module owns one concept and co-locates its type + logic:
+  - `music.ts` (scale tables, keys, `ScaleId`, `GlobalMusicState`, `degreeToMidi`), `instrument.ts` (instrument / drum-kit id catalog + `PitchedRole` + role defaults), `timing.ts` (`Tick`, `TICKS_PER_BEAT = 96` (PPQN 96), `TimeSignature`, `MasterConfig`), `pattern.ts` (`DrumPad` / `DrumHit` / `Note` / `Pattern`).
+  - `track.ts` — the `Track` aggregate (discriminated over `kind` × `source`), `TrackRef` / `refById` / `refByName`, color + octave bounds, the API-facing contract types (`NewTrackInput`, `TrackPatch`, `AutoConfigPatch`, `EngineInitial`, `PhraseLookup`) and `TrackError`.
+  - `phrase/` — built-in phrase library: `types.ts` (`Phrase` templates + `PhraseId`), the `drums`/`melody`/`bass` catalog (authored at 32 sixteenth-step / 2-bar resolution), and `registry.ts` (`getPhrase` resolver + `phraseExists` + `list*`).
+  - `auto/` — domain service: `params.ts` (`AutoParams` + defaults + `defaultAutoParamsFor`) and `generator.ts`, the `(seed, loop, params, phraseTemplates)` → loop pure functions. Variation collapses to two loop-counted periods, `microPeriodLoops` (per-event drop / walk / ghost re-roll) and `macroPeriodLoops` (template rotation slot); `0` = infinity (lock); strengths are constants in `generator.ts`. One loop = `LOOP_BARS` musical bars (currently 2; defined in `engine/engine.ts`) — the only place `bar` enters the pipeline.
+  - Internal DAG (acyclic): `music` / `instrument` / `timing` are leaves; `pattern → timing`; `phrase → pattern, instrument`; `auto → pattern, phrase, timing` (+ `src/shared/rng`); `track → pattern, instrument, auto, phrase`.
+- **`src/engine/`** — the runtime over the domain (transport). `Engine` owns transport, the track list, and the dispatch loop, and enforces track-name uniqueness. `Scheduler` look-aheads ~100 ms via `setTimeout` and converts `Tick`s to `AudioContext.currentTime` seconds; `Clock` wraps the audio clock so tests can swap in a fake. `sound-port.ts` is the `SoundOutput` interface the engine pushes events into (the instrument / kit id vocabulary it speaks lives in `domain/instrument`). Engine never touches WebAudio directly; the phrase catalog is injected as `resolvePhrase` so the runtime stays content-free.
+- **`src/sound/`** — `SoundOutput` implementations (adapters). `webaudio.ts` is the production sink (Oscillator + ADSR for pitched, noise-based drums); `mock.ts` is for tests. Depends on `engine/sound-port` + `domain`, so swapping in Web MIDI later is an additional adapter, not a refactor.
 - **`src/api/`** — the **Control API**.
-  - `types.ts` is the public façade (`ControlApi` + sub-APIs `transport`, `global`, `track`, `project`). All methods are synchronous; recoverable errors go through `Result<T, E>`.
+  - `types.ts` is the public façade (`ControlApi` + sub-APIs `master`, `playback`, `global`, `track`, `project`). All methods are synchronous; recoverable errors go through `Result<T, E>`. Contract types come from `domain/track`, not the `Engine` class.
   - `inprocess.ts` is the in-runtime implementation backed directly by an `Engine`.
-  - `project.ts` is the JSON snapshot/parse layer (`schemaVersion` + valibot schema; reject incompatible versions instead of silently coercing). Several inner schemas (`TrackSchema`, `patternSchema`, `ScaleIdSchema`, etc.) are exported so the protocol layer can reuse them.
+  - `schema.ts` holds the valibot schemas describing the persisted shape (shape only — no parser, no phrase catalog). Several leaf schemas (`TrackSchema`, `patternSchema`, `ScaleIdSchema`, etc.) are reused by the protocol layer.
+  - `project.ts` is the JSON snapshot/parse layer (`schemaVersion`; reject incompatible versions instead of silently coercing). It validates phrase references against the built-in catalog directly (imports `phraseExists` from `domain/phrase/registry`).
   - `storage.ts` handles IndexedDB autosave.
-  - `protocol.ts` defines the wire frames for the relay (HTTP `RpcRequest`, WS `req`/`res`) plus per-method valibot schemas. Re-exported from the package as `@susisu/vefr/protocol` so `vefr-relay` consumes the same types.
+  - `protocol.ts` defines the wire frames for the relay (HTTP `RpcRequest`, WS `req`/`res`) plus per-method valibot schemas (reusing `api/schema`). Re-exported from the package as `@susisu/vefr/protocol` so `vefr-relay` consumes the same types.
   - `relay-client.ts` is the browser-side WS dispatcher: receives a req batch, runs every op synchronously against `InProcessControlApi`, writes back a single res frame. The whole batch executes in one tick so the audio scheduler cannot fire mid-batch (`(key, scale, bpm)` updates land atomically).
-- **`src/ui/`** — React 19 + Vite. Talks to the engine **only** through `ControlApi`. Importing from `engine/engine`, `engine/scheduler`, `engine/clock`, `engine/sound-port`, `auto/**`, `sound/**`, or `api/inprocess*` from under `src/ui/` is blocked by `no-restricted-imports` in `eslint.config.js`. Type-only imports from `src/engine/types` and `src/api/types` are allowed. State subscription uses `useSyncExternalStore` against the API's `onChange` handlers.
-- **`src/phrases/`** — built-in phrase library (drums / melody / bass), grouped by genre. `index.ts` indexes them by `PhraseId` and exposes `getPhrase` (resolver passed into the engine) + `phraseExists` (used by the project parser to validate references). Phrases are authored at 32 sixteenth-step / 2-bar resolution.
-- **`src/shared/`** — `music.ts` (scale tables, `degreeToMidi`), `rng.ts` (deterministic `mulberry32` + `hashSeeds`), `signal.ts` (tiny pub/sub).
+- **`src/ui/`** — React 19 + Vite. Talks to the engine **only** through `ControlApi`. Importing from `engine/**` (runtime), `sound/**`, or `api/inprocess*` is blocked by `no-restricted-imports`. All of `domain/**` (model, catalogs, the pure auto generator, defaults) and `api/types` are allowed. State subscription uses `useSyncExternalStore` against the API's `onChange` handlers.
+- **`src/shared/`** — domain-free utilities only: `rng.ts` (deterministic `mulberry32` + `hashSeeds`) and `signal.ts` (tiny pub/sub). Anything with musical meaning lives in `domain/`, not here.
 
 ### `packages/vefr-relay/`
 
@@ -81,7 +88,7 @@ External-control overlay (optional, opt-in at build):
 ### Data model invariants worth keeping in mind
 
 - `Note.degree` is a **scale degree** (0-based, can be negative or exceed scale length — wraps with octave). It is resolved to MIDI at sound time using the global `key` + `scale`. Patterns therefore transpose for free; never bake absolute pitches into a pattern.
-- `Track` is a discriminated union over `kind` ("drum" | "pitched") **and** `source` ("manual" | "auto"). Use `DistributiveOmit` (see `engine.ts`) when stripping fields off `Track`; the built-in `Omit` collapses the union and drops variant-specific fields like `pattern` / `phraseIds`.
+- `Track` is a discriminated union over `kind` ("drum" | "pitched") **and** `source` ("manual" | "auto"). Use `DistributiveOmit` (see `domain/track.ts`) when stripping fields off `Track`; the built-in `Omit` collapses the union and drops variant-specific fields like `pattern` / `phraseIds`.
 - Tracks have both an opaque `id` and a unique human-readable `name`. Ref them via `TrackRef` (`refById` / `refByName`) — uniqueness of names is engine-enforced.
 - Auto tracks must be reproducible from `(seed, loop, params, phraseIds)` alone. Don't keep "live" auto state outside the seed; that's why `seed` is a saved field of the `Project`.
 - `Project` JSON carries `schemaVersion` (`CURRENT_SCHEMA_VERSION` in `api/project.ts`). When you change the persisted shape, bump the version and add a migration — don't silently coerce.
