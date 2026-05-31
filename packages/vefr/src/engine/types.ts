@@ -183,8 +183,8 @@ type ManualSource<T> = {
 
 /**
  * Auto track body: a list of phrase references plus generation parameters.
- * The auto generator rotates among `phraseIds` according to `rotationBars`,
- * or freezes on a single phrase when `params.lockVariant` is true.
+ * The auto generator rotates among `phraseIds` according to
+ * `params.macroPeriodLoops`, or freezes on a single phrase when it is `0`.
  */
 type AutoSource = {
   source: "auto";

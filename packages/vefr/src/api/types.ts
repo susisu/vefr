@@ -149,10 +149,10 @@ export interface TrackApi {
   /** Patch the auto-generation config (phraseIds / seed / params) of an auto track. */
   setAutoConfig: (ref: TrackRef, patch: AutoConfigPatch) => Result<void, TrackUpdateError>;
   /**
-   * Replace an auto track's seed with a fresh random integer. With
-   * `lockVariant` on this picks a new locked phrase; with it off it just
-   * shuffles where the rotation cycle lands. Manual tracks return
-   * kind-mismatch (they have no seed).
+   * Replace an auto track's seed with a fresh random integer. When the track
+   * is locked (`macroPeriodLoops === 0`) this picks a new locked phrase; when
+   * it rotates this just shuffles where the rotation cycle lands. Manual tracks
+   * return kind-mismatch (they have no seed).
    */
   rerollPhrase: (ref: TrackRef) => Result<void, TrackUpdateError>;
   /** Subscribe to track-list changes. */
