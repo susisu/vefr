@@ -85,8 +85,8 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
   };
 
   /** Re-roll the seed via the API so the picked template + walk both change. */
-  const rerollPhrase = (): void => {
-    api.track.rerollPhrase(refById(track.id));
+  const rerollSeed = (): void => {
+    api.track.rerollSeed(refById(track.id));
   };
 
   const kindLabel = track.kind === "drum" ? "DRUM" : track.role.toUpperCase();
@@ -163,9 +163,9 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
             <button
               type="button"
               className={styles.rerollButton}
-              title="Reroll phrase"
-              aria-label="Reroll phrase"
-              onClick={rerollPhrase}
+              title="Reroll seed"
+              aria-label="Reroll seed"
+              onClick={rerollSeed}
             >
               ↻
             </button>

@@ -148,13 +148,8 @@ export interface TrackApi {
   setPitchedPattern: (ref: TrackRef, pattern: Pattern<Note>) => Result<void, TrackUpdateError>;
   /** Patch the auto-generation config (phraseIds / seed / params) of an auto track. */
   setAutoConfig: (ref: TrackRef, patch: AutoConfigPatch) => Result<void, TrackUpdateError>;
-  /**
-   * Replace an auto track's seed with a fresh random integer. When the track
-   * is locked (`macroPeriodLoops === 0`) this picks a new locked phrase; when
-   * it rotates this just shuffles where the rotation cycle lands. Manual tracks
-   * return kind-mismatch (they have no seed).
-   */
-  rerollPhrase: (ref: TrackRef) => Result<void, TrackUpdateError>;
+  /** Replace an auto track's seed with a fresh random integer; manual tracks return kind-mismatch. */
+  rerollSeed: (ref: TrackRef) => Result<void, TrackUpdateError>;
   /** Subscribe to track-list changes. */
   onChange: (handler: (tracks: readonly Track[]) => void) => () => void;
 }

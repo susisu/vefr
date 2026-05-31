@@ -244,8 +244,8 @@ function dispatchOp(api: ControlApi, op: Op): unknown {
       return api.track.setPitchedPattern(op.params.ref, op.params.pattern);
     case "track.setAutoConfig":
       return api.track.setAutoConfig(op.params.ref, op.params.patch);
-    case "track.rerollPhrase":
-      return api.track.rerollPhrase(op.params.ref);
+    case "track.rerollSeed":
+      return api.track.rerollSeed(op.params.ref);
 
     case "project.snapshot":
       return api.project.snapshot();

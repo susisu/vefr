@@ -161,7 +161,7 @@ export const OpSchema = v.variant("method", [
     method: v.literal("track.setAutoConfig"),
     params: v.object({ ref: TrackRefSchema, patch: AutoConfigPatchSchema }),
   }),
-  v.object({ method: v.literal("track.rerollPhrase"), params: RefOnlyParams }),
+  v.object({ method: v.literal("track.rerollSeed"), params: RefOnlyParams }),
 
   v.object({ method: v.literal("project.snapshot"), params: NoParams }),
   // `project.importJson` is the only project mutator we expose on the wire:

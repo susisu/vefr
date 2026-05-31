@@ -203,7 +203,7 @@ function makeTrackApi(engine: Engine): TrackApi {
         ref,
         () => "",
       ),
-    rerollPhrase: (ref: TrackRef): Result<void, TrackUpdateError> =>
+    rerollSeed: (ref: TrackRef): Result<void, TrackUpdateError> =>
       runTrackOp(
         () => engine.setAutoConfig(ref, { seed: randomSeed() }),
         ref,
