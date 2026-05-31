@@ -45,8 +45,8 @@ export type InProcessHooks = {
 
 /**
  * In-process {@link ControlApi} backed by an {@link Engine} living in the same
- * runtime. The UI talks to this; future remote transports (WS/SSE) will
- * implement the same interface against a network connection.
+ * runtime. The UI talks to this directly, and the relay dispatches its WS req
+ * frames into this same instance.
  */
 export class InProcessControlApi implements ControlApi {
   readonly master: MasterApi;

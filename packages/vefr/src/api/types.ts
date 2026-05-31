@@ -28,7 +28,8 @@ export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
 /**
  * Public façade between the UI (or external clients) and the Engine.
  * The UI may *only* interact through this surface; engine internals are
- * off-limits. The same shape will later be served over WS/SSE.
+ * off-limits. The same shape can also be exposed over the wire (e.g. served
+ * to external clients over WS) without changing this surface.
  *
  * Methods are written in arrow-property style so they're safe to pass around
  * unbound (e.g. into `useSyncExternalStore`).
