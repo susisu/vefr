@@ -1,12 +1,7 @@
-import { hashSeeds, mulberry32 } from "../shared/rng.js";
-import {
-  TICKS_PER_BEAT,
-  type DrumHit,
-  type DrumPad,
-  type Note,
-  type PatternEvent,
-} from "../engine/types.js";
-import { LOOP_STEPS } from "../phrases/types.js";
+import { hashSeeds, mulberry32 } from "../../shared/rng.js";
+import { TICKS_PER_BEAT } from "../timing.js";
+import type { DrumHit, DrumPad, Note, PatternEvent } from "../pattern.js";
+import { LOOP_STEPS } from "../phrase/types.js";
 import type { DrumGeneratorInput, MaterializedPhrase, PitchedGeneratorInput } from "./types.js";
 
 /** One sixteenth-note in ticks; templates are authored at this resolution. */

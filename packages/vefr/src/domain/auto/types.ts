@@ -1,5 +1,6 @@
-import type { AutoParams, Note, PhraseId } from "../engine/types.js";
-import type { DrumPhrase, DrumTemplate, PitchedPhrase, RhythmTemplate } from "../phrases/types.js";
+import type { Note } from "../pattern.js";
+import type { DrumPhrase, DrumTemplate, PhraseId, PitchedPhrase, RhythmTemplate } from "../phrase/types.js";
+import type { AutoParams } from "./params.js";
 
 /**
  * Inputs to a per-loop drum generator. The macro tier picks one of the

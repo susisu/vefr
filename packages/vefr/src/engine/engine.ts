@@ -4,31 +4,31 @@ import {
   generateDrumLoop,
   generateMelodyLoop,
   pitchedPhraseToEvents,
-} from "../auto/generator.js";
-import type { MaterializedPhrase } from "../auto/types.js";
-import type { DrumPhrase, Phrase, PitchedPhrase } from "../phrases/types.js";
-import { degreeToMidi } from "../shared/music.js";
+} from "../domain/auto/generator.js";
+import type { AutoParams } from "../domain/auto/params.js";
+import type { MaterializedPhrase } from "../domain/auto/types.js";
+import type { DrumKitId, InstrumentId } from "../domain/instrument.js";
+import { degreeToMidi, type GlobalMusicState } from "../domain/music.js";
+import type { DrumHit, DrumPad, Note, Pattern } from "../domain/pattern.js";
+import type { DrumPhrase, Phrase, PhraseId, PitchedPhrase } from "../domain/phrase/types.js";
+import { TICKS_PER_BEAT, type MasterConfig, type Tick } from "../domain/timing.js";
+import {
+  TrackError,
+  type AutoConfigPatch,
+  type EngineInitial,
+  type NewTrackInput,
+  type PhraseLookup,
+  type Track,
+  type TrackColorId,
+  type TrackId,
+  type TrackPatch,
+  type TrackRef,
+} from "../domain/track.js";
 import { Signal } from "../shared/signal.js";
 import type { Clock } from "./clock.js";
 import { PlaybackState, type AutoCacheEntry } from "./playback.js";
 import { Scheduler } from "./scheduler.js";
-import type { DrumKitId, InstrumentId, SoundOutput } from "./sound-port.js";
-import {
-  TICKS_PER_BEAT,
-  type AutoParams,
-  type DrumHit,
-  type DrumPad,
-  type GlobalMusicState,
-  type MasterConfig,
-  type Note,
-  type Pattern,
-  type PhraseId,
-  type Tick,
-  type Track,
-  type TrackColorId,
-  type TrackId,
-  type TrackRef,
-} from "./types.js";
+import type { SoundOutput } from "./sound-port.js";
 
 /**
  * How many musical bars one auto-track loop spans. Phrase templates are
@@ -39,64 +39,6 @@ import {
  * to ticks via the time signature.
  */
 const LOOP_BARS = 2;
-
-/** Initial state used to seed an {@link Engine}. Only persistent config — the live transport state is constructed fresh per session. */
-export type EngineInitial = {
-  master: MasterConfig;
-  global: GlobalMusicState;
-  tracks: readonly Track[];
-};
-
-/**
- * Mutation applied via {@link Engine.updateTrack}; absent fields are left alone.
- * `instrumentId` and `octave` are pitched-only; `kitId` and `mutedPads` are
- * drum-only — applying any to the wrong kind raises {@link TrackError}
- * `kind-mismatch`.
- */
-export type TrackPatch = {
-  name?: string;
-  mute?: boolean;
-  volume?: number;
-  color?: TrackColorId;
-  instrumentId?: InstrumentId;
-  octave?: number;
-  kitId?: DrumKitId;
-  mutedPads?: readonly DrumPad[];
-};
-
-/** Mutation applied via {@link Engine.setAutoConfig}; absent fields are left alone. */
-export type AutoConfigPatch = {
-  phraseIds?: readonly PhraseId[];
-  seed?: number;
-  params?: AutoParams;
-};
-
-/**
- * Spec passed to {@link Engine.addTrack}. Identical to a {@link Track} except
- * the engine assigns the id, so the caller cannot pre-set or collide with one.
- *
- * Built on a distributive `Omit` helper so the conditional fires per union
- * variant — TS's built-in `Omit` would collapse the discriminated shape and
- * drop variant-specific fields like `pattern` / `phraseIds`.
- */
-export type NewTrackInput = DistributiveOmit<Track, "id">;
-
-/** {@link Omit} that distributes over a discriminated union. */
-type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
-
-/** Resolves phrase ids into the data the generator needs. */
-export type PhraseLookup = (id: PhraseId) => Phrase | undefined;
-
-/** Engine-level error for track operations the caller can recover from. */
-export class TrackError extends Error {
-  constructor(
-    message: string,
-    readonly code: "not-found" | "name-conflict" | "kind-mismatch" | "out-of-range",
-  ) {
-    super(message);
-    this.name = "TrackError";
-  }
-}
 
 /**
  * Authoritative state holder + scheduler driver for a vefr session.

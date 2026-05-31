@@ -1,4 +1,48 @@
-import type { GlobalMusicState, ScaleId } from "../engine/types.js";
+/**
+ * Built-in scales recognised by the engine; intervals defined below in
+ * {@link intervalsOf} / {@link SCALE_INTERVALS}.
+ */
+export type ScaleId =
+  // Diatonic
+  | "major"
+  | "minor"
+  // Modal
+  | "dorian"
+  | "mixolydian"
+  | "lydian"
+  | "phrygian"
+  // Exotic / Eastern
+  | "harmonic-minor"
+  | "melodic-minor"
+  | "phrygian-dominant"
+  | "hijaz"
+  | "hungarian"
+  // Pentatonic / blues
+  | "minor-pentatonic"
+  | "major-pentatonic"
+  | "blues"
+  | "blues-major"
+  // Japanese / Asian pentatonic
+  | "hirajoshi"
+  | "iwato"
+  | "insen"
+  | "yo"
+  | "kumoi"
+  | "chinese"
+  // Symmetric
+  | "wholetone"
+  | "diminished"
+  // Chord-tone "scales" (sparse — degrees wrap fast)
+  | "minor7"
+  | "major7"
+  | "dorian-hex";
+
+/** Global musical context shared by every pitched track. */
+export type GlobalMusicState = {
+  /** Tonic semitone offset -11..11 (0 = C); negative values transpose the tonic down. */
+  key: number;
+  scale: ScaleId;
+};
 
 /**
  * Semitone offsets within an octave for each supported scale.

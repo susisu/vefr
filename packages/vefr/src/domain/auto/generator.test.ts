@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DrumPhrase, PitchedPhrase, RhythmTemplate } from "../phrases/types.js";
+import type { DrumPhrase, PitchedPhrase, RhythmTemplate } from "../phrase/types.js";
 import {
   drumPhraseToEvents,
   generateBassLoop,
