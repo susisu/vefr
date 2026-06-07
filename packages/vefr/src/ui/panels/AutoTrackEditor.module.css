@@ -251,7 +251,7 @@ details[open] > .phrasesSummary::before {
 
 /* Square icon button for "regenerate the seed". Letter-spacing / text-transform
  * are reset so the arrow glyph isn't shifted. The seed input is taller than
- * the readouts the equivalent button sits next to in Global, so this variant
+ * the readouts the equivalent button sits next to in Song, so this variant
  * stretches to match the input's height instead of the fixed 28x28 used there. */
 .rerollButton {
   padding: 0;

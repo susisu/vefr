@@ -4,7 +4,7 @@ import { Panel } from "./components/index.js";
 import { useTracks, useTrackMuteShortcuts } from "./hooks.js";
 import { AutoTrackEditor } from "./panels/AutoTrackEditor.js";
 import { TopBezel } from "./panels/TopBezel.js";
-import { GlobalPanel } from "./panels/GlobalPanel.js";
+import { SongPanel } from "./panels/SongPanel.js";
 import { ManualDrumEditor } from "./panels/ManualDrumEditor.js";
 import { ManualPitchedEditor } from "./panels/ManualPitchedEditor.js";
 import { TrackList } from "./panels/TrackList.js";
@@ -12,7 +12,7 @@ import { MasterPanel } from "./panels/MasterPanel.js";
 import styles from "./App.module.css";
 import "./styles.css";
 
-/** Top-level UI: master, global, project menu, track list, and per-track editors. */
+/** Top-level UI: master, song, project menu, track list, and per-track editors. */
 export function App(): ReactElement {
   const tracks = useTracks();
   useTrackMuteShortcuts();
@@ -22,7 +22,7 @@ export function App(): ReactElement {
       <main>
         <div className={styles.topRow}>
           <MasterPanel />
-          <GlobalPanel />
+          <SongPanel />
         </div>
         <TrackList />
         <Panel title="Editors">

@@ -1,8 +1,7 @@
-/* Top row: Transport + Global share one horizontal band. Transport stays at
- * its natural width on the left; Global grows to absorb the slack. Flex
- * (rather than grid) is used so a wide Global doesn't drag Transport's track
- * wider than its content when Global wraps to its own row on narrow
- * viewports. */
+/* Top row: Master + Song share one horizontal band. Master stays at its
+ * natural width on the left; Song grows to absorb the slack. Flex (rather
+ * than grid) is used so a wide Song doesn't drag Master's track wider than
+ * its content when Song wraps to its own row on narrow viewports. */
 .topRow {
   display: flex;
   flex-wrap: wrap;
@@ -18,9 +17,9 @@
   flex: 1 1 0;
 }
 
-/* Narrow viewports: Transport can no longer share a row with Global without
- * crushing the readouts, so Global drops onto its own full-width row
- * underneath. Transport keeps its natural content width — stretching it to
+/* Narrow viewports: Master can no longer share a row with Song without
+ * crushing the readouts, so Song drops onto its own full-width row
+ * underneath. Master keeps its natural content width — stretching it to
  * fill the row leaves a large dead zone inside the panel that fights the
  * hardware metaphor, so the chassis just shows bare basket-weave to its
  * right instead. */

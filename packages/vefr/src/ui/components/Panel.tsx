@@ -3,7 +3,7 @@ import styles from "./Panel.module.css";
 
 /**
  * A bordered panel with a Polyend/MC-707-style header strip and inset body.
- * Treat each top-level UI section (Transport, Global, Tracks…) as one panel.
+ * Treat each top-level UI section (Master, Song, Tracks…) as one panel.
  */
 export function Panel({
   title,

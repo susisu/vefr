@@ -1,8 +1,16 @@
 .controls {
   display: flex;
   gap: 0.6rem;
-  align-items: flex-end;
+  align-items: flex-start;
   flex-wrap: wrap;
+}
+
+/* Key and Scale stack in a single column next to the BPM knob, so the two
+ * tonality readouts read as one block. */
+.readoutColumn {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 /* Each readout (Key, Scale) and its iconic Reroll button form a logical
@@ -22,17 +30,24 @@
 .readout {
   display: inline-flex;
   flex-direction: column;
+  /* The global `label` default centers items; as a column that would center
+   * the label over the select — keep it flush left like the seed label in
+   * the auto-track editor. */
+  align-items: flex-start;
   gap: 0.15rem;
   text-transform: none;
   letter-spacing: normal;
   color: var(--fg);
 }
+/* Sized to match the Knob label (`Knob.module.css`) so BPM / KEY / SCALE read
+ * as one family of silkscreen labels across the top-aligned row. */
 .readoutLabel {
   font-family: var(--font-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.2em;
+  font-size: 0.55rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--fg-faint);
+  line-height: 1;
 }
 .readoutControl {
   background: var(--inset);
@@ -49,7 +64,7 @@
 }
 
 /* Square icon button for "regenerate this value". Used next to Key / Scale
- * readouts in Global. (The auto-track editor's own seed reroll has its own
+ * readouts in Song. (The auto-track editor's own seed reroll has its own
  * variant in `AutoTrackEditor.module.css` because it needs to match the
  * surrounding input height there.) Reset letter-spacing / text-transform so
  * the arrow glyph isn't shifted. */

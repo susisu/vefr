@@ -2,13 +2,16 @@ import clsx from "clsx";
 import type { ReactElement } from "react";
 import { Knob, LED, Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";
-import { useMix, usePlaying, useTiming } from "../hooks.js";
+import { useMix, usePlaying } from "../hooks.js";
 import styles from "./MasterPanel.module.css";
 
-/** Master section: play / stop + tempo knob + master volume knob, all driven through ControlApi. */
+/**
+ * Master section: play / stop transport + master volume knob, all driven
+ * through ControlApi. Runtime-only controls — the musical parameters (tempo /
+ * key / scale) live on the Song panel instead.
+ */
 export function MasterPanel(): ReactElement {
   const api = useControlApi();
-  const timing = useTiming();
   const mix = useMix();
   const playing = usePlaying();
 
@@ -24,13 +27,6 @@ export function MasterPanel(): ReactElement {
   /** Stop and rewind. */
   const onStop = (): void => {
     api.playback.stop();
-  };
-
-  /** Forward a knob update to the engine, clamping is already done by the knob. */
-  const onBpm = (bpm: number): void => {
-    if (Number.isFinite(bpm) && bpm > 0) {
-      api.timing.setBpm(bpm);
-    }
   };
 
   /** Forward a master-volume knob update; the knob already clamps to 0..1. */
@@ -62,15 +58,6 @@ export function MasterPanel(): ReactElement {
             Stop
           </button>
         </div>
-        <Knob
-          label="BPM"
-          value={timing.bpm}
-          min={30}
-          max={240}
-          step={1}
-          onChange={onBpm}
-          format={(v) => v.toFixed(0)}
-        />
         <Knob
           label="VOL"
           value={mix.masterVolume}

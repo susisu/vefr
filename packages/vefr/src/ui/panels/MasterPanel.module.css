@@ -5,7 +5,7 @@
 }
 
 /* Play / Stop stacked vertically, both at the same width — keeps the
- * Master panel narrow (frees horizontal space for the Global panel
+ * Master panel narrow (frees horizontal space for the Song panel
  * next to it) and avoids the visual mismatch of a wide Play next to a
  * narrow Stop. */
 .buttons {
