@@ -22,8 +22,9 @@
  * underneath. Master keeps its natural content width — stretching it to
  * fill the row leaves a large dead zone inside the panel that fights the
  * hardware metaphor, so the chassis just shows bare basket-weave to its
- * right instead. */
-@media (max-width: 767px) {
+ * right instead. The cutoff tracks the two panels' combined natural width,
+ * not a device class — re-derive it when either panel's content changes. */
+@media (max-width: 550px) {
   .topRow > :nth-child(2) {
     flex-basis: 100%;
   }
