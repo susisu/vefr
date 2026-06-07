@@ -20,12 +20,6 @@ export const NonNegativeInteger = v.pipe(v.number(), v.integer(), v.minValue(0))
 /** Velocity / volume / etc. — a normalized 0..1. */
 export const NormalizedNumber = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
 
-/** Time signature numerator / denominator. */
-export const TimeSignatureSchema = v.object({
-  numerator: PositiveInteger,
-  denominator: PositiveInteger,
-});
-
 /** Engine-recognised scale ids. */
 export const ScaleIdSchema = v.picklist([
   "major",
@@ -187,10 +181,9 @@ export const TrackSchema: v.GenericSchema<Track> = v.union([
   PitchedAutoSchema,
 ]);
 
-/** Schema for the saved timing config (tempo + meter). */
+/** Schema for the saved timing config (tempo). */
 export const TimingSchema = v.object({
   bpm: v.pipe(v.number(), v.minValue(1)),
-  signature: TimeSignatureSchema,
 });
 
 /** Schema for the saved tonality (key + scale). */

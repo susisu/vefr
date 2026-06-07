@@ -103,8 +103,8 @@ function makePlaybackApi(engine: Engine, hooks: InProcessHooks): PlaybackApi {
     subscribeActiveAutoPhrase: (ref: TrackRef, handler: () => void): (() => void) => {
       // Fire on live active-phrase changes filtered to this track, plus on
       // track-config changes (which can shuffle the picked phrase). Timing /
-      // mix listeners are unnecessary because none of bpm / signature /
-      // master gain affect the picked phrase id.
+      // mix listeners are unnecessary because neither bpm nor master gain
+      // affects the picked phrase id.
       const offPhrase = engine.playback.activePhraseChanged.on((e) => {
         const target = engine.resolveTrack(ref);
         if (target && e.trackId === target.id) handler();
@@ -312,10 +312,7 @@ function snapshotProject(engine: Engine): Project {
   const mix = engine.getMix();
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    timing: {
-      bpm: timing.bpm,
-      signature: timing.signature,
-    },
+    timing: { bpm: timing.bpm },
     tonality: engine.getTonality(),
     mix: { masterVolume: mix.masterVolume },
     tracks: engine.getTracks(),

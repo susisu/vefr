@@ -46,7 +46,7 @@ export type AudibleTickProvider = () => Tick;
  * Live transport state for a session: are we playing, where is the play
  * head, which materialized phrase is currently scheduled per auto track.
  * None of this is persisted — the {@link Project} snapshot only carries
- * the master *config* (bpm / signature / masterVolume).
+ * the master *config* (bpm / masterVolume).
  *
  * All "what's happening right now" the UI subscribes to lives here, in a
  * single owner. The Engine is the only mutator; the API exposes read +

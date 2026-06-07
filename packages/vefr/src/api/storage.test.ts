@@ -24,7 +24,7 @@ function makeProject(): Project {
   };
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    timing: { bpm: 100, signature: { numerator: 4, denominator: 4 } },
+    timing: { bpm: 100 },
     tonality: { key: 5, scale: "major" },
     mix: { masterVolume: 0.4 },
     tracks: [drum],

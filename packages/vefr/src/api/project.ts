@@ -13,11 +13,11 @@ export const CURRENT_SCHEMA_VERSION = 1;
 /**
  * The portable shape of a vefr project. Everything needed to round-trip the
  * full session — manual patterns, auto phrase ids/seed/params, mute/volume/name,
- * global key/scale, master tempo/signature/volume — fits in this object.
+ * global key/scale, master tempo/volume — fits in this object.
  */
 export type Project = {
   schemaVersion: typeof CURRENT_SCHEMA_VERSION;
-  /** Tempo + meter. Live transport state isn't stored — sessions reload stopped at position 0. */
+  /** Tempo. Live transport state isn't stored — sessions reload stopped at position 0. */
   timing: Timing;
   /** Key + scale. */
   tonality: Tonality;

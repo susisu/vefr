@@ -11,7 +11,7 @@ import type { Mix } from "../domain/mix.js";
 import { degreeToMidi, type Tonality } from "../domain/music.js";
 import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
 import type { DrumPhrase, Phrase, PhraseId, PitchedPhrase } from "../domain/phrase/phrase.js";
-import { TICKS_PER_BEAT, type Timing, type Tick } from "../domain/timing.js";
+import { BEATS_PER_BAR, TICKS_PER_BEAT, type Timing, type Tick } from "../domain/timing.js";
 import {
   TrackError,
   type AutoConfigPatch,
@@ -33,7 +33,7 @@ import type { SoundOutput } from "./sound-port.js";
  * generator output and the dispatcher cycle stay aligned. This is the only
  * place "bar" appears in the auto/loop pipeline — generators and slot
  * arithmetic work in loops; bars only re-enter when converting loop length
- * to ticks via the time signature.
+ * to ticks via the fixed 4/4 grid.
  */
 const LOOP_BARS = 2;
 
@@ -68,7 +68,7 @@ export class Engine {
   /** Live transport state — playing/positionTick + auto-loop cache. */
   readonly playback: PlaybackState;
 
-  /** Fires whenever the timing config (bpm / signature) changes. */
+  /** Fires whenever the timing config (bpm) changes. */
   readonly timingChanged: Signal<Timing> = new Signal();
   /** Fires whenever the tonality (key / scale) changes. */
   readonly tonalityChanged: Signal<Tonality> = new Signal();
@@ -104,7 +104,7 @@ export class Engine {
     this.output.setMasterVolume(this.mix.masterVolume);
   }
 
-  /** Snapshot of the current timing config (bpm / signature). */
+  /** Snapshot of the current timing config (bpm). */
   getTiming(): Timing {
     return this.timing;
   }
@@ -500,9 +500,9 @@ export class Engine {
     }
   }
 
-  /** Ticks per auto-track loop, derived from the time signature. */
+  /** Ticks per auto-track loop, derived from the fixed 4/4 grid. */
   private loopTicks(): Tick {
-    return TICKS_PER_BEAT * this.timing.signature.numerator * LOOP_BARS;
+    return TICKS_PER_BEAT * BEATS_PER_BAR * LOOP_BARS;
   }
 
   /**

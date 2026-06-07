@@ -31,10 +31,7 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
     },
   };
   const initial: EngineInitial = {
-    timing: {
-      bpm: 60,
-      signature: { numerator: 4, denominator: 4 },
-    },
+    timing: { bpm: 60 },
     tonality: { key: 0, scale: "minor" },
     mix: { masterVolume: 0.4 },
     tracks: [drumTrack],
@@ -195,10 +192,7 @@ describe("Engine", () => {
       params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
     };
     const initial: EngineInitial = {
-      timing: {
-        bpm: 60,
-        signature: { numerator: 4, denominator: 4 },
-      },
+      timing: { bpm: 60 },
       tonality: { key: 0, scale: "minor" },
       mix: { masterVolume: 0.4 },
       tracks: [drum],
@@ -248,10 +242,7 @@ describe("Engine", () => {
       params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
     };
     const initial: EngineInitial = {
-      timing: {
-        bpm: 60,
-        signature: { numerator: 4, denominator: 4 },
-      },
+      timing: { bpm: 60 },
       tonality: { key: 0, scale: "minor" },
       mix: { masterVolume: 0.4 },
       tracks: [drum],
@@ -324,7 +315,7 @@ describe("Engine", () => {
     };
     const engine = new Engine(
       {
-        timing: { bpm: 60, signature: { numerator: 4, denominator: 4 } },
+        timing: { bpm: 60 },
         tonality: { key: 0, scale: "minor" },
         mix: { masterVolume: 0.4 },
         tracks: [drum],
@@ -375,10 +366,7 @@ describe("Engine", () => {
       params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
     };
     const initial: EngineInitial = {
-      timing: {
-        bpm: 60,
-        signature: { numerator: 4, denominator: 4 },
-      },
+      timing: { bpm: 60 },
       tonality: { key: 0, scale: "minor" },
       mix: { masterVolume: 0.4 },
       tracks: [drum],
@@ -523,10 +511,7 @@ describe("Engine", () => {
       },
     };
     const initial: EngineInitial = {
-      timing: {
-        bpm: 60,
-        signature: { numerator: 4, denominator: 4 },
-      },
+      timing: { bpm: 60 },
       tonality: { key: 0, scale: "minor" },
       mix: { masterVolume: 0.4 },
       tracks: [melody],
@@ -579,10 +564,7 @@ describe("Engine", () => {
         },
       };
       const initial: EngineInitial = {
-        timing: {
-          bpm: 60,
-          signature: { numerator: 4, denominator: 4 },
-        },
+        timing: { bpm: 60 },
         tonality: { key: 0, scale: "minor" },
         mix: { masterVolume: 0.4 },
         tracks: [melody],

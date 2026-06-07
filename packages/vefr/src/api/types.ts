@@ -44,15 +44,15 @@ export interface ControlApi {
 }
 
 /**
- * Timing sub-API: tempo + meter (the persisted {@link Timing} config).
+ * Timing sub-API: tempo (the persisted {@link Timing} config).
  * Transient transport state and its commands live on {@link PlaybackApi}.
  */
 export interface TimingApi {
   /** Set tempo in BPM (must be > 0). */
   setBpm: (bpm: number) => void;
-  /** Latest snapshot of the timing config (bpm / signature). */
+  /** Latest snapshot of the timing config (bpm). */
   get: () => Timing;
-  /** Subscribe to timing-config changes (bpm / signature). */
+  /** Subscribe to timing-config changes (bpm). */
   onChange: (handler: (state: Timing) => void) => () => void;
 }
 

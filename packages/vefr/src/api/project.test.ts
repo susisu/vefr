@@ -73,7 +73,7 @@ function makeAutoBassTrack(phraseIds: readonly string[] = [REAL_BASS_PHRASE]): P
 function makeProject(tracks: Track[]): Project {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    timing: { bpm: 120, signature: { numerator: 4, denominator: 4 } },
+    timing: { bpm: 120 },
     tonality: { key: 0, scale: "minor" },
     mix: { masterVolume: 0.4 },
     tracks,
@@ -204,8 +204,9 @@ describe("parseProject", () => {
     const { instrumentId: _instrumentId, ...trackWithoutInstrument } = makeMelodyTrack();
     const broken: unknown = {
       schemaVersion: CURRENT_SCHEMA_VERSION,
-      master: { bpm: 120, signature: { numerator: 4, denominator: 4 }, masterVolume: 0.4 },
-      global: { key: 0, scale: "minor" },
+      timing: { bpm: 120 },
+      tonality: { key: 0, scale: "minor" },
+      mix: { masterVolume: 0.4 },
       tracks: [trackWithoutInstrument],
     };
     const r = parseProject(broken);

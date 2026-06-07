@@ -78,10 +78,7 @@ function defaultInitial(): EngineInitial {
     params: defaultAutoParamsFor("pitched", "melody"),
   };
   return {
-    timing: {
-      bpm: 120,
-      signature: { numerator: 4, denominator: 4 },
-    },
+    timing: { bpm: 120 },
     tonality: { key: 0, scale: "minor" },
     mix: { masterVolume: 0.4 },
     tracks: [autoDrum, autoBass, autoMelody],

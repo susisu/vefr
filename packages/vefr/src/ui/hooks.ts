@@ -14,7 +14,7 @@ import { useControlApi, useRelay } from "./context.js";
 const PLAYHEAD_STEP_TICKS = TICKS_PER_BEAT / 4;
 
 /**
- * Subscribe to the timing config (tempo / signature). Live transport state
+ * Subscribe to the timing config (tempo). Live transport state
  * (is-playing / playhead) lives on the playback hooks.
  */
 export function useTiming(): Timing {
