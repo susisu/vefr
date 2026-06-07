@@ -55,13 +55,13 @@ describe("dispatchBatch", () => {
   it("applies a key+bpm batch as a single block (no partial state visible)", () => {
     const api = makeApi();
     // Subscribe to onChange to count how many times state was observed.
-    const transportCalls: number[] = [];
-    const globalCalls: number[] = [];
+    const timingCalls: number[] = [];
+    const tonalityCalls: number[] = [];
     api.timing.onChange((s) => {
-      transportCalls.push(s.bpm);
+      timingCalls.push(s.bpm);
     });
-    api.tonality.onChange((g) => {
-      globalCalls.push(g.key);
+    api.tonality.onChange((t) => {
+      tonalityCalls.push(t.key);
     });
 
     dispatchBatch(api, "id-2", [
@@ -71,8 +71,8 @@ describe("dispatchBatch", () => {
 
     // State changed exactly once each; the batch is synchronous so no
     // intermediate microtask/scheduler tick can observe a half-applied state.
-    expect(globalCalls).toEqual([7]);
-    expect(transportCalls).toEqual([160]);
+    expect(tonalityCalls).toEqual([7]);
+    expect(timingCalls).toEqual([160]);
     expect(api.tonality.get().key).toBe(7);
     expect(api.timing.get().bpm).toBe(160);
   });

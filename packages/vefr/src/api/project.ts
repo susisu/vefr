@@ -13,7 +13,7 @@ export const CURRENT_SCHEMA_VERSION = 1;
 /**
  * The portable shape of a vefr project. Everything needed to round-trip the
  * full session — manual patterns, auto phrase ids/seed/params, mute/volume/name,
- * global key/scale, master tempo/volume — fits in this object.
+ * tonality (key/scale), timing (tempo), mix (master volume) — fits in this object.
  */
 export type Project = {
   schemaVersion: typeof CURRENT_SCHEMA_VERSION;

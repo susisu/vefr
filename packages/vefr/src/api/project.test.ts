@@ -112,7 +112,7 @@ describe("parseProject", () => {
   });
 
   it("rejects an unknown schemaVersion", () => {
-    const r = parseProject({ schemaVersion: 99, master: {}, global: {}, tracks: [] });
+    const r = parseProject({ schemaVersion: 99 });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.errors.some((e) => e.code === "unknown-schema-version")).toBe(true);

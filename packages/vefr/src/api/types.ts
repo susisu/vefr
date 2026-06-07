@@ -120,7 +120,7 @@ export interface TonalityApi {
   rerollKey: () => void;
   /** Pick a fresh random scale from the engine's scale list. */
   rerollScale: () => void;
-  /** Subscribe to global-state changes. */
+  /** Subscribe to tonality changes. */
   onChange: (handler: (state: Tonality) => void) => () => void;
 }
 

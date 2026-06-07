@@ -419,8 +419,8 @@ export class Engine {
     // `playback.advance` bumps the cached position to the live tick.
     // No signal fires here — UI components observe playback position by
     // pulling `getAudibleTick()` from an rAF loop instead of subscribing
-    // to per-tick pushes, and master / playing only emit for
-    // user-initiated changes.
+    // to per-tick pushes, and the config signals (timing / tonality / mix)
+    // and playing only emit for user-initiated changes.
     this.playback.advance(tick);
     for (const track of this.tracks) {
       if (track.mute) continue;

@@ -102,13 +102,13 @@ export function intervalsOf(scale: ScaleId): readonly number[] {
  * Degree wraps across the scale length (so degree 7 in a 7-note scale = degree 0
  * in the next octave). Negative degrees wrap into earlier octaves.
  */
-export function degreeToMidi(global: Tonality, degree: number, octave: number): number {
-  const intervals = SCALE_INTERVALS[global.scale];
+export function degreeToMidi(tonality: Tonality, degree: number, octave: number): number {
+  const intervals = SCALE_INTERVALS[tonality.scale];
   const len = intervals.length;
   const octShift = Math.floor(degree / len);
   const idx = ((degree % len) + len) % len;
   const interval = intervals[idx] ?? 0;
-  return REFERENCE_MIDI + global.key + (octave + octShift) * 12 + interval;
+  return REFERENCE_MIDI + tonality.key + (octave + octShift) * 12 + interval;
 }
 
 /**
