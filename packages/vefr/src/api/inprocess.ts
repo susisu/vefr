@@ -1,7 +1,8 @@
 import type { MaterializedPhrase } from "../domain/auto/generator.js";
+import type { Mix } from "../domain/mix.js";
 import { KEY_MAX, KEY_MIN, SCALE_IDS, type Tonality } from "../domain/music.js";
 import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
-import type { MasterConfig, Tick } from "../domain/timing.js";
+import type { Timing, Tick } from "../domain/timing.js";
 import {
   TrackError,
   type AutoConfigPatch,
@@ -14,11 +15,12 @@ import type { Engine } from "../engine/engine.js";
 import { parseProject, type ImportError, type Project, CURRENT_SCHEMA_VERSION } from "./project.js";
 import type {
   ControlApi,
-  GlobalApi,
-  MasterApi,
+  MixApi,
   PlaybackApi,
   ProjectApi,
   Result,
+  TimingApi,
+  TonalityApi,
   TrackApi,
   TrackUpdateError,
 } from "./types.js";
@@ -37,33 +39,42 @@ export type InProcessHooks = {
  * frames into this same instance.
  */
 export class InProcessControlApi implements ControlApi {
-  readonly master: MasterApi;
+  readonly timing: TimingApi;
+  readonly tonality: TonalityApi;
+  readonly mix: MixApi;
   readonly playback: PlaybackApi;
-  readonly global: GlobalApi;
   readonly track: TrackApi;
   readonly project: ProjectApi;
 
   constructor(engine: Engine, hooks: InProcessHooks = {}) {
-    this.master = makeMasterApi(engine);
+    this.timing = makeTimingApi(engine);
+    this.tonality = makeTonalityApi(engine);
+    this.mix = makeMixApi(engine);
     this.playback = makePlaybackApi(engine, hooks);
-    this.global = makeGlobalApi(engine);
     this.track = makeTrackApi(engine);
     this.project = makeProjectApi(engine);
   }
 }
 
-/** Build the master sub-API (persistent master config) around an Engine. */
-function makeMasterApi(engine: Engine): MasterApi {
+/** Build the timing sub-API (tempo + meter) around an Engine. */
+function makeTimingApi(engine: Engine): TimingApi {
   return {
     setBpm: (bpm: number): void => {
       engine.setBpm(bpm);
     },
-    setMasterVolume: (gain: number): void => {
+    get: (): Timing => engine.getTiming(),
+    onChange: (handler: (state: Timing) => void): (() => void) => engine.timingChanged.on(handler),
+  };
+}
+
+/** Build the mix sub-API (master output gain) around an Engine. */
+function makeMixApi(engine: Engine): MixApi {
+  return {
+    setVolume: (gain: number): void => {
       engine.setMasterVolume(gain);
     },
-    getState: (): MasterConfig => engine.getMaster(),
-    onChange: (handler: (state: MasterConfig) => void): (() => void) =>
-      engine.masterConfigChanged.on(handler),
+    get: (): Mix => engine.getMix(),
+    onChange: (handler: (state: Mix) => void): (() => void) => engine.mixChanged.on(handler),
   };
 }
 
@@ -91,9 +102,9 @@ function makePlaybackApi(engine: Engine, hooks: InProcessHooks): PlaybackApi {
       engine.getActiveAutoPhrase(ref),
     subscribeActiveAutoPhrase: (ref: TrackRef, handler: () => void): (() => void) => {
       // Fire on live active-phrase changes filtered to this track, plus on
-      // track-config changes (which can shuffle the picked phrase). The
-      // masterConfig listener is unnecessary because none of bpm / signature /
-      // masterVolume affect the picked phrase id.
+      // track-config changes (which can shuffle the picked phrase). Timing /
+      // mix listeners are unnecessary because none of bpm / signature /
+      // master gain affect the picked phrase id.
       const offPhrase = engine.playback.activePhraseChanged.on((e) => {
         const target = engine.resolveTrack(ref);
         if (target && e.trackId === target.id) handler();
@@ -109,26 +120,26 @@ function makePlaybackApi(engine: Engine, hooks: InProcessHooks): PlaybackApi {
   };
 }
 
-/** Build the global sub-API around an Engine. */
-function makeGlobalApi(engine: Engine): GlobalApi {
+/** Build the tonality sub-API (key / scale) around an Engine. */
+function makeTonalityApi(engine: Engine): TonalityApi {
   return {
-    get: (): Tonality => engine.getGlobal(),
+    get: (): Tonality => engine.getTonality(),
     set: (partial: Partial<Tonality>): void => {
-      engine.setGlobal(partial);
+      engine.setTonality(partial);
     },
     rerollKey: (): void => {
       const span = KEY_MAX - KEY_MIN + 1;
-      engine.setGlobal({ key: Math.floor(Math.random() * span) + KEY_MIN });
+      engine.setTonality({ key: Math.floor(Math.random() * span) + KEY_MIN });
     },
     rerollScale: (): void => {
       const idx = Math.floor(Math.random() * SCALE_IDS.length);
       const scale = SCALE_IDS[idx];
       if (scale !== undefined) {
-        engine.setGlobal({ scale });
+        engine.setTonality({ scale });
       }
     },
     onChange: (handler: (state: Tonality) => void): (() => void) =>
-      engine.globalChanged.on(handler),
+      engine.tonalityChanged.on(handler),
   };
 }
 
@@ -214,8 +225,9 @@ function makeProjectApi(engine: Engine): ProjectApi {
     snapshot: (): Project => snapshotProject(engine),
     load: (project: Project): void => {
       engine.loadState({
-        master: project.master,
-        global: project.global,
+        timing: project.timing,
+        tonality: project.tonality,
+        mix: project.mix,
         tracks: project.tracks,
       });
     },
@@ -223,25 +235,30 @@ function makeProjectApi(engine: Engine): ProjectApi {
       const parsed = parseProject(raw);
       if (!parsed.ok) return { ok: false, error: parsed.errors };
       engine.loadState({
-        master: parsed.value.master,
-        global: parsed.value.global,
+        timing: parsed.value.timing,
+        tonality: parsed.value.tonality,
+        mix: parsed.value.mix,
         tracks: parsed.value.tracks,
       });
       return { ok: true, value: undefined };
     },
     onAnyChange: (handler: () => void): (() => void) => {
-      const offMaster = engine.masterConfigChanged.on(() => {
+      const offTiming = engine.timingChanged.on(() => {
         handler();
       });
-      const offGlobal = engine.globalChanged.on(() => {
+      const offTonality = engine.tonalityChanged.on(() => {
+        handler();
+      });
+      const offMix = engine.mixChanged.on(() => {
         handler();
       });
       const offTracks = engine.tracksChanged.on(() => {
         handler();
       });
       return () => {
-        offMaster();
-        offGlobal();
+        offTiming();
+        offTonality();
+        offMix();
         offTracks();
       };
     },
@@ -291,15 +308,16 @@ function trackErrorToResult(e: TrackError, conflictName: string): TrackUpdateErr
 
 /** Build a portable {@link Project} from the engine's current state. */
 function snapshotProject(engine: Engine): Project {
-  const master = engine.getMaster();
+  const timing = engine.getTiming();
+  const mix = engine.getMix();
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    master: {
-      bpm: master.bpm,
-      signature: master.signature,
-      masterVolume: master.masterVolume,
+    timing: {
+      bpm: timing.bpm,
+      signature: timing.signature,
     },
-    global: engine.getGlobal(),
+    tonality: engine.getTonality(),
+    mix: { masterVolume: mix.masterVolume },
     tracks: engine.getTracks(),
   };
 }

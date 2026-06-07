@@ -11,18 +11,13 @@ export type TimeSignature = {
 };
 
 /**
- * Persistent "Master" section config: tempo, meter, master gain. Named after
- * the UI panel that hosts these (and on hardware the section that lumps
- * tempo + master volume + start/stop together); not strictly DAW "transport"
- * since master volume is mixer-side.
- *
- * Transient state (is-playing, current play head position, active phrase per
- * auto track) lives in the engine's playback state, not here — only this
- * shape is persisted in the project snapshot.
+ * Configurable musical time of the piece: tempo (BPM) + meter (time
+ * signature). The constants above ({@link Tick} / {@link TICKS_PER_BEAT}) are
+ * the fixed grid; this is the part the user sets and the project persists.
+ * Pairs with the tonality (pitch) axis as the other global musical setting.
  */
-export type MasterConfig = {
+export type Timing = {
+  /** Tempo in beats per minute (> 0). */
   bpm: number;
   signature: TimeSignature;
-  /** Linear gain applied to every voice at the sound-output boundary, 0..1. */
-  masterVolume: number;
 };

@@ -13,7 +13,7 @@ describe("parseRpcRequest", () => {
 
   it("accepts a method with typed params", () => {
     const result = parseRpcRequest({
-      ops: [{ method: "master.setBpm", params: { bpm: 140 } }],
+      ops: [{ method: "timing.setBpm", params: { bpm: 140 } }],
     });
     expect(result.ok).toBe(true);
   });
@@ -21,14 +21,14 @@ describe("parseRpcRequest", () => {
   it("accepts a multi-op batch in declared order", () => {
     const body: RpcRequest = {
       ops: [
-        { method: "global.set", params: { partial: { key: 5, scale: "minor" } } },
-        { method: "master.setBpm", params: { bpm: 140 } },
+        { method: "tonality.set", params: { partial: { key: 5, scale: "minor" } } },
+        { method: "timing.setBpm", params: { bpm: 140 } },
       ],
     };
     const result = parseRpcRequest(body);
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.ops.map((o) => o.method)).toEqual(["global.set", "master.setBpm"]);
+      expect(result.value.ops.map((o) => o.method)).toEqual(["tonality.set", "timing.setBpm"]);
     }
   });
 
@@ -37,19 +37,19 @@ describe("parseRpcRequest", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("accepts global.set at the key range bounds", () => {
+  it("accepts tonality.set at the key range bounds", () => {
     for (const key of [-11, 0, 11]) {
       const result = parseRpcRequest({
-        ops: [{ method: "global.set", params: { partial: { key } } }],
+        ops: [{ method: "tonality.set", params: { partial: { key } } }],
       });
       expect(result.ok).toBe(true);
     }
   });
 
-  it("rejects global.set with a key outside -11..11", () => {
+  it("rejects tonality.set with a key outside -11..11", () => {
     for (const key of [-12, 12, 1.5]) {
       const result = parseRpcRequest({
-        ops: [{ method: "global.set", params: { partial: { key } } }],
+        ops: [{ method: "tonality.set", params: { partial: { key } } }],
       });
       expect(result.ok).toBe(false);
     }
@@ -57,7 +57,7 @@ describe("parseRpcRequest", () => {
 
   it("rejects a negative bpm", () => {
     const result = parseRpcRequest({
-      ops: [{ method: "master.setBpm", params: { bpm: -1 } }],
+      ops: [{ method: "timing.setBpm", params: { bpm: -1 } }],
     });
     expect(result.ok).toBe(false);
   });

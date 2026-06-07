@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import type { MaterializedPhrase } from "../api/types.js";
+import type { Mix } from "../domain/mix.js";
 import type { Tonality } from "../domain/music.js";
 import type { PhraseId } from "../domain/phrase/phrase.js";
-import { type MasterConfig, TICKS_PER_BEAT } from "../domain/timing.js";
+import { type Timing, TICKS_PER_BEAT } from "../domain/timing.js";
 import { refById, type Track, type TrackRef } from "../domain/track.js";
 import { useControlApi, useRelay } from "./context.js";
 
@@ -13,12 +14,18 @@ import { useControlApi, useRelay } from "./context.js";
 const PLAYHEAD_STEP_TICKS = TICKS_PER_BEAT / 4;
 
 /**
- * Subscribe to persistent master config (tempo / signature / master gain).
- * Live transport state (is-playing / playhead) lives on the playback hooks.
+ * Subscribe to the timing config (tempo / signature). Live transport state
+ * (is-playing / playhead) lives on the playback hooks.
  */
-export function useMaster(): MasterConfig {
+export function useTiming(): Timing {
   const api = useControlApi();
-  return useSyncExternalStore(api.master.onChange, api.master.getState);
+  return useSyncExternalStore(api.timing.onChange, api.timing.get);
+}
+
+/** Subscribe to the mix settings (master output gain). */
+export function useMix(): Mix {
+  const api = useControlApi();
+  return useSyncExternalStore(api.mix.onChange, api.mix.get);
 }
 
 /** Subscribe to whether the engine is currently playing. */
@@ -27,10 +34,10 @@ export function usePlaying(): boolean {
   return useSyncExternalStore(api.playback.onPlayingChange, api.playback.isPlaying);
 }
 
-/** Subscribe to global musical state (key / scale). */
-export function useGlobal(): Tonality {
+/** Subscribe to the tonality (key / scale). */
+export function useTonality(): Tonality {
   const api = useControlApi();
-  return useSyncExternalStore(api.global.onChange, api.global.get);
+  return useSyncExternalStore(api.tonality.onChange, api.tonality.get);
 }
 
 /** Subscribe to the track list. */

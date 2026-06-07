@@ -184,14 +184,17 @@ export function dispatchBatch(api: ControlApi, id: string, ops: readonly Op[]): 
 /** Type-narrow on `op.method` and call the matching ControlApi method. */
 function dispatchOp(api: ControlApi, op: Op): unknown {
   switch (op.method) {
-    case "master.setBpm":
-      api.master.setBpm(op.params.bpm);
+    case "timing.setBpm":
+      api.timing.setBpm(op.params.bpm);
       return null;
-    case "master.setMasterVolume":
-      api.master.setMasterVolume(op.params.gain);
+    case "timing.get":
+      return api.timing.get();
+
+    case "mix.setVolume":
+      api.mix.setVolume(op.params.gain);
       return null;
-    case "master.getState":
-      return api.master.getState();
+    case "mix.get":
+      return api.mix.get();
 
     case "playback.play":
       api.playback.play();
@@ -212,16 +215,16 @@ function dispatchOp(api: ControlApi, op: Op): unknown {
     case "playback.getActiveAutoPhrase":
       return api.playback.getActiveAutoPhrase(op.params.ref) ?? null;
 
-    case "global.get":
-      return api.global.get();
-    case "global.set":
-      api.global.set(op.params.partial);
+    case "tonality.get":
+      return api.tonality.get();
+    case "tonality.set":
+      api.tonality.set(op.params.partial);
       return null;
-    case "global.rerollKey":
-      api.global.rerollKey();
+    case "tonality.rerollKey":
+      api.tonality.rerollKey();
       return null;
-    case "global.rerollScale":
-      api.global.rerollScale();
+    case "tonality.rerollScale":
+      api.tonality.rerollScale();
       return null;
 
     case "track.list":

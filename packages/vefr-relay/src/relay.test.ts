@@ -69,13 +69,13 @@ describe("relay HTTP→WS routing", () => {
   it("forwards a single op to the browser and returns its result", async () => {
     const browser = await attachBrowser();
     const httpDone = postRpc({
-      ops: [{ method: "master.setBpm", params: { bpm: 144 } }],
+      ops: [{ method: "timing.setBpm", params: { bpm: 144 } }],
     });
 
     const incoming = await nextReqFrame(browser);
     expect(incoming.kind).toBe("req");
     expect(incoming.ops).toHaveLength(1);
-    expect(incoming.ops[0]?.method).toBe("master.setBpm");
+    expect(incoming.ops[0]?.method).toBe("timing.setBpm");
 
     browser.send(
       JSON.stringify({
@@ -95,13 +95,13 @@ describe("relay HTTP→WS routing", () => {
     const browser = await attachBrowser();
     const httpDone = postRpc({
       ops: [
-        { method: "global.set", params: { partial: { key: 5, scale: "minor" } } },
-        { method: "master.setBpm", params: { bpm: 140 } },
+        { method: "tonality.set", params: { partial: { key: 5, scale: "minor" } } },
+        { method: "timing.setBpm", params: { bpm: 140 } },
       ],
     });
 
     const incoming = await nextReqFrame(browser);
-    expect(incoming.ops.map((o) => o.method)).toEqual(["global.set", "master.setBpm"]);
+    expect(incoming.ops.map((o) => o.method)).toEqual(["tonality.set", "timing.setBpm"]);
 
     browser.send(
       JSON.stringify({
@@ -128,7 +128,7 @@ describe("relay HTTP→WS routing", () => {
   it("propagates a fatalError surfaced by the browser", async () => {
     const browser = await attachBrowser();
     const httpDone = postRpc({
-      ops: [{ method: "master.setBpm", params: { bpm: 999 } }],
+      ops: [{ method: "timing.setBpm", params: { bpm: 999 } }],
     });
 
     const incoming = await nextReqFrame(browser);

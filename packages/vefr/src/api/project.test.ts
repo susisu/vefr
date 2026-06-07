@@ -73,8 +73,9 @@ function makeAutoBassTrack(phraseIds: readonly string[] = [REAL_BASS_PHRASE]): P
 function makeProject(tracks: Track[]): Project {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    master: { bpm: 120, signature: { numerator: 4, denominator: 4 }, masterVolume: 0.4 },
-    global: { key: 0, scale: "minor" },
+    timing: { bpm: 120, signature: { numerator: 4, denominator: 4 } },
+    tonality: { key: 0, scale: "minor" },
+    mix: { masterVolume: 0.4 },
     tracks,
   };
 }
@@ -145,8 +146,9 @@ describe("parseProject", () => {
     const original = makeProject([makeDrumTrack()]);
     const broken: unknown = {
       schemaVersion: original.schemaVersion,
-      master: { ...original.master, bpm: -5 },
-      global: { ...original.global, key: 99 },
+      timing: { ...original.timing, bpm: -5 },
+      tonality: { ...original.tonality, key: 99 },
+      mix: original.mix,
       tracks: original.tracks,
     };
     const r = parseProject(broken);
@@ -158,8 +160,9 @@ describe("parseProject", () => {
     for (const key of [-11, -1, 0, 11]) {
       const project: unknown = {
         schemaVersion: original.schemaVersion,
-        master: original.master,
-        global: { ...original.global, key },
+        timing: original.timing,
+        tonality: { ...original.tonality, key },
+        mix: original.mix,
         tracks: original.tracks,
       };
       const r = parseProject(project);
@@ -172,8 +175,9 @@ describe("parseProject", () => {
     for (const key of [-12, 12]) {
       const broken: unknown = {
         schemaVersion: original.schemaVersion,
-        master: original.master,
-        global: { ...original.global, key },
+        timing: original.timing,
+        tonality: { ...original.tonality, key },
+        mix: original.mix,
         tracks: original.tracks,
       };
       const r = parseProject(broken);
@@ -186,8 +190,9 @@ describe("parseProject", () => {
     for (const bad of [-0.01, 1.01, 2, -1]) {
       const broken: unknown = {
         schemaVersion: original.schemaVersion,
-        master: { ...original.master, masterVolume: bad },
-        global: original.global,
+        timing: original.timing,
+        tonality: original.tonality,
+        mix: { ...original.mix, masterVolume: bad },
         tracks: original.tracks,
       };
       const r = parseProject(broken);

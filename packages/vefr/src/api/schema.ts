@@ -187,23 +187,28 @@ export const TrackSchema: v.GenericSchema<Track> = v.union([
   PitchedAutoSchema,
 ]);
 
-/** Schema for the saved master sub-object (tempo + meter + master gain). */
-export const MasterSchema = v.object({
+/** Schema for the saved timing config (tempo + meter). */
+export const TimingSchema = v.object({
   bpm: v.pipe(v.number(), v.minValue(1)),
   signature: TimeSignatureSchema,
-  masterVolume: NormalizedNumber,
 });
 
-/** Schema for the saved global music state. */
-export const GlobalSchema = v.object({
+/** Schema for the saved tonality (key + scale). */
+export const TonalitySchema = v.object({
   key: v.pipe(v.number(), v.integer(), v.minValue(KEY_MIN), v.maxValue(KEY_MAX)),
   scale: ScaleIdSchema,
 });
 
+/** Schema for the saved mix settings (master output gain). */
+export const MixSchema = v.object({
+  masterVolume: NormalizedNumber,
+});
+
 /** Schema for the v1 project body (everything below `schemaVersion`). */
 export const ProjectV1BodySchema = v.object({
-  master: MasterSchema,
-  global: GlobalSchema,
+  timing: TimingSchema,
+  tonality: TonalitySchema,
+  mix: MixSchema,
   tracks: v.array(TrackSchema),
   globalSeed: v.optional(v.pipe(v.number(), v.integer())),
 });

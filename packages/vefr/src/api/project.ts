@@ -1,8 +1,9 @@
 import * as v from "valibot";
+import type { Mix } from "../domain/mix.js";
 import type { Tonality } from "../domain/music.js";
 import { phraseExists } from "../domain/phrase/registry.js";
 import type { PhraseId } from "../domain/phrase/phrase.js";
-import type { Tick, TimeSignature } from "../domain/timing.js";
+import type { Tick, Timing } from "../domain/timing.js";
 import type { Track } from "../domain/track.js";
 import { ProjectV1BodySchema } from "./schema.js";
 
@@ -16,13 +17,12 @@ export const CURRENT_SCHEMA_VERSION = 1;
  */
 export type Project = {
   schemaVersion: typeof CURRENT_SCHEMA_VERSION;
-  /**
-   * Saved master section: bpm + signature + master output gain. `playing` and
-   * `positionTick` from {@link MasterState} aren't stored — sessions reload
-   * stopped at position 0.
-   */
-  master: { bpm: number; signature: TimeSignature; masterVolume: number };
-  global: Tonality;
+  /** Tempo + meter. Live transport state isn't stored — sessions reload stopped at position 0. */
+  timing: Timing;
+  /** Key + scale. */
+  tonality: Tonality;
+  /** Master mix settings (output gain). */
+  mix: Mix;
   tracks: readonly Track[];
   /** Optional global seed used to re-derive every auto track's seed at once. */
   globalSeed?: number;
@@ -83,8 +83,9 @@ function parseV1(input: unknown): ParseResult {
 
   const project: Project = {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    master: result.output.master,
-    global: result.output.global,
+    timing: result.output.timing,
+    tonality: result.output.tonality,
+    mix: result.output.mix,
     tracks: result.output.tracks,
   };
   if (result.output.globalSeed !== undefined) {
