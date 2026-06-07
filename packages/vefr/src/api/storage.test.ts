@@ -1,6 +1,7 @@
 import { IDBFactory } from "fake-indexeddb";
 import { beforeEach, describe, expect, it } from "vitest";
-import { TICKS_PER_BEAT, type DrumTrack } from "../engine/types.js";
+import { TICKS_PER_BEAT } from "../domain/timing.js";
+import type { DrumTrack } from "../domain/track.js";
 import { CURRENT_SCHEMA_VERSION, type Project } from "./project.js";
 import { AUTOSAVE_ID, loadAutosave, openDatabase, saveAutosave } from "./storage.js";
 
@@ -23,8 +24,9 @@ function makeProject(): Project {
   };
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    master: { bpm: 100, signature: { numerator: 4, denominator: 4 }, masterVolume: 0.4 },
-    global: { key: 5, scale: "major" },
+    timing: { bpm: 100, signature: { numerator: 4, denominator: 4 } },
+    tonality: { key: 5, scale: "major" },
+    mix: { masterVolume: 0.4 },
     tracks: [drum],
   };
 }
@@ -53,10 +55,10 @@ describe("storage", () => {
 
   it("overwrites the autosave on subsequent saves", async () => {
     const db = await openDatabase();
-    await saveAutosave(db, { ...makeProject(), global: { key: 0, scale: "minor" } });
-    await saveAutosave(db, { ...makeProject(), global: { key: 7, scale: "dorian" } });
+    await saveAutosave(db, { ...makeProject(), tonality: { key: 0, scale: "minor" } });
+    await saveAutosave(db, { ...makeProject(), tonality: { key: 7, scale: "dorian" } });
     const restored = await loadAutosave(db);
-    expect(restored?.global).toEqual({ key: 7, scale: "dorian" });
+    expect(restored?.tonality).toEqual({ key: 7, scale: "dorian" });
     db.close();
   });
 

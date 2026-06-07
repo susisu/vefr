@@ -4,31 +4,28 @@ import {
   generateDrumLoop,
   generateMelodyLoop,
   pitchedPhraseToEvents,
-} from "../auto/generator.js";
-import type { MaterializedPhrase } from "../auto/types.js";
-import type { DrumPhrase, Phrase, PitchedPhrase } from "../phrases/types.js";
-import { degreeToMidi } from "../shared/music.js";
+} from "../domain/auto/generator.js";
+import type { MaterializedPhrase } from "../domain/auto/generator.js";
+import type { InstrumentId } from "../domain/instrument.js";
+import type { Mix } from "../domain/mix.js";
+import { degreeToMidi, type Tonality } from "../domain/music.js";
+import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
+import type { DrumPhrase, Phrase, PhraseId, PitchedPhrase } from "../domain/phrase/phrase.js";
+import { TICKS_PER_BEAT, type Timing, type Tick } from "../domain/timing.js";
+import {
+  TrackError,
+  type AutoConfigPatch,
+  type NewTrackInput,
+  type Track,
+  type TrackId,
+  type TrackPatch,
+  type TrackRef,
+} from "../domain/track.js";
 import { Signal } from "../shared/signal.js";
 import type { Clock } from "./clock.js";
 import { PlaybackState, type AutoCacheEntry } from "./playback.js";
 import { Scheduler } from "./scheduler.js";
-import type { DrumKitId, InstrumentId, SoundOutput } from "./sound-port.js";
-import {
-  TICKS_PER_BEAT,
-  type AutoParams,
-  type DrumHit,
-  type DrumPad,
-  type GlobalMusicState,
-  type MasterConfig,
-  type Note,
-  type Pattern,
-  type PhraseId,
-  type Tick,
-  type Track,
-  type TrackColorId,
-  type TrackId,
-  type TrackRef,
-} from "./types.js";
+import type { SoundOutput } from "./sound-port.js";
 
 /**
  * How many musical bars one auto-track loop spans. Phrase templates are
@@ -40,76 +37,30 @@ import {
  */
 const LOOP_BARS = 2;
 
-/** Initial state used to seed an {@link Engine}. Only persistent config — the live transport state is constructed fresh per session. */
+/** Resolves phrase ids into the data the generator needs. Injected so the engine stays content-free. */
+export type PhraseLookup = (id: PhraseId) => Phrase | undefined;
+
+/** Initial state used to seed an engine. Only persistent config — the live transport state is constructed fresh per session. */
 export type EngineInitial = {
-  master: MasterConfig;
-  global: GlobalMusicState;
+  timing: Timing;
+  tonality: Tonality;
+  mix: Mix;
   tracks: readonly Track[];
 };
 
 /**
- * Mutation applied via {@link Engine.updateTrack}; absent fields are left alone.
- * `instrumentId` and `octave` are pitched-only; `kitId` and `mutedPads` are
- * drum-only — applying any to the wrong kind raises {@link TrackError}
- * `kind-mismatch`.
- */
-export type TrackPatch = {
-  name?: string;
-  mute?: boolean;
-  volume?: number;
-  color?: TrackColorId;
-  instrumentId?: InstrumentId;
-  octave?: number;
-  kitId?: DrumKitId;
-  mutedPads?: readonly DrumPad[];
-};
-
-/** Mutation applied via {@link Engine.setAutoConfig}; absent fields are left alone. */
-export type AutoConfigPatch = {
-  phraseIds?: readonly PhraseId[];
-  seed?: number;
-  params?: AutoParams;
-};
-
-/**
- * Spec passed to {@link Engine.addTrack}. Identical to a {@link Track} except
- * the engine assigns the id, so the caller cannot pre-set or collide with one.
- *
- * Built on a distributive `Omit` helper so the conditional fires per union
- * variant — TS's built-in `Omit` would collapse the discriminated shape and
- * drop variant-specific fields like `pattern` / `phraseIds`.
- */
-export type NewTrackInput = DistributiveOmit<Track, "id">;
-
-/** {@link Omit} that distributes over a discriminated union. */
-type DistributiveOmit<T, K extends keyof T> = T extends unknown ? Omit<T, K> : never;
-
-/** Resolves phrase ids into the data the generator needs. */
-export type PhraseLookup = (id: PhraseId) => Phrase | undefined;
-
-/** Engine-level error for track operations the caller can recover from. */
-export class TrackError extends Error {
-  constructor(
-    message: string,
-    readonly code: "not-found" | "name-conflict" | "kind-mismatch" | "out-of-range",
-  ) {
-    super(message);
-    this.name = "TrackError";
-  }
-}
-
-/**
  * Authoritative state holder + scheduler driver for a vefr session.
  *
- * Persistent config (master / global / tracks) and the live transport state
- * ({@link PlaybackState}) are kept on separate fields, so the project
- * snapshot can serialize the former without dragging the latter, and the UI
- * can subscribe to the two axes independently. UI never touches this
+ * Persistent config (timing / tonality / master volume / tracks) and the live
+ * transport state ({@link PlaybackState}) are kept on separate fields, so the
+ * project snapshot can serialize the former without dragging the latter, and
+ * the UI can subscribe to each axis independently. UI never touches this
  * directly — it goes through the Control API in {@link src/api}.
  */
 export class Engine {
-  private master: MasterConfig;
-  private global: GlobalMusicState;
+  private timing: Timing;
+  private tonality: Tonality;
+  private mix: Mix;
   private tracks: readonly Track[];
   private readonly scheduler: Scheduler;
   private readonly output: SoundOutput;
@@ -117,10 +68,12 @@ export class Engine {
   /** Live transport state — playing/positionTick + auto-loop cache. */
   readonly playback: PlaybackState;
 
-  /** Fires whenever persistent master config (bpm / signature / volume) changes. */
-  readonly masterConfigChanged: Signal<MasterConfig> = new Signal();
-  /** Fires whenever global musical context (key / scale) changes. */
-  readonly globalChanged: Signal<GlobalMusicState> = new Signal();
+  /** Fires whenever the timing config (bpm / signature) changes. */
+  readonly timingChanged: Signal<Timing> = new Signal();
+  /** Fires whenever the tonality (key / scale) changes. */
+  readonly tonalityChanged: Signal<Tonality> = new Signal();
+  /** Fires whenever the mix settings (master gain) change. */
+  readonly mixChanged: Signal<Mix> = new Signal();
   /** Fires whenever the track list or any track's fields change. */
   readonly tracksChanged: Signal<readonly Track[]> = new Signal();
 
@@ -128,8 +81,9 @@ export class Engine {
     initial: EngineInitial,
     opts: { clock: Clock; output: SoundOutput; resolvePhrase: PhraseLookup },
   ) {
-    this.master = { ...initial.master };
-    this.global = { ...initial.global };
+    this.timing = { ...initial.timing };
+    this.tonality = { ...initial.tonality };
+    this.mix = { ...initial.mix };
     this.tracks = [...initial.tracks];
     this.output = opts.output;
     this.resolvePhrase = opts.resolvePhrase;
@@ -147,17 +101,22 @@ export class Engine {
     });
     // Sync the SoundOutput master gain to the initial value once at startup;
     // subsequent changes flow through {@link setMasterVolume}.
-    this.output.setMasterVolume(this.master.masterVolume);
+    this.output.setMasterVolume(this.mix.masterVolume);
   }
 
-  /** Snapshot of the persistent master config. */
-  getMaster(): MasterConfig {
-    return this.master;
+  /** Snapshot of the current timing config (bpm / signature). */
+  getTiming(): Timing {
+    return this.timing;
   }
 
-  /** Snapshot of the current global musical state. */
-  getGlobal(): GlobalMusicState {
-    return this.global;
+  /** Snapshot of the current tonality (key / scale). */
+  getTonality(): Tonality {
+    return this.tonality;
+  }
+
+  /** Snapshot of the current mix settings (master gain). */
+  getMix(): Mix {
+    return this.mix;
   }
 
   /** Snapshot of the current track list (immutable). */
@@ -173,22 +132,24 @@ export class Engine {
   loadState(initial: EngineInitial): void {
     this.scheduler.stop();
     this.scheduler.seek(0);
-    this.master = { ...initial.master };
-    this.global = { ...initial.global };
+    this.timing = { ...initial.timing };
+    this.tonality = { ...initial.tonality };
+    this.mix = { ...initial.mix };
     this.tracks = [...initial.tracks];
     this.playback.clearAutoCache();
     this.playback.setPositionTick(0);
     this.playback.setPlaying(false);
-    this.output.setMasterVolume(this.master.masterVolume);
-    this.masterConfigChanged.emit(this.master);
-    this.globalChanged.emit(this.global);
+    this.output.setMasterVolume(this.mix.masterVolume);
+    this.timingChanged.emit(this.timing);
+    this.tonalityChanged.emit(this.tonality);
+    this.mixChanged.emit(this.mix);
     this.tracksChanged.emit(this.tracks);
   }
 
   /** Begin playback from the saved play head position. */
   play(): void {
     if (this.playback.isPlaying()) return;
-    this.scheduler.start(this.playback.getPositionTick(), this.master.bpm);
+    this.scheduler.start(this.playback.getPositionTick(), this.timing.bpm);
     this.playback.setPlaying(true);
   }
 
@@ -212,8 +173,8 @@ export class Engine {
   setBpm(bpm: number): void {
     if (bpm <= 0) throw new RangeError(`bpm must be positive: ${bpm}`);
     this.scheduler.setBpm(bpm);
-    this.master = { ...this.master, bpm };
-    this.masterConfigChanged.emit(this.master);
+    this.timing = { ...this.timing, bpm };
+    this.timingChanged.emit(this.timing);
   }
 
   /** Move the play head to `tick`. */
@@ -232,18 +193,18 @@ export class Engine {
     if (!(gain >= 0 && gain <= 1)) {
       throw new RangeError(`masterVolume must be in 0..1: ${gain}`);
     }
-    this.master = { ...this.master, masterVolume: gain };
+    this.mix = { ...this.mix, masterVolume: gain };
     this.output.setMasterVolume(gain);
-    this.masterConfigChanged.emit(this.master);
+    this.mixChanged.emit(this.mix);
   }
 
-  /** Patch the global musical state (key / scale). */
-  setGlobal(partial: Partial<GlobalMusicState>): void {
-    const next: GlobalMusicState = { ...this.global };
+  /** Patch the tonality (key / scale). */
+  setTonality(partial: Partial<Tonality>): void {
+    const next: Tonality = { ...this.tonality };
     if (partial.key !== undefined) next.key = partial.key;
     if (partial.scale !== undefined) next.scale = partial.scale;
-    this.global = next;
-    this.globalChanged.emit(this.global);
+    this.tonality = next;
+    this.tonalityChanged.emit(this.tonality);
   }
 
   /** Find a track by id or name; undefined if it doesn't exist. */
@@ -541,7 +502,7 @@ export class Engine {
 
   /** Ticks per auto-track loop, derived from the time signature. */
   private loopTicks(): Tick {
-    return TICKS_PER_BEAT * this.master.signature.numerator * LOOP_BARS;
+    return TICKS_PER_BEAT * this.timing.signature.numerator * LOOP_BARS;
   }
 
   /**
@@ -648,8 +609,8 @@ export class Engine {
     instrumentId: InstrumentId,
     trackOctave: number,
   ): void {
-    const midi = degreeToMidi(this.global, note.degree, note.octave + trackOctave);
-    const lengthSec = (note.lengthTicks * 60) / (this.master.bpm * TICKS_PER_BEAT);
+    const midi = degreeToMidi(this.tonality, note.degree, note.octave + trackOctave);
+    const lengthSec = (note.lengthTicks * 60) / (this.timing.bpm * TICKS_PER_BEAT);
     this.output.playNote(time, midi, lengthSec, note.velocity, instrumentId, gain);
   }
 }

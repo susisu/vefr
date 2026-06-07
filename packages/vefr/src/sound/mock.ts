@@ -1,5 +1,6 @@
-import type { DrumKitId, InstrumentId, SoundOutput } from "../engine/sound-port.js";
-import type { DrumHit } from "../engine/types.js";
+import type { DrumKitId, InstrumentId } from "../domain/instrument.js";
+import type { SoundOutput } from "../engine/sound-port.js";
+import type { DrumHit } from "../domain/pattern.js";
 
 /** Recorded `playDrum` invocation. */
 export type RecordedDrum = {

@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import type { ReactElement } from "react";
-import { refById, type DrumPad, type DrumTrack } from "../../engine/types.js";
+import type { DrumPad } from "../../domain/pattern.js";
+import { type DrumTrack, refById } from "../../domain/track.js";
 import { useControlApi } from "../context.js";
 import { drumPadLabel } from "../drumPadLabel.js";
 import styles from "./DrumPadMuteToggle.module.css";

@@ -1,17 +1,11 @@
 import * as v from "valibot";
-import { DRUM_KIT_IDS, INSTRUMENT_IDS } from "../engine/sound-port.js";
-import { PITCHED_OCTAVE_MAX, PITCHED_OCTAVE_MIN, TRACK_COLOR_IDS } from "../engine/types.js";
-import { KEY_MAX, KEY_MIN } from "../shared/music.js";
-import type {
-  DrumHit,
-  GlobalMusicState,
-  Note,
-  Pattern,
-  PhraseId,
-  Tick,
-  TimeSignature,
-  Track,
-} from "../engine/types.js";
+import type { Mix } from "../domain/mix.js";
+import type { Tonality } from "../domain/music.js";
+import { phraseExists } from "../domain/phrase/registry.js";
+import type { PhraseId } from "../domain/phrase/phrase.js";
+import type { Tick, Timing } from "../domain/timing.js";
+import type { Track } from "../domain/track.js";
+import { ProjectV1BodySchema } from "./schema.js";
 
 /** Schema version baked into every saved project; bump when migrations are required. */
 export const CURRENT_SCHEMA_VERSION = 1;
@@ -23,13 +17,12 @@ export const CURRENT_SCHEMA_VERSION = 1;
  */
 export type Project = {
   schemaVersion: typeof CURRENT_SCHEMA_VERSION;
-  /**
-   * Saved master section: bpm + signature + master output gain. `playing` and
-   * `positionTick` from {@link MasterState} aren't stored — sessions reload
-   * stopped at position 0.
-   */
-  master: { bpm: number; signature: TimeSignature; masterVolume: number };
-  global: GlobalMusicState;
+  /** Tempo + meter. Live transport state isn't stored — sessions reload stopped at position 0. */
+  timing: Timing;
+  /** Key + scale. */
+  tonality: Tonality;
+  /** Master mix settings (output gain). */
+  mix: Mix;
   tracks: readonly Track[];
   /** Optional global seed used to re-derive every auto track's seed at once. */
   globalSeed?: number;
@@ -47,216 +40,12 @@ export type ImportError =
 /** Railway-style result for parsing untrusted input. */
 export type ParseResult = { ok: true; value: Project } | { ok: false; errors: ImportError[] };
 
-/** Resolver function for phrase id existence checks during import. */
-export type PhraseResolver = (id: PhraseId) => boolean;
-
-// --- valibot schemas ---------------------------------------------------------
-// A handful of inner schemas are exported so the relay's RPC protocol layer can
-// reuse them when validating per-method params off the wire.
-
-/** A positive integer. */
-export const PositiveInteger = v.pipe(v.number(), v.integer(), v.minValue(1));
-/** A non-negative integer (used for ticks, period loops, etc.). */
-export const NonNegativeInteger = v.pipe(v.number(), v.integer(), v.minValue(0));
-/** Velocity / volume / etc. — a normalized 0..1. */
-export const NormalizedNumber = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
-
-/** Time signature numerator / denominator. */
-export const TimeSignatureSchema = v.object({
-  numerator: PositiveInteger,
-  denominator: PositiveInteger,
-});
-
-/** Engine-recognised scale ids. */
-export const ScaleIdSchema = v.picklist([
-  "major",
-  "minor",
-  "dorian",
-  "mixolydian",
-  "lydian",
-  "phrygian",
-  "harmonic-minor",
-  "melodic-minor",
-  "phrygian-dominant",
-  "hijaz",
-  "hungarian",
-  "minor-pentatonic",
-  "major-pentatonic",
-  "blues",
-  "blues-major",
-  "hirajoshi",
-  "iwato",
-  "insen",
-  "yo",
-  "kumoi",
-  "chinese",
-  "wholetone",
-  "diminished",
-  "minor7",
-  "major7",
-  "dorian-hex",
-]);
-
-/** Engine-recognised drum pads. */
-export const DrumPadSchema = v.picklist(["kick", "snare", "closed-hat", "open-hat"]);
-
-/** Pitched-track role: melody or bass. */
-export const PitchedRoleSchema = v.picklist(["melody", "bass"]);
-
-/** Built-in instrument id picklist; mirrors `INSTRUMENT_IDS` from the engine. */
-export const InstrumentIdSchema = v.picklist(INSTRUMENT_IDS);
-
-/** Built-in drum-kit id picklist; mirrors `DRUM_KIT_IDS` from the engine. */
-export const DrumKitIdSchema = v.picklist(DRUM_KIT_IDS);
-
-/** Per-track decorative LED color id; mirrors `TRACK_COLOR_IDS` from the engine. */
-export const TrackColorIdSchema = v.picklist(TRACK_COLOR_IDS);
-
-/**
- * Per-track octave offset accepted by pitched tracks. Whole octaves,
- * inclusive `[PITCHED_OCTAVE_MIN, PITCHED_OCTAVE_MAX]` (currently -3..+3).
- */
-export const PitchedOctaveSchema = v.pipe(
-  v.number(),
-  v.integer(),
-  v.minValue(PITCHED_OCTAVE_MIN),
-  v.maxValue(PITCHED_OCTAVE_MAX),
-);
-
-/** Schema for {@link DrumHit} payloads. */
-export const DrumHitSchema = v.object({
-  pad: DrumPadSchema,
-  velocity: NormalizedNumber,
-});
-
-/** Schema for {@link Note} payloads. */
-export const NoteSchema = v.object({
-  degree: v.pipe(v.number(), v.integer()),
-  octave: v.pipe(v.number(), v.integer()),
-  velocity: NormalizedNumber,
-  lengthTicks: PositiveInteger,
-});
-
-/**
- * Build a {@link Pattern} schema parameterised over the payload shape.
- * Each event's `tick` is constrained to `[0, lengthTicks)`.
- */
-export function patternSchema<P>(payload: v.GenericSchema<P>): v.GenericSchema<Pattern<P>> {
-  const eventSchema = v.object({
-    tick: NonNegativeInteger,
-    payload,
-  });
-  return v.pipe(
-    v.object({
-      lengthTicks: PositiveInteger,
-      events: v.array(eventSchema),
-    }),
-    v.check(
-      (p): boolean => p.events.every((e) => e.tick < p.lengthTicks),
-      "every event tick must be less than lengthTicks",
-    ),
-  );
-}
-
-/** Schema for {@link AutoParams}. Periods of 0 mean "infinity" (slot frozen at 0). */
-export const AutoParamsSchema = v.object({
-  microPeriodLoops: NonNegativeInteger,
-  macroPeriodLoops: NonNegativeInteger,
-});
-
-/** Fields shared by every track. */
-const TrackBaseShape = {
-  id: v.string(),
-  name: v.string(),
-  mute: v.boolean(),
-  volume: NormalizedNumber,
-  color: TrackColorIdSchema,
-};
-
-/** Track-base + auto-body fields, pre-merged so leaf schemas only spread once. */
-const AutoTrackBaseShape = {
-  ...TrackBaseShape,
-  source: v.literal("auto"),
-  phraseIds: v.array(v.string()),
-  seed: v.pipe(v.number(), v.integer()),
-  params: AutoParamsSchema,
-};
-
-/** Manual drum track. */
-export const DrumManualSchema = v.object({
-  ...TrackBaseShape,
-  kind: v.literal("drum"),
-  kitId: DrumKitIdSchema,
-  mutedPads: v.array(DrumPadSchema),
-  source: v.literal("manual"),
-  pattern: patternSchema<DrumHit>(DrumHitSchema),
-});
-
-/** Auto drum track. */
-export const DrumAutoSchema = v.object({
-  ...AutoTrackBaseShape,
-  kind: v.literal("drum"),
-  kitId: DrumKitIdSchema,
-  mutedPads: v.array(DrumPadSchema),
-});
-
-/** Manual pitched track. */
-export const PitchedManualSchema = v.object({
-  ...TrackBaseShape,
-  kind: v.literal("pitched"),
-  role: PitchedRoleSchema,
-  instrumentId: InstrumentIdSchema,
-  octave: PitchedOctaveSchema,
-  source: v.literal("manual"),
-  pattern: patternSchema<Note>(NoteSchema),
-});
-
-/** Auto pitched track. */
-export const PitchedAutoSchema = v.object({
-  ...AutoTrackBaseShape,
-  kind: v.literal("pitched"),
-  role: PitchedRoleSchema,
-  instrumentId: InstrumentIdSchema,
-  octave: PitchedOctaveSchema,
-});
-
-/** Top-level track schema, flat union of the four leaf shapes. */
-export const TrackSchema: v.GenericSchema<Track> = v.union([
-  DrumManualSchema,
-  DrumAutoSchema,
-  PitchedManualSchema,
-  PitchedAutoSchema,
-]);
-
-/** Schema for the saved master sub-object (tempo + meter + master gain). */
-export const MasterSchema = v.object({
-  bpm: v.pipe(v.number(), v.minValue(1)),
-  signature: TimeSignatureSchema,
-  masterVolume: NormalizedNumber,
-});
-
-/** Schema for the saved global music state. */
-export const GlobalSchema = v.object({
-  key: v.pipe(v.number(), v.integer(), v.minValue(KEY_MIN), v.maxValue(KEY_MAX)),
-  scale: ScaleIdSchema,
-});
-
-/** Schema for the v1 project body (everything below `schemaVersion`). */
-const ProjectV1BodySchema = v.object({
-  master: MasterSchema,
-  global: GlobalSchema,
-  tracks: v.array(TrackSchema),
-  globalSeed: v.optional(v.pipe(v.number(), v.integer())),
-});
-
-// --- entry point -------------------------------------------------------------
-
 /**
  * Parse and validate an unknown blob into a {@link Project}. Returns every
  * error found rather than throwing on the first one, so the UI can show all
  * problems at once.
  */
-export function parseProject(input: unknown, phraseExists: PhraseResolver): ParseResult {
+export function parseProject(input: unknown): ParseResult {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     return { ok: false, errors: [{ code: "not-an-object" }] };
   }
@@ -265,41 +54,38 @@ export function parseProject(input: unknown, phraseExists: PhraseResolver): Pars
   if (typeof version !== "number") {
     return { ok: false, errors: [{ code: "unknown-schema-version", got: version }] };
   }
-  return parseAtVersion(input, version, phraseExists);
+  return parseAtVersion(input, version);
 }
 
 /**
  * Dispatch on `schemaVersion`. Today only v1 is supported; future migrations
  * slot into the switch and produce a v1 body for the rest of the pipeline.
  */
-function parseAtVersion(
-  input: unknown,
-  version: number,
-  phraseExists: PhraseResolver,
-): ParseResult {
+function parseAtVersion(input: unknown, version: number): ParseResult {
   switch (version) {
     case CURRENT_SCHEMA_VERSION:
-      return parseV1(input, phraseExists);
+      return parseV1(input);
     default:
       return { ok: false, errors: [{ code: "unknown-schema-version", got: version }] };
   }
 }
 
 /** Schema-validate against v1 and run cross-cutting checks (phrases, dupes). */
-function parseV1(input: unknown, phraseExists: PhraseResolver): ParseResult {
+function parseV1(input: unknown): ParseResult {
   const result = v.safeParse(ProjectV1BodySchema, input);
   if (!result.success) {
     return { ok: false, errors: result.issues.map(issueToError) };
   }
   const errors: ImportError[] = [];
   errors.push(...checkUniqueness(result.output.tracks));
-  errors.push(...checkPhrases(result.output.tracks, phraseExists));
+  errors.push(...checkPhrases(result.output.tracks));
   if (errors.length > 0) return { ok: false, errors };
 
   const project: Project = {
     schemaVersion: CURRENT_SCHEMA_VERSION,
-    master: result.output.master,
-    global: result.output.global,
+    timing: result.output.timing,
+    tonality: result.output.tonality,
+    mix: result.output.mix,
     tracks: result.output.tracks,
   };
   if (result.output.globalSeed !== undefined) {
@@ -328,8 +114,12 @@ function checkUniqueness(tracks: readonly Track[]): ImportError[] {
   return errors;
 }
 
-/** Reject auto tracks whose `phraseIds` reference unknown phrases. */
-function checkPhrases(tracks: readonly Track[], phraseExists: PhraseResolver): ImportError[] {
+/**
+ * Reject auto tracks whose `phraseIds` reference unknown phrases. Validates
+ * against the built-in phrase catalog directly — the parser owns this check,
+ * so callers no longer inject a resolver.
+ */
+function checkPhrases(tracks: readonly Track[]): ImportError[] {
   const errors: ImportError[] = [];
   for (const t of tracks) {
     if (t.source !== "auto") continue;
@@ -364,6 +154,6 @@ function formatPath(path: v.BaseIssue<unknown>["path"]): string {
   return out;
 }
 
-// Re-export Tick so `engine/types` consumers that go through this module also
-// pick it up — keeps the UI → api → engine dependency direction explicit.
+// Re-export Tick so consumers that go through this module also pick it up —
+// keeps the UI → api → domain dependency direction explicit.
 export type { Tick };

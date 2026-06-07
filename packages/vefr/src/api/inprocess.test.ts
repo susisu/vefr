@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { TestClock } from "../engine/clock.js";
 import { Engine } from "../engine/engine.js";
-import { TICKS_PER_BEAT, type DrumTrack } from "../engine/types.js";
+import { TICKS_PER_BEAT } from "../domain/timing.js";
+import type { DrumTrack } from "../domain/track.js";
 import { RecordingSoundOutput } from "../sound/mock.js";
 import { InProcessControlApi } from "./inprocess.js";
 
@@ -26,17 +27,17 @@ function makeApi(): { api: InProcessControlApi; engine: Engine } {
   };
   const engine = new Engine(
     {
-      master: {
+      timing: {
         bpm: 120,
         signature: { numerator: 4, denominator: 4 },
-        masterVolume: 0.4,
       },
-      global: { key: 0, scale: "minor" },
+      tonality: { key: 0, scale: "minor" },
+      mix: { masterVolume: 0.4 },
       tracks: [drum],
     },
     { clock, output, resolvePhrase: () => undefined },
   );
-  const api = new InProcessControlApi(engine, () => false);
+  const api = new InProcessControlApi(engine);
   return { api, engine };
 }
 
@@ -49,14 +50,14 @@ function expectJsonRoundTrip(value: unknown): void {
 }
 
 describe("ControlApi event payloads", () => {
-  it("transport.getState() is JSON-serializable", () => {
+  it("timing.get() is JSON-serializable", () => {
     const { api } = makeApi();
-    expectJsonRoundTrip(api.master.getState());
+    expectJsonRoundTrip(api.timing.get());
   });
 
-  it("global.get() is JSON-serializable", () => {
+  it("tonality.get() is JSON-serializable", () => {
     const { api } = makeApi();
-    expectJsonRoundTrip(api.global.get());
+    expectJsonRoundTrip(api.tonality.get());
   });
 
   it("track.list() is JSON-serializable", () => {
@@ -69,13 +70,13 @@ describe("ControlApi event payloads", () => {
     expectJsonRoundTrip(api.project.snapshot());
   });
 
-  it("transport onChange payload is JSON-serializable", () => {
+  it("timing onChange payload is JSON-serializable", () => {
     const { api } = makeApi();
     let captured: unknown;
-    const off = api.master.onChange((s) => {
+    const off = api.timing.onChange((s) => {
       captured = s;
     });
-    api.master.setBpm(140);
+    api.timing.setBpm(140);
     off();
     expect(captured).toBeDefined();
     expectJsonRoundTrip(captured);

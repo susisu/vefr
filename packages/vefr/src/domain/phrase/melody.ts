@@ -1,4 +1,4 @@
-import type { PitchedPhrase, RhythmTemplate } from "./types.js";
+import type { PitchedPhrase, RhythmTemplate } from "./phrase.js";
 
 /** Standard hit velocity for melody phrases — walk dynamics carry the variety. */
 const V = 0.75;

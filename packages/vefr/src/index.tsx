@@ -9,8 +9,9 @@ import {
 } from "./api/storage.js";
 import { WebAudioClock } from "./engine/clock.js";
 import { Engine, type EngineInitial } from "./engine/engine.js";
-import type { DrumTrack, PitchedTrack } from "./engine/types.js";
-import { defaultAutoParamsFor, getPhrase, phraseExists } from "./phrases/index.js";
+import type { DrumTrack, PitchedTrack } from "./domain/track.js";
+import { defaultAutoParamsFor } from "./domain/auto/params.js";
+import { getPhrase } from "./domain/phrase/registry.js";
 import { WebAudioSoundOutput } from "./sound/webaudio.js";
 import type { RelayClientHandle } from "./api/relay-client.js";
 import { App } from "./ui/App.js";
@@ -77,12 +78,12 @@ function defaultInitial(): EngineInitial {
     params: defaultAutoParamsFor("pitched", "melody"),
   };
   return {
-    master: {
+    timing: {
       bpm: 120,
       signature: { numerator: 4, denominator: 4 },
-      masterVolume: 0.4,
     },
-    global: { key: 0, scale: "minor" },
+    tonality: { key: 0, scale: "minor" },
+    mix: { masterVolume: 0.4 },
     tracks: [autoDrum, autoBass, autoMelody],
   };
 }
@@ -102,7 +103,7 @@ async function bootstrap(): Promise<void> {
     output,
     resolvePhrase: getPhrase,
   });
-  const api = new InProcessControlApi(engine, phraseExists, {
+  const api = new InProcessControlApi(engine, {
     beforePlay: () => {
       // AudioContext starts suspended in most browsers; resume it on the first
       // user gesture (the Play button click) per the autoplay policy.

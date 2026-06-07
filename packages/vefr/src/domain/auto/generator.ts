@@ -1,13 +1,15 @@
-import { hashSeeds, mulberry32 } from "../shared/rng.js";
+import { hashSeeds, mulberry32 } from "../../shared/rng.js";
+import { TICKS_PER_BEAT } from "../timing.js";
+import type { DrumHit, DrumPad, Note, PatternEvent } from "../pattern.js";
 import {
-  TICKS_PER_BEAT,
-  type DrumHit,
-  type DrumPad,
-  type Note,
-  type PatternEvent,
-} from "../engine/types.js";
-import { LOOP_STEPS } from "../phrases/types.js";
-import type { DrumGeneratorInput, MaterializedPhrase, PitchedGeneratorInput } from "./types.js";
+  LOOP_STEPS,
+  type DrumPhrase,
+  type DrumTemplate,
+  type PhraseId,
+  type PitchedPhrase,
+  type RhythmTemplate,
+} from "../phrase/phrase.js";
+import type { AutoParams } from "./params.js";
 
 /** One sixteenth-note in ticks; templates are authored at this resolution. */
 const SIXTEENTH = TICKS_PER_BEAT / 4;
@@ -39,6 +41,70 @@ const TAG_DROP = 0x4452; /* "DR" — drop dice per event */
 const TAG_INSERT = 0x494e; /* "IN" — ghost-note insertion dice */
 const TAG_WALK = 0x574b; /* "WK" — melody walk step */
 const TAG_WALK_START = 0x5753; /* "WS" — melody walk starting degree */
+
+/**
+ * Inputs to a per-loop drum generator. The macro tier picks one of the
+ * candidate phrases per slot; the micro tier applies drop jitter per event.
+ * Phrases (rather than bare templates) are passed in so the materialized
+ * output can carry the picked phrase's id/name back to the engine.
+ */
+export type DrumGeneratorInput = {
+  /** 0-based loop index. Combined with `params.{micro,macro}PeriodLoops` for slots. */
+  loop: number;
+  /** Per-track seed; same value reproduces the same generated stream. */
+  seed: number;
+  /** Candidate drum phrases — the macro tier picks one of these per slot. */
+  phrases: readonly DrumPhrase[];
+  /** User-tunable parameters. */
+  params: AutoParams;
+};
+
+/**
+ * Inputs to a per-loop pitched generator (bass or melody). For bass the
+ * walker is degenerate (always root). For melody it walks the scale.
+ */
+export type PitchedGeneratorInput = {
+  loop: number;
+  seed: number;
+  phrases: readonly PitchedPhrase[];
+  params: AutoParams;
+};
+
+/**
+ * One loop's worth of materialized phrase data in the same dense grid shape
+ * as the authored {@link DrumPhrase}/{@link PitchedPhrase} templates, but
+ * with all micro variation (drop / walk / ghost) already applied.
+ *
+ * Shared by three consumers:
+ *  1. the generator's output,
+ *  2. the engine's per-tick event dispatch (via `*PhraseToEvents`), and
+ *  3. the UI preview grid in `AutoTrackEditor`.
+ *
+ * Carrying the picked phrase's `phraseId`/`name` lets the engine report
+ * "what is playing" without re-running the picker. `phraseId`/`name` are
+ * `undefined` only in the empty-phrase-list fallback case.
+ */
+export type MaterializedPhrase =
+  | {
+      kind: "drum";
+      phraseId: PhraseId | undefined;
+      name: string | undefined;
+      /** Per-pad rhythm row, post-drop. Pads with no authored row are absent. */
+      template: DrumTemplate;
+    }
+  | {
+      kind: "pitched";
+      phraseId: PhraseId | undefined;
+      name: string | undefined;
+      /** Per-step velocity (post-drop + post-ghost) for the UI preview. */
+      template: RhythmTemplate;
+      /**
+       * Per-step note for sound generation. `null` at rests (including
+       * dropped steps); ghost-inserted steps have a non-null entry with
+       * {@link Note.velocity} matching {@link template}[step].
+       */
+      notes: ReadonlyArray<Note | null>;
+    };
 
 /**
  * Materialize one loop of drum content as a {@link MaterializedPhrase}. The

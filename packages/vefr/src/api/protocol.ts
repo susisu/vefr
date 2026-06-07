@@ -11,7 +11,7 @@
  * only request/response (commands) are modelled here.
  */
 import * as v from "valibot";
-import { KEY_MAX, KEY_MIN } from "../shared/music.js";
+import { KEY_MAX, KEY_MIN } from "../domain/music.js";
 import {
   AutoParamsSchema,
   DrumAutoSchema,
@@ -29,7 +29,7 @@ import {
   ScaleIdSchema,
   TrackColorIdSchema,
   patternSchema,
-} from "./project.js";
+} from "./schema.js";
 
 /** Current wire-protocol version. Bump together with any breaking frame change. */
 export const PROTOCOL_VERSION = 1;
@@ -92,14 +92,16 @@ const RefOnlyParams = v.object({ ref: TrackRefSchema });
  */
 export const OpSchema = v.variant("method", [
   v.object({
-    method: v.literal("master.setBpm"),
+    method: v.literal("timing.setBpm"),
     params: v.object({ bpm: v.pipe(v.number(), v.minValue(1)) }),
   }),
+  v.object({ method: v.literal("timing.get"), params: NoParams }),
+
   v.object({
-    method: v.literal("master.setMasterVolume"),
+    method: v.literal("mix.setVolume"),
     params: v.object({ gain: NormalizedNumber }),
   }),
-  v.object({ method: v.literal("master.getState"), params: NoParams }),
+  v.object({ method: v.literal("mix.get"), params: NoParams }),
 
   v.object({ method: v.literal("playback.play"), params: NoParams }),
   v.object({ method: v.literal("playback.pause"), params: NoParams }),
@@ -112,9 +114,9 @@ export const OpSchema = v.variant("method", [
   v.object({ method: v.literal("playback.getAudibleTick"), params: NoParams }),
   v.object({ method: v.literal("playback.getActiveAutoPhrase"), params: RefOnlyParams }),
 
-  v.object({ method: v.literal("global.get"), params: NoParams }),
+  v.object({ method: v.literal("tonality.get"), params: NoParams }),
   v.object({
-    method: v.literal("global.set"),
+    method: v.literal("tonality.set"),
     params: v.object({
       partial: v.object({
         key: v.exactOptional(
@@ -124,8 +126,8 @@ export const OpSchema = v.variant("method", [
       }),
     }),
   }),
-  v.object({ method: v.literal("global.rerollKey"), params: NoParams }),
-  v.object({ method: v.literal("global.rerollScale"), params: NoParams }),
+  v.object({ method: v.literal("tonality.rerollKey"), params: NoParams }),
+  v.object({ method: v.literal("tonality.rerollScale"), params: NoParams }),
 
   v.object({ method: v.literal("track.list"), params: NoParams }),
   v.object({

@@ -1,16 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { DrumPhrase, Phrase } from "../phrases/types.js";
+import type { DrumPhrase, Phrase } from "../domain/phrase/phrase.js";
 import { RecordingSoundOutput } from "../sound/mock.js";
 import { TestClock } from "./clock.js";
-import { Engine } from "./engine.js";
-import type { EngineInitial } from "./engine.js";
-import {
-  refById,
-  TICKS_PER_BEAT,
-  type DrumTrack,
-  type PhraseId,
-  type PitchedTrack,
-} from "./types.js";
+import { Engine, type EngineInitial } from "./engine.js";
+import type { PhraseId } from "../domain/phrase/phrase.js";
+import { TICKS_PER_BEAT } from "../domain/timing.js";
+import { type DrumTrack, type PitchedTrack, refById } from "../domain/track.js";
 
 function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine: Engine } {
   const clock = new TestClock();
@@ -36,12 +31,12 @@ function makeEngine(): { clock: TestClock; output: RecordingSoundOutput; engine:
     },
   };
   const initial: EngineInitial = {
-    master: {
+    timing: {
       bpm: 60,
       signature: { numerator: 4, denominator: 4 },
-      masterVolume: 0.4,
     },
-    global: { key: 0, scale: "minor" },
+    tonality: { key: 0, scale: "minor" },
+    mix: { masterVolume: 0.4 },
     tracks: [drumTrack],
   };
   return {
@@ -58,17 +53,17 @@ describe("Engine", () => {
     expect(engine.playback.getPositionTick()).toBe(0);
   });
 
-  it("setMasterVolume updates state, pushes to SoundOutput, and emits masterConfigChanged", () => {
+  it("setMasterVolume updates state, pushes to SoundOutput, and emits mixChanged", () => {
     const { engine, output } = makeEngine();
     // Engine pushes the initial value on construction (here 0.4 — the
     // test fixture's default), so we start from a known recorded entry.
     const before = output.events.filter((e) => e.kind === "master").length;
     let lastEmitted: number | undefined;
-    engine.masterConfigChanged.on((s) => {
+    engine.mixChanged.on((s) => {
       lastEmitted = s.masterVolume;
     });
     engine.setMasterVolume(0.7);
-    expect(engine.getMaster().masterVolume).toBeCloseTo(0.7);
+    expect(engine.getMix().masterVolume).toBeCloseTo(0.7);
     expect(lastEmitted).toBeCloseTo(0.7);
     const masterEvents = output.events.filter((e) => e.kind === "master");
     expect(masterEvents.length).toBe(before + 1);
@@ -200,12 +195,12 @@ describe("Engine", () => {
       params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
     };
     const initial: EngineInitial = {
-      master: {
+      timing: {
         bpm: 60,
         signature: { numerator: 4, denominator: 4 },
-        masterVolume: 0.4,
       },
-      global: { key: 0, scale: "minor" },
+      tonality: { key: 0, scale: "minor" },
+      mix: { masterVolume: 0.4 },
       tracks: [drum],
     };
     const engine = new Engine(initial, { clock, output, resolvePhrase });
@@ -253,12 +248,12 @@ describe("Engine", () => {
       params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
     };
     const initial: EngineInitial = {
-      master: {
+      timing: {
         bpm: 60,
         signature: { numerator: 4, denominator: 4 },
-        masterVolume: 0.4,
       },
-      global: { key: 0, scale: "minor" },
+      tonality: { key: 0, scale: "minor" },
+      mix: { masterVolume: 0.4 },
       tracks: [drum],
     };
     const engine = new Engine(initial, { clock, output, resolvePhrase });
@@ -329,8 +324,9 @@ describe("Engine", () => {
     };
     const engine = new Engine(
       {
-        master: { bpm: 60, signature: { numerator: 4, denominator: 4 }, masterVolume: 0.4 },
-        global: { key: 0, scale: "minor" },
+        timing: { bpm: 60, signature: { numerator: 4, denominator: 4 } },
+        tonality: { key: 0, scale: "minor" },
+        mix: { masterVolume: 0.4 },
         tracks: [drum],
       },
       { clock, output, resolvePhrase },
@@ -379,12 +375,12 @@ describe("Engine", () => {
       params: { microPeriodLoops: 0, macroPeriodLoops: 0 },
     };
     const initial: EngineInitial = {
-      master: {
+      timing: {
         bpm: 60,
         signature: { numerator: 4, denominator: 4 },
-        masterVolume: 0.4,
       },
-      global: { key: 0, scale: "minor" },
+      tonality: { key: 0, scale: "minor" },
+      mix: { masterVolume: 0.4 },
       tracks: [drum],
     };
     const engine = new Engine(initial, { clock, output, resolvePhrase });
@@ -527,12 +523,12 @@ describe("Engine", () => {
       },
     };
     const initial: EngineInitial = {
-      master: {
+      timing: {
         bpm: 60,
         signature: { numerator: 4, denominator: 4 },
-        masterVolume: 0.4,
       },
-      global: { key: 0, scale: "minor" },
+      tonality: { key: 0, scale: "minor" },
+      mix: { masterVolume: 0.4 },
       tracks: [melody],
     };
     const engine = new Engine(initial, { clock, output, resolvePhrase: () => undefined });
@@ -583,12 +579,12 @@ describe("Engine", () => {
         },
       };
       const initial: EngineInitial = {
-        master: {
+        timing: {
           bpm: 60,
           signature: { numerator: 4, denominator: 4 },
-          masterVolume: 0.4,
         },
-        global: { key: 0, scale: "minor" },
+        tonality: { key: 0, scale: "minor" },
+        mix: { masterVolume: 0.4 },
         tracks: [melody],
       };
       const engine = new Engine(initial, { clock, output, resolvePhrase: () => undefined });

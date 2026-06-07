@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { DrumPhrase, PitchedPhrase, RhythmTemplate } from "../phrases/types.js";
+import type { DrumPhrase, PitchedPhrase, RhythmTemplate } from "../phrase/phrase.js";
 import {
   drumPhraseToEvents,
   generateBassLoop,
   generateDrumLoop,
   generateMelodyLoop,
   pitchedPhraseToEvents,
+  type MaterializedPhrase,
 } from "./generator.js";
-import type { MaterializedPhrase } from "./types.js";
 
 /** Drum phrase with kick on every beat — a stable reference for rotation tests. */
 const kickPhrase: DrumPhrase = {

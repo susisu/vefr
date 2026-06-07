@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TestClock } from "../engine/clock.js";
 import { Engine } from "../engine/engine.js";
-import { TICKS_PER_BEAT } from "../engine/types.js";
-import { phraseExists } from "../phrases/index.js";
+import { TICKS_PER_BEAT } from "../domain/timing.js";
 import { RecordingSoundOutput } from "../sound/mock.js";
 import { InProcessControlApi } from "./inprocess.js";
 import { PROTOCOL_VERSION, type Op } from "./protocol.js";
@@ -16,12 +15,12 @@ import { connectRelay, dispatchBatch, type Scheduler } from "./relay-client.js";
 function makeApi(): InProcessControlApi {
   const engine = new Engine(
     {
-      master: {
+      timing: {
         bpm: 120,
         signature: { numerator: 4, denominator: 4 },
-        masterVolume: 0.4,
       },
-      global: { key: 0, scale: "minor" },
+      tonality: { key: 0, scale: "minor" },
+      mix: { masterVolume: 0.4 },
       tracks: [],
     },
     {
@@ -30,16 +29,16 @@ function makeApi(): InProcessControlApi {
       resolvePhrase: () => undefined,
     },
   );
-  return new InProcessControlApi(engine, phraseExists);
+  return new InProcessControlApi(engine);
 }
 
 describe("dispatchBatch", () => {
   it("runs every op in declared order and returns results aligned to ops", () => {
     const api = makeApi();
     const ops: Op[] = [
-      { method: "master.setBpm", params: { bpm: 140 } },
-      { method: "global.set", params: { partial: { key: 5, scale: "minor" } } },
-      { method: "master.getState", params: {} },
+      { method: "timing.setBpm", params: { bpm: 140 } },
+      { method: "tonality.set", params: { partial: { key: 5, scale: "minor" } } },
+      { method: "timing.get", params: {} },
     ];
 
     const res = dispatchBatch(api, "id-1", ops);
@@ -61,35 +60,35 @@ describe("dispatchBatch", () => {
     // Subscribe to onChange to count how many times state was observed.
     const transportCalls: number[] = [];
     const globalCalls: number[] = [];
-    api.master.onChange((s) => {
+    api.timing.onChange((s) => {
       transportCalls.push(s.bpm);
     });
-    api.global.onChange((g) => {
+    api.tonality.onChange((g) => {
       globalCalls.push(g.key);
     });
 
     dispatchBatch(api, "id-2", [
-      { method: "global.set", params: { partial: { key: 7 } } },
-      { method: "master.setBpm", params: { bpm: 160 } },
+      { method: "tonality.set", params: { partial: { key: 7 } } },
+      { method: "timing.setBpm", params: { bpm: 160 } },
     ]);
 
     // State changed exactly once each; the batch is synchronous so no
     // intermediate microtask/scheduler tick can observe a half-applied state.
     expect(globalCalls).toEqual([7]);
     expect(transportCalls).toEqual([160]);
-    expect(api.global.get().key).toBe(7);
-    expect(api.master.getState().bpm).toBe(160);
+    expect(api.tonality.get().key).toBe(7);
+    expect(api.timing.get().bpm).toBe(160);
   });
 
   it("aborts the batch and surfaces fatalError when an op throws", () => {
     const api = makeApi();
     const res = dispatchBatch(api, "id-3", [
-      { method: "master.setBpm", params: { bpm: 130 } },
+      { method: "timing.setBpm", params: { bpm: 130 } },
       // setBpm validates > 0 and throws RangeError on 0/negative; protocol
       // schema would reject this in real traffic, but here we go straight
       // through dispatch to prove the throw path aborts mid-batch.
-      { method: "master.setBpm", params: { bpm: 0 } },
-      { method: "master.setBpm", params: { bpm: 999 } }, // unreached
+      { method: "timing.setBpm", params: { bpm: 0 } },
+      { method: "timing.setBpm", params: { bpm: 999 } }, // unreached
     ]);
 
     expect(res.results).toHaveLength(1);
@@ -97,7 +96,7 @@ describe("dispatchBatch", () => {
     expect(res.fatalError).toBeDefined();
     expect(res.fatalError?.index).toBe(1);
     // First op did apply (it was committed before the throw).
-    expect(api.master.getState().bpm).toBe(130);
+    expect(api.timing.get().bpm).toBe(130);
   });
 
   it("returns recoverable Result errors without aborting the batch", () => {
@@ -105,7 +104,7 @@ describe("dispatchBatch", () => {
     const res = dispatchBatch(api, "id-4", [
       // Unknown ref -> Result {ok:false, error:not-found}, but no throw.
       { method: "track.remove", params: { ref: { kind: "name", name: "ghost" } } },
-      { method: "master.setBpm", params: { bpm: 100 } },
+      { method: "timing.setBpm", params: { bpm: 100 } },
     ]);
 
     expect(res.results).toHaveLength(2);
@@ -167,7 +166,7 @@ describe("connectRelay", () => {
       v: PROTOCOL_VERSION,
       kind: "req",
       id: "abc",
-      ops: [{ method: "master.setBpm", params: { bpm: 144 } }],
+      ops: [{ method: "timing.setBpm", params: { bpm: 144 } }],
     });
 
     expect(socket.sent).toHaveLength(1);
@@ -184,7 +183,7 @@ describe("connectRelay", () => {
     expect(sent.kind).toBe("res");
     expect(sent.id).toBe("abc");
     expect(sent.results[0]?.ok).toBe(true);
-    expect(api.master.getState().bpm).toBe(144);
+    expect(api.timing.get().bpm).toBe(144);
 
     handle.dispose();
   });
@@ -342,7 +341,7 @@ describe("batch verification — pattern + tempo + key landed atomically", () =>
           },
         },
       },
-      { method: "master.setBpm", params: { bpm: 130 } },
+      { method: "timing.setBpm", params: { bpm: 130 } },
     ]);
 
     const tracks = api.track.list();
@@ -352,6 +351,6 @@ describe("batch verification — pattern + tempo + key landed atomically", () =>
     }
     expect(drum.pattern.lengthTicks).toBe(TICKS_PER_BEAT * 4);
     expect(drum.pattern.events).toHaveLength(1);
-    expect(api.master.getState().bpm).toBe(130);
+    expect(api.timing.get().bpm).toBe(130);
   });
 });

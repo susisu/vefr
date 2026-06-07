@@ -1,4 +1,48 @@
-import type { GlobalMusicState, ScaleId } from "../engine/types.js";
+/**
+ * Built-in scales recognised by the engine; intervals defined below in
+ * {@link intervalsOf} / {@link SCALE_INTERVALS}.
+ */
+export type ScaleId =
+  // Diatonic
+  | "major"
+  | "minor"
+  // Modal
+  | "dorian"
+  | "mixolydian"
+  | "lydian"
+  | "phrygian"
+  // Exotic / Eastern
+  | "harmonic-minor"
+  | "melodic-minor"
+  | "phrygian-dominant"
+  | "hijaz"
+  | "hungarian"
+  // Pentatonic / blues
+  | "minor-pentatonic"
+  | "major-pentatonic"
+  | "blues"
+  | "blues-major"
+  // Japanese / Asian pentatonic
+  | "hirajoshi"
+  | "iwato"
+  | "insen"
+  | "yo"
+  | "kumoi"
+  | "chinese"
+  // Symmetric
+  | "wholetone"
+  | "diminished"
+  // Chord-tone "scales" (sparse — degrees wrap fast)
+  | "minor7"
+  | "major7"
+  | "dorian-hex";
+
+/** Tonal context (tonic key + scale) shared by every pitched track; a note's degree resolves to a pitch under it. */
+export type Tonality = {
+  /** Tonic semitone offset -11..11 (0 = C); negative values transpose the tonic down. */
+  key: number;
+  scale: ScaleId;
+};
 
 /**
  * Semitone offsets within an octave for each supported scale.
@@ -58,7 +102,7 @@ export function intervalsOf(scale: ScaleId): readonly number[] {
  * Degree wraps across the scale length (so degree 7 in a 7-note scale = degree 0
  * in the next octave). Negative degrees wrap into earlier octaves.
  */
-export function degreeToMidi(global: GlobalMusicState, degree: number, octave: number): number {
+export function degreeToMidi(global: Tonality, degree: number, octave: number): number {
   const intervals = SCALE_INTERVALS[global.scale];
   const len = intervals.length;
   const octShift = Math.floor(degree / len);

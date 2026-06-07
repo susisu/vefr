@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TestClock } from "./clock.js";
 import { Scheduler } from "./scheduler.js";
-import { TICKS_PER_BEAT, type Tick } from "./types.js";
+import { type Tick, TICKS_PER_BEAT } from "../domain/timing.js";
 
 type Recorded = { tick: Tick; time: number };
 

@@ -23,13 +23,8 @@ import {
   type KeyboardEvent,
   type ReactElement,
 } from "react";
-import {
-  refById,
-  TRACK_COLOR_IDS,
-  type PitchedRole,
-  type Track,
-  type TrackColorId,
-} from "../../engine/types.js";
+import type { PitchedRole } from "../../domain/instrument.js";
+import { refById, type Track, TRACK_COLOR_IDS, type TrackColorId } from "../../domain/track.js";
 import clsx from "clsx";
 import { Chip, Knob, LED, Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";

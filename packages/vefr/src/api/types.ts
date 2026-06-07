@@ -1,15 +1,15 @@
-import type { AutoConfigPatch, NewTrackInput, TrackPatch } from "../engine/engine.js";
-import type { MaterializedPhrase } from "../auto/types.js";
+import type { MaterializedPhrase } from "../domain/auto/generator.js";
+import type { Mix } from "../domain/mix.js";
+import type { Tonality } from "../domain/music.js";
+import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
+import type { Timing, Tick } from "../domain/timing.js";
 import type {
-  DrumHit,
-  GlobalMusicState,
-  MasterConfig,
-  Note,
-  Pattern,
-  Tick,
+  AutoConfigPatch,
+  NewTrackInput,
   Track,
+  TrackPatch,
   TrackRef,
-} from "../engine/types.js";
+} from "../domain/track.js";
 import type { ImportError, Project } from "./project.js";
 
 // Re-exported so the UI can use these types without depending on engine / auto.
@@ -35,27 +35,35 @@ export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
  * unbound (e.g. into `useSyncExternalStore`).
  */
 export interface ControlApi {
-  master: MasterApi;
+  timing: TimingApi;
+  tonality: TonalityApi;
+  mix: MixApi;
   playback: PlaybackApi;
-  global: GlobalApi;
   track: TrackApi;
   project: ProjectApi;
 }
 
 /**
- * Master sub-API: persistent master config (tempo, signature, master gain).
- * Mirrors the engine's `MasterConfig` shape. Transient transport state and
- * its commands live on {@link PlaybackApi}.
+ * Timing sub-API: tempo + meter (the persisted {@link Timing} config).
+ * Transient transport state and its commands live on {@link PlaybackApi}.
  */
-export interface MasterApi {
+export interface TimingApi {
   /** Set tempo in BPM (must be > 0). */
   setBpm: (bpm: number) => void;
+  /** Latest snapshot of the timing config (bpm / signature). */
+  get: () => Timing;
+  /** Subscribe to timing-config changes (bpm / signature). */
+  onChange: (handler: (state: Timing) => void) => () => void;
+}
+
+/** Mix sub-API: the master mix-bus settings (master output gain today). */
+export interface MixApi {
   /** Set the master output gain (linear, 0..1). */
-  setMasterVolume: (gain: number) => void;
-  /** Latest snapshot of the persistent master config. */
-  getState: () => MasterConfig;
-  /** Subscribe to master-config changes (bpm / signature / master gain). */
-  onChange: (handler: (state: MasterConfig) => void) => () => void;
+  setVolume: (gain: number) => void;
+  /** Latest snapshot of the mix settings (master gain). */
+  get: () => Mix;
+  /** Subscribe to mix-setting changes. */
+  onChange: (handler: (state: Mix) => void) => () => void;
 }
 
 /**
@@ -102,18 +110,18 @@ export interface PlaybackApi {
   subscribeActiveAutoPhrase: (ref: TrackRef, handler: () => void) => () => void;
 }
 
-/** Global sub-API: key/scale read+write, plus convenience random-pick helpers. */
-export interface GlobalApi {
-  /** Latest snapshot of {@link GlobalMusicState}. */
-  get: () => GlobalMusicState;
-  /** Patch the global musical context (key/scale). Absent fields are left alone. */
-  set: (partial: Partial<GlobalMusicState>) => void;
+/** Tonality sub-API: key/scale read+write, plus convenience random-pick helpers. */
+export interface TonalityApi {
+  /** Latest snapshot of {@link Tonality}. */
+  get: () => Tonality;
+  /** Patch the tonality (key/scale). Absent fields are left alone. */
+  set: (partial: Partial<Tonality>) => void;
   /** Pick a fresh random tonic key in the supported range (-11..11). */
   rerollKey: () => void;
   /** Pick a fresh random scale from the engine's scale list. */
   rerollScale: () => void;
   /** Subscribe to global-state changes. */
-  onChange: (handler: (state: GlobalMusicState) => void) => () => void;
+  onChange: (handler: (state: Tonality) => void) => () => void;
 }
 
 /** Track sub-API: list/find by name/update + change subscription. */

@@ -1,15 +1,12 @@
 import clsx from "clsx";
 import type { ChangeEvent, ReactElement } from "react";
 import type { MaterializedPhrase } from "../../api/types.js";
-import {
-  refById,
-  type DrumPad,
-  type DrumTrack,
-  type PhraseId,
-  type Track,
-} from "../../engine/types.js";
-import { listDrumPhrases, listPitchedPhrases, type Phrase } from "../../phrases/index.js";
-import type { DrumTemplate, RhythmTemplate } from "../../phrases/types.js";
+import type { DrumPad } from "../../domain/pattern.js";
+import type { PhraseId } from "../../domain/phrase/phrase.js";
+import { type DrumTrack, refById, type Track } from "../../domain/track.js";
+import { listDrumPhrases, listPitchedPhrases } from "../../domain/phrase/registry.js";
+import type { Phrase } from "../../domain/phrase/phrase.js";
+import type { DrumTemplate, RhythmTemplate } from "../../domain/phrase/phrase.js";
 import { Chip, DrumPadMuteToggle, Knob, PlayheadOverlay } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useActiveAutoPhrase } from "../hooks.js";

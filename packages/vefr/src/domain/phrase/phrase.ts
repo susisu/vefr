@@ -1,4 +1,8 @@
-import type { AutoParams, DrumPad, PhraseId, PitchedRole } from "../engine/types.js";
+import type { PitchedRole } from "../instrument.js";
+import type { DrumPad } from "../pattern.js";
+
+/** Stable identifier for a phrase (one auto-rotation candidate) in the library. */
+export type PhraseId = string;
 
 /** Number of sixteenth-note steps in one loop (32 = 2 bars in 4/4). Phrase templates are authored at this resolution. */
 export const LOOP_STEPS = 32;
@@ -47,19 +51,3 @@ export type PitchedPhrase = {
 
 /** Union of every phrase shape recognised by the registry. */
 export type Phrase = DrumPhrase | PitchedPhrase;
-
-/**
- * Default {@link AutoParams} per pitched role. Bass evolves slowly by default;
- * melody rotates and re-rolls more often so phrases keep moving. Periods are
- * counted in loops (current loop length is 2 bars in 4/4).
- */
-export const DEFAULT_AUTO_PARAMS_PITCHED: Record<PitchedRole, AutoParams> = {
-  melody: { microPeriodLoops: 2, macroPeriodLoops: 8 },
-  bass: { microPeriodLoops: 8, macroPeriodLoops: 32 },
-};
-
-/** Default {@link AutoParams} for an auto drum track. */
-export const DEFAULT_AUTO_PARAMS_DRUM: AutoParams = {
-  microPeriodLoops: 8,
-  macroPeriodLoops: 32,
-};
