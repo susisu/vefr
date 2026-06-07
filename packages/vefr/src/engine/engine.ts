@@ -9,14 +9,12 @@ import type { MaterializedPhrase } from "../domain/auto/generator.js";
 import type { InstrumentId } from "../domain/instrument.js";
 import { degreeToMidi, type GlobalMusicState } from "../domain/music.js";
 import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
-import type { DrumPhrase, PhraseId, PitchedPhrase } from "../domain/phrase/phrase.js";
+import type { DrumPhrase, Phrase, PhraseId, PitchedPhrase } from "../domain/phrase/phrase.js";
 import { TICKS_PER_BEAT, type MasterConfig, type Tick } from "../domain/timing.js";
 import {
   TrackError,
   type AutoConfigPatch,
-  type EngineInitial,
   type NewTrackInput,
-  type PhraseLookup,
   type Track,
   type TrackId,
   type TrackPatch,
@@ -37,6 +35,16 @@ import type { SoundOutput } from "./sound-port.js";
  * to ticks via the time signature.
  */
 const LOOP_BARS = 2;
+
+/** Resolves phrase ids into the data the generator needs. Injected so the engine stays content-free. */
+export type PhraseLookup = (id: PhraseId) => Phrase | undefined;
+
+/** Initial state used to seed an engine. Only persistent config — the live transport state is constructed fresh per session. */
+export type EngineInitial = {
+  master: MasterConfig;
+  global: GlobalMusicState;
+  tracks: readonly Track[];
+};
 
 /**
  * Authoritative state holder + scheduler driver for a vefr session.

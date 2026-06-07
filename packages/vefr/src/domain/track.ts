@@ -1,9 +1,7 @@
 import type { AutoParams } from "./auto/params.js";
 import type { DrumKitId, InstrumentId, PitchedRole } from "./instrument.js";
-import type { GlobalMusicState } from "./music.js";
 import type { DrumHit, DrumPad, Note, Pattern } from "./pattern.js";
-import type { Phrase, PhraseId } from "./phrase/phrase.js";
-import type { MasterConfig } from "./timing.js";
+import type { PhraseId } from "./phrase/phrase.js";
 
 /** Stable, opaque identifier for a Track. */
 export type TrackId = string;
@@ -154,16 +152,6 @@ export type AutoConfigPatch = {
   phraseIds?: readonly PhraseId[];
   seed?: number;
   params?: AutoParams;
-};
-
-/** Resolves phrase ids into the data the generator needs. */
-export type PhraseLookup = (id: PhraseId) => Phrase | undefined;
-
-/** Initial state used to seed an engine. Only persistent config — the live transport state is constructed fresh per session. */
-export type EngineInitial = {
-  master: MasterConfig;
-  global: GlobalMusicState;
-  tracks: readonly Track[];
 };
 
 /** Engine-level error for track operations the caller can recover from. */

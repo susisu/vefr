@@ -8,8 +8,7 @@ import {
   openDatabase,
 } from "./api/storage.js";
 import { WebAudioClock } from "./engine/clock.js";
-import type { EngineInitial } from "./domain/track.js";
-import { Engine } from "./engine/engine.js";
+import { Engine, type EngineInitial } from "./engine/engine.js";
 import type { DrumTrack, PitchedTrack } from "./domain/track.js";
 import { defaultAutoParamsFor } from "./domain/auto/params.js";
 import { getPhrase } from "./domain/phrase/registry.js";
