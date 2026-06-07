@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import type { MaterializedPhrase } from "../api/types.js";
 import type { GlobalMusicState } from "../domain/music.js";
-import type { PhraseId } from "../domain/phrase/types.js";
+import type { PhraseId } from "../domain/phrase/phrase.js";
 import { type MasterConfig, TICKS_PER_BEAT } from "../domain/timing.js";
 import { refById, type Track, type TrackRef } from "../domain/track.js";
 import { useControlApi, useRelay } from "./context.js";

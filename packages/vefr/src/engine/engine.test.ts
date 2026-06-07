@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { DrumPhrase, Phrase } from "../domain/phrase/types.js";
+import type { DrumPhrase, Phrase } from "../domain/phrase/phrase.js";
 import { RecordingSoundOutput } from "../sound/mock.js";
 import { TestClock } from "./clock.js";
 import { Engine } from "./engine.js";
 import type { EngineInitial } from "../domain/track.js";
-import type { PhraseId } from "../domain/phrase/types.js";
+import type { PhraseId } from "../domain/phrase/phrase.js";
 import { TICKS_PER_BEAT } from "../domain/timing.js";
 import { type DrumTrack, type PitchedTrack, refById } from "../domain/track.js";
 

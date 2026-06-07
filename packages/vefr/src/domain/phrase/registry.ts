@@ -2,7 +2,7 @@ import type { PitchedRole } from "../instrument.js";
 import { bassPhrases } from "./bass.js";
 import { drumPhrases } from "./drums.js";
 import { melodyPhrases } from "./melody.js";
-import type { DrumPhrase, Phrase, PhraseId, PitchedPhrase } from "./types.js";
+import type { DrumPhrase, Phrase, PhraseId, PitchedPhrase } from "./phrase.js";
 
 /** Built-in phrase registry: drums + melody + bass, flat list. */
 const builtinPhrases: readonly Phrase[] = [...drumPhrases, ...melodyPhrases, ...bassPhrases];

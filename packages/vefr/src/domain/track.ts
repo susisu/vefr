@@ -2,7 +2,7 @@ import type { AutoParams } from "./auto/params.js";
 import type { DrumKitId, InstrumentId, PitchedRole } from "./instrument.js";
 import type { GlobalMusicState } from "./music.js";
 import type { DrumHit, DrumPad, Note, Pattern } from "./pattern.js";
-import type { Phrase, PhraseId } from "./phrase/types.js";
+import type { Phrase, PhraseId } from "./phrase/phrase.js";
 import type { MasterConfig } from "./timing.js";
 
 /** Stable, opaque identifier for a Track. */

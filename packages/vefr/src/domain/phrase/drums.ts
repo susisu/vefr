@@ -1,4 +1,4 @@
-import type { DrumPhrase, DrumTemplate } from "./types.js";
+import type { DrumPhrase, DrumTemplate } from "./phrase.js";
 
 // --- Techno -----------------------------------------------------------------
 

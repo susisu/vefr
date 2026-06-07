@@ -1,7 +1,7 @@
-import type { MaterializedPhrase } from "../domain/auto/types.js";
+import type { MaterializedPhrase } from "../domain/auto/generator.js";
 import { Signal } from "../shared/signal.js";
 import type { DrumHit, Note, PatternEvent } from "../domain/pattern.js";
-import type { PhraseId } from "../domain/phrase/types.js";
+import type { PhraseId } from "../domain/phrase/phrase.js";
 import type { Tick } from "../domain/timing.js";
 import type { TrackId } from "../domain/track.js";
 

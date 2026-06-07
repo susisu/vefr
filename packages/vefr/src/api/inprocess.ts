@@ -1,4 +1,4 @@
-import type { MaterializedPhrase } from "../domain/auto/types.js";
+import type { MaterializedPhrase } from "../domain/auto/generator.js";
 import { KEY_MAX, KEY_MIN, SCALE_IDS, type GlobalMusicState } from "../domain/music.js";
 import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
 import type { MasterConfig, Tick } from "../domain/timing.js";

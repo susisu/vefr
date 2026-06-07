@@ -1,4 +1,4 @@
-import type { PitchedPhrase, RhythmTemplate } from "./types.js";
+import type { PitchedPhrase, RhythmTemplate } from "./phrase.js";
 
 // --- Techno -----------------------------------------------------------------
 

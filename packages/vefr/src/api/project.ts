@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import type { GlobalMusicState } from "../domain/music.js";
 import { phraseExists } from "../domain/phrase/registry.js";
-import type { PhraseId } from "../domain/phrase/types.js";
+import type { PhraseId } from "../domain/phrase/phrase.js";
 import type { Tick, TimeSignature } from "../domain/timing.js";
 import type { Track } from "../domain/track.js";
 import { ProjectV1BodySchema } from "./schema.js";
