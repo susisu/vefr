@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import type { GlobalMusicState } from "../domain/music.js";
+import type { Tonality } from "../domain/music.js";
 import { phraseExists } from "../domain/phrase/registry.js";
 import type { PhraseId } from "../domain/phrase/phrase.js";
 import type { Tick, TimeSignature } from "../domain/timing.js";
@@ -22,7 +22,7 @@ export type Project = {
    * stopped at position 0.
    */
   master: { bpm: number; signature: TimeSignature; masterVolume: number };
-  global: GlobalMusicState;
+  global: Tonality;
   tracks: readonly Track[];
   /** Optional global seed used to re-derive every auto track's seed at once. */
   globalSeed?: number;

@@ -1,5 +1,5 @@
 import type { MaterializedPhrase } from "../domain/auto/generator.js";
-import type { GlobalMusicState } from "../domain/music.js";
+import type { Tonality } from "../domain/music.js";
 import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
 import type { MasterConfig, Tick } from "../domain/timing.js";
 import type {
@@ -103,16 +103,16 @@ export interface PlaybackApi {
 
 /** Global sub-API: key/scale read+write, plus convenience random-pick helpers. */
 export interface GlobalApi {
-  /** Latest snapshot of {@link GlobalMusicState}. */
-  get: () => GlobalMusicState;
+  /** Latest snapshot of {@link Tonality}. */
+  get: () => Tonality;
   /** Patch the global musical context (key/scale). Absent fields are left alone. */
-  set: (partial: Partial<GlobalMusicState>) => void;
+  set: (partial: Partial<Tonality>) => void;
   /** Pick a fresh random tonic key in the supported range (-11..11). */
   rerollKey: () => void;
   /** Pick a fresh random scale from the engine's scale list. */
   rerollScale: () => void;
   /** Subscribe to global-state changes. */
-  onChange: (handler: (state: GlobalMusicState) => void) => () => void;
+  onChange: (handler: (state: Tonality) => void) => () => void;
 }
 
 /** Track sub-API: list/find by name/update + change subscription. */

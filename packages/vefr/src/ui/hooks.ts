@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import type { MaterializedPhrase } from "../api/types.js";
-import type { GlobalMusicState } from "../domain/music.js";
+import type { Tonality } from "../domain/music.js";
 import type { PhraseId } from "../domain/phrase/phrase.js";
 import { type MasterConfig, TICKS_PER_BEAT } from "../domain/timing.js";
 import { refById, type Track, type TrackRef } from "../domain/track.js";
@@ -28,7 +28,7 @@ export function usePlaying(): boolean {
 }
 
 /** Subscribe to global musical state (key / scale). */
-export function useGlobal(): GlobalMusicState {
+export function useGlobal(): Tonality {
   const api = useControlApi();
   return useSyncExternalStore(api.global.onChange, api.global.get);
 }

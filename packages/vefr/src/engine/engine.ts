@@ -7,7 +7,7 @@ import {
 } from "../domain/auto/generator.js";
 import type { MaterializedPhrase } from "../domain/auto/generator.js";
 import type { InstrumentId } from "../domain/instrument.js";
-import { degreeToMidi, type GlobalMusicState } from "../domain/music.js";
+import { degreeToMidi, type Tonality } from "../domain/music.js";
 import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
 import type { DrumPhrase, Phrase, PhraseId, PitchedPhrase } from "../domain/phrase/phrase.js";
 import { TICKS_PER_BEAT, type MasterConfig, type Tick } from "../domain/timing.js";
@@ -42,7 +42,7 @@ export type PhraseLookup = (id: PhraseId) => Phrase | undefined;
 /** Initial state used to seed an engine. Only persistent config — the live transport state is constructed fresh per session. */
 export type EngineInitial = {
   master: MasterConfig;
-  global: GlobalMusicState;
+  global: Tonality;
   tracks: readonly Track[];
 };
 
@@ -57,7 +57,7 @@ export type EngineInitial = {
  */
 export class Engine {
   private master: MasterConfig;
-  private global: GlobalMusicState;
+  private global: Tonality;
   private tracks: readonly Track[];
   private readonly scheduler: Scheduler;
   private readonly output: SoundOutput;
@@ -68,7 +68,7 @@ export class Engine {
   /** Fires whenever persistent master config (bpm / signature / volume) changes. */
   readonly masterConfigChanged: Signal<MasterConfig> = new Signal();
   /** Fires whenever global musical context (key / scale) changes. */
-  readonly globalChanged: Signal<GlobalMusicState> = new Signal();
+  readonly globalChanged: Signal<Tonality> = new Signal();
   /** Fires whenever the track list or any track's fields change. */
   readonly tracksChanged: Signal<readonly Track[]> = new Signal();
 
@@ -104,7 +104,7 @@ export class Engine {
   }
 
   /** Snapshot of the current global musical state. */
-  getGlobal(): GlobalMusicState {
+  getGlobal(): Tonality {
     return this.global;
   }
 
@@ -186,8 +186,8 @@ export class Engine {
   }
 
   /** Patch the global musical state (key / scale). */
-  setGlobal(partial: Partial<GlobalMusicState>): void {
-    const next: GlobalMusicState = { ...this.global };
+  setGlobal(partial: Partial<Tonality>): void {
+    const next: Tonality = { ...this.global };
     if (partial.key !== undefined) next.key = partial.key;
     if (partial.scale !== undefined) next.scale = partial.scale;
     this.global = next;

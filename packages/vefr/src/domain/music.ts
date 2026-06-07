@@ -37,8 +37,8 @@ export type ScaleId =
   | "major7"
   | "dorian-hex";
 
-/** Global musical context shared by every pitched track. */
-export type GlobalMusicState = {
+/** Tonal context (tonic key + scale) shared by every pitched track; a note's degree resolves to a pitch under it. */
+export type Tonality = {
   /** Tonic semitone offset -11..11 (0 = C); negative values transpose the tonic down. */
   key: number;
   scale: ScaleId;
@@ -102,7 +102,7 @@ export function intervalsOf(scale: ScaleId): readonly number[] {
  * Degree wraps across the scale length (so degree 7 in a 7-note scale = degree 0
  * in the next octave). Negative degrees wrap into earlier octaves.
  */
-export function degreeToMidi(global: GlobalMusicState, degree: number, octave: number): number {
+export function degreeToMidi(global: Tonality, degree: number, octave: number): number {
   const intervals = SCALE_INTERVALS[global.scale];
   const len = intervals.length;
   const octShift = Math.floor(degree / len);

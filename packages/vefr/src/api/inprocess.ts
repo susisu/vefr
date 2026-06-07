@@ -1,5 +1,5 @@
 import type { MaterializedPhrase } from "../domain/auto/generator.js";
-import { KEY_MAX, KEY_MIN, SCALE_IDS, type GlobalMusicState } from "../domain/music.js";
+import { KEY_MAX, KEY_MIN, SCALE_IDS, type Tonality } from "../domain/music.js";
 import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
 import type { MasterConfig, Tick } from "../domain/timing.js";
 import {
@@ -112,8 +112,8 @@ function makePlaybackApi(engine: Engine, hooks: InProcessHooks): PlaybackApi {
 /** Build the global sub-API around an Engine. */
 function makeGlobalApi(engine: Engine): GlobalApi {
   return {
-    get: (): GlobalMusicState => engine.getGlobal(),
-    set: (partial: Partial<GlobalMusicState>): void => {
+    get: (): Tonality => engine.getGlobal(),
+    set: (partial: Partial<Tonality>): void => {
       engine.setGlobal(partial);
     },
     rerollKey: (): void => {
@@ -127,7 +127,7 @@ function makeGlobalApi(engine: Engine): GlobalApi {
         engine.setGlobal({ scale });
       }
     },
-    onChange: (handler: (state: GlobalMusicState) => void): (() => void) =>
+    onChange: (handler: (state: Tonality) => void): (() => void) =>
       engine.globalChanged.on(handler),
   };
 }
