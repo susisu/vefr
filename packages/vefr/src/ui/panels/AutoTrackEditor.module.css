@@ -45,17 +45,17 @@
 }
 
 /*
- * Phrase selector is collapsed by default — once a track is configured it
- * rarely gets re-edited, but the list is long enough that always-open
- * dominates the editor visually.
+ * Phrase picker trigger. The list itself floats over the layout (see
+ * .phrasesPopover) so toggling it doesn't resize the track editor the way
+ * the old inline disclosure did. Keeps the flat recessed-strip look of that
+ * disclosure rather than the global raised-button chrome.
  */
-.phrasesCollapsible {
-  margin: 0.4rem 0;
-}
-.phrasesSummary {
+.phrasesButton {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  width: 100%;
+  margin: 0.4rem 0;
   padding: 0.3rem 0.45rem;
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--panel-rim);
@@ -66,34 +66,46 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--fg-dim);
-  list-style: none;
 }
-.phrasesSummary::-webkit-details-marker {
-  display: none;
+.phrasesButton:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #404040;
 }
-/* Custom marker that flips when the disclosure opens — replaces the default
- * triangle, which doesn't fit the chassis vibe. */
-.phrasesSummary::before {
-  content: "▸";
+.phrasesButton:active {
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+/* Popup affordance: a static ↕ that reads as "opens a chooser" without
+ * claiming a direction — the popover may open above or below depending on
+ * viewport space. */
+.phrasesMarker {
   color: var(--fg-faint);
   font-size: 0.7rem;
   letter-spacing: 0;
-  transition: transform 100ms ease;
 }
-details[open] > .phrasesSummary::before {
-  transform: rotate(90deg);
-}
-.phrasesSummaryCount {
+.phrasesCount {
   margin-left: auto;
   color: var(--fg-faint);
   letter-spacing: 0.1em;
 }
 
-.phrases {
+/* Floating genre-grouped checkbox list, portalled to the body. Mirrors the
+ * tooltip's panel chrome so it reads as part of the chassis; width (matching
+ * the trigger) and max-height are set inline by the floating-ui size()
+ * middleware, and the body scrolls. */
+.phrasesPopover {
+  z-index: 100;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  margin-top: 0.4rem;
+  overflow-y: auto;
+  padding: 0.45rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-rim);
+  border-radius: var(--radius);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 4px 14px rgba(0, 0, 0, 0.55);
 }
 
 .phraseGroup {
