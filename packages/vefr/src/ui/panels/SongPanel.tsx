@@ -1,5 +1,6 @@
 import type { ChangeEvent, ReactElement } from "react";
-import { asScaleId, KEY_MAX, KEY_MIN, keyLabel, SCALE_IDS } from "../../domain/music.js";
+import { genreLabel } from "../../domain/genre.js";
+import { asScaleId, KEY_MAX, KEY_MIN, keyLabel, SCALE_GROUPS } from "../../domain/music.js";
 import { Knob, Panel } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useTiming, useTonality } from "../hooks.js";
@@ -80,10 +81,14 @@ export function SongPanel(): ReactElement {
           </div>
           <div className={styles.readoutGroup}>
             <ReadoutSelect label="Scale" value={tonality.scale} onChange={onScaleChange}>
-              {SCALE_IDS.map((id) => (
-                <option key={id} value={id}>
-                  {id}
-                </option>
+              {SCALE_GROUPS.map(({ genre, scales }) => (
+                <optgroup key={genre} label={genreLabel(genre)}>
+                  {scales.map((id) => (
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </ReadoutSelect>
             <button

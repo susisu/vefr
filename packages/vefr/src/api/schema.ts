@@ -1,6 +1,6 @@
 import * as v from "valibot";
 import { DRUM_KIT_IDS, INSTRUMENT_IDS } from "../domain/instrument.js";
-import { KEY_MAX, KEY_MIN } from "../domain/music.js";
+import { KEY_MAX, KEY_MIN, SCALE_IDS } from "../domain/music.js";
 import type { DrumHit, Note, Pattern } from "../domain/pattern.js";
 import {
   PITCHED_OCTAVE_MAX,
@@ -20,35 +20,8 @@ export const NonNegativeInteger = v.pipe(v.number(), v.integer(), v.minValue(0))
 /** Velocity / volume / etc. — a normalized 0..1. */
 export const NormalizedNumber = v.pipe(v.number(), v.minValue(0), v.maxValue(1));
 
-/** Engine-recognised scale ids. */
-export const ScaleIdSchema = v.picklist([
-  "major",
-  "minor",
-  "dorian",
-  "mixolydian",
-  "lydian",
-  "phrygian",
-  "harmonic-minor",
-  "melodic-minor",
-  "phrygian-dominant",
-  "hijaz",
-  "hungarian",
-  "minor-pentatonic",
-  "major-pentatonic",
-  "blues",
-  "blues-major",
-  "hirajoshi",
-  "iwato",
-  "insen",
-  "yo",
-  "kumoi",
-  "chinese",
-  "wholetone",
-  "diminished",
-  "minor7",
-  "major7",
-  "dorian-hex",
-]);
+/** Engine-recognised scale ids; mirrors `SCALE_IDS` from the domain. */
+export const ScaleIdSchema = v.picklist(SCALE_IDS);
 
 /** Engine-recognised drum pads. */
 export const DrumPadSchema = v.picklist(["kick", "snare", "closed-hat", "open-hat"]);
