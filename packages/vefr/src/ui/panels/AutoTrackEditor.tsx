@@ -1,6 +1,7 @@
 import {
   autoUpdate,
   flip,
+  FloatingFocusManager,
   FloatingPortal,
   offset,
   shift,
@@ -249,56 +250,63 @@ function PhrasePicker({
       </button>
       {open ?
         <FloatingPortal>
-          <div
-            ref={setFloating}
-            style={floatingStyles}
-            className={clsx(styles.phrasesPopover, `track-color-${color}`)}
-            aria-label="Phrases"
-            {...getFloatingProps()}
-          >
-            {groups.map(({ genre, items }) => {
-              const selectedCount = items.filter((p) => selected.has(p.id)).length;
-              const allSelected = selectedCount === items.length;
-              return (
-                <fieldset key={genre} className={styles.phraseGroup}>
-                  <legend>
-                    {/* Group-level toggle: one click selects / clears the whole
-                     * genre; indeterminate marks a partial selection. */}
-                    <label className={styles.phraseGroupToggle}>
-                      <input
-                        type="checkbox"
-                        checked={allSelected}
-                        ref={(el) => {
-                          if (el) el.indeterminate = selectedCount > 0 && !allSelected;
-                        }}
-                        onChange={() => {
-                          setGroup(
-                            items.map((p) => p.id),
-                            !allSelected,
-                          );
-                        }}
-                      />
-                      <span>{genreLabel(genre)}</span>
-                    </label>
-                  </legend>
-                  <div className={styles.phraseList}>
-                    {items.map((p) => (
-                      <label key={p.id} className={styles.phraseRow}>
+          {/* The portalled popover is detached from the trigger in the DOM,
+           * so without the focus manager keyboard focus could never reach
+           * it. It moves focus to the first checkbox on open, keeps Tab
+           * inside via focus guards, and returns focus to the trigger on
+           * close (non-modal so outside interactions still dismiss). */}
+          <FloatingFocusManager context={context} modal={false}>
+            <div
+              ref={setFloating}
+              style={floatingStyles}
+              className={clsx(styles.phrasesPopover, `track-color-${color}`)}
+              aria-label="Phrases"
+              {...getFloatingProps()}
+            >
+              {groups.map(({ genre, items }) => {
+                const selectedCount = items.filter((p) => selected.has(p.id)).length;
+                const allSelected = selectedCount === items.length;
+                return (
+                  <fieldset key={genre} className={styles.phraseGroup}>
+                    <legend>
+                      {/* Group-level toggle: one click selects / clears the whole
+                       * genre; indeterminate marks a partial selection. */}
+                      <label className={styles.phraseGroupToggle}>
                         <input
                           type="checkbox"
-                          checked={selected.has(p.id)}
+                          checked={allSelected}
+                          ref={(el) => {
+                            if (el) el.indeterminate = selectedCount > 0 && !allSelected;
+                          }}
                           onChange={() => {
-                            togglePhrase(p.id);
+                            setGroup(
+                              items.map((p) => p.id),
+                              !allSelected,
+                            );
                           }}
                         />
-                        <span>{p.name}</span>
+                        <span>{genreLabel(genre)}</span>
                       </label>
-                    ))}
-                  </div>
-                </fieldset>
-              );
-            })}
-          </div>
+                    </legend>
+                    <div className={styles.phraseList}>
+                      {items.map((p) => (
+                        <label key={p.id} className={styles.phraseRow}>
+                          <input
+                            type="checkbox"
+                            checked={selected.has(p.id)}
+                            onChange={() => {
+                              togglePhrase(p.id);
+                            }}
+                          />
+                          <span>{p.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                );
+              })}
+            </div>
+          </FloatingFocusManager>
         </FloatingPortal>
       : null}
     </>
