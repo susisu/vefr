@@ -1,5 +1,11 @@
 import type { DrumPhrase, DrumTemplate } from "./phrase.js";
 
+// Each genre's drum phrases share a signature trait and differ from each other
+// in how they realise it: Techno = four-on-the-floor with minimal snare,
+// Pop = backbeat, Disco = four-on-the-floor with open-hat shimmer,
+// Lo-fi = sparse + ghost notes + uneven velocities, Game = bare-bones or
+// machine-gun chip drumming, Other = breaks / world oddballs.
+
 // --- Techno -----------------------------------------------------------------
 
 /** Tech-house: kick on every beat, off-beat closed-hat "tss" between kicks. */
@@ -22,15 +28,16 @@ const drumTechnoOpenHat: DrumTemplate = {
                0, 0, 0.5, 0,  0, 0, 0.5, 0,  0, 0, 0.5, 0,  0, 0, 0.5, 0],
 };
 
-/** Driving techno: kick + claps on the backbeat + relentless 16th closed-hats. */
+/**
+ * Rumble: accented four-floor kick over a continuous bed of ghost kicks —
+ * the low-end "rumble" of harder techno. Off-beat hats keep the top moving.
+ */
 // prettier-ignore
-const drumTechnoDriving: DrumTemplate = {
-  kick:         [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
-                 1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0],
-  snare:        [0, 0, 0, 0,  0.85, 0, 0, 0,  0, 0, 0, 0,  0.85, 0, 0, 0,
-                 0, 0, 0, 0,  0.85, 0, 0, 0,  0, 0, 0, 0,  0.85, 0, 0, 0],
-  "closed-hat": [0.5, 0.3, 0.4, 0.3,  0.5, 0.3, 0.4, 0.3,  0.5, 0.3, 0.4, 0.3,  0.5, 0.3, 0.4, 0.3,
-                 0.5, 0.3, 0.4, 0.3,  0.5, 0.3, 0.4, 0.3,  0.5, 0.3, 0.4, 0.3,  0.5, 0.3, 0.4, 0.3],
+const drumTechnoRumble: DrumTemplate = {
+  kick:         [1, 0.3, 0.35, 0.3,  1, 0.3, 0.35, 0.3,  1, 0.3, 0.35, 0.3,  1, 0.3, 0.35, 0.3,
+                 1, 0.3, 0.35, 0.3,  1, 0.3, 0.35, 0.3,  1, 0.3, 0.35, 0.3,  1, 0.3, 0.35, 0.4],
+  "closed-hat": [0, 0, 0.4, 0,  0, 0, 0.4, 0,  0, 0, 0.4, 0,  0, 0, 0.4, 0,
+                 0, 0, 0.4, 0,  0, 0, 0.4, 0,  0, 0, 0.4, 0,  0, 0, 0.4, 0],
 };
 
 /** Minimal techno: 4-floor kick + ghost-quiet hats on the off-beats and a single snare per bar. */
@@ -79,13 +86,16 @@ const drumPopHalfTime: DrumTemplate = {
                  0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0],
 };
 
-/** Dance-pop: 4-floor kick + clap on 2/4 + driving 8th hats — pop/EDM crossover. */
+/**
+ * Syncopated pop: kick on 1, the "& of 2" and the "& of 3" — the modern pop
+ * kick figure — with a small snare fill closing bar 2.
+ */
 // prettier-ignore
-const drumPopDance: DrumTemplate = {
-  kick:         [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
-                 1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0],
+const drumPopSyncoKick: DrumTemplate = {
+  kick:         [1, 0, 0, 0,  0, 0, 0.8, 0,  0, 0, 0.85, 0,  0, 0, 0, 0,
+                 1, 0, 0, 0,  0, 0, 0.8, 0,  0, 0, 0.85, 0,  0, 0, 0, 0],
   snare:        [0, 0, 0, 0,  0.9, 0, 0, 0,  0, 0, 0, 0,  0.9, 0, 0, 0,
-                 0, 0, 0, 0,  0.9, 0, 0, 0,  0, 0, 0, 0,  0.9, 0, 0, 0],
+                 0, 0, 0, 0,  0.9, 0, 0, 0,  0, 0, 0, 0,  0.9, 0, 0.5, 0.65],
   "closed-hat": [0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0,
                  0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0],
 };
@@ -103,7 +113,7 @@ const drumDiscoFourFloor: DrumTemplate = {
                0, 0, 0.6, 0,  0, 0, 0.6, 0,  0, 0, 0.6, 0,  0, 0, 0.6, 0],
 };
 
-/** Disco 16th: 4-floor + busy 16th closed-hats + clap on 2/4. */
+/** Disco 16th: 4-floor + busy 16th closed-hats + snare on 2/4. */
 // prettier-ignore
 const drumDisco16thHat: DrumTemplate = {
   kick:         [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
@@ -125,15 +135,20 @@ const drumDiscoBoogie: DrumTemplate = {
                  0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0,  0.5, 0, 0.4, 0],
 };
 
-/** Cowbell-feel disco: sparse open-hat shimmer on every beat + clap on 2/4 (cowbell substitute). */
+/**
+ * Philly: the lush late-70s combination — 4-floor kick, snare 2/4, 16th
+ * closed-hats AND open-hat on every "&" at once.
+ */
 // prettier-ignore
-const drumDiscoCowbell: DrumTemplate = {
-  kick:       [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
-               1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0],
-  snare:      [0, 0, 0, 0,  0.85, 0, 0, 0,  0, 0, 0, 0,  0.85, 0, 0, 0,
-               0, 0, 0, 0,  0.85, 0, 0, 0,  0, 0, 0, 0,  0.85, 0, 0, 0],
-  "open-hat": [0.55, 0, 0, 0,  0.55, 0, 0, 0,  0.55, 0, 0, 0,  0.55, 0, 0, 0,
-               0.55, 0, 0, 0,  0.55, 0, 0, 0,  0.55, 0, 0, 0,  0.55, 0, 0, 0],
+const drumDiscoPhilly: DrumTemplate = {
+  kick:         [1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,
+                 1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0],
+  snare:        [0, 0, 0, 0,  0.85, 0, 0, 0,  0, 0, 0, 0,  0.85, 0, 0, 0,
+                 0, 0, 0, 0,  0.85, 0, 0, 0,  0, 0, 0, 0,  0.85, 0, 0, 0],
+  "closed-hat": [0.4, 0.3, 0, 0.3,  0.4, 0.3, 0, 0.3,  0.4, 0.3, 0, 0.3,  0.4, 0.3, 0, 0.3,
+                 0.4, 0.3, 0, 0.3,  0.4, 0.3, 0, 0.3,  0.4, 0.3, 0, 0.3,  0.4, 0.3, 0, 0.3],
+  "open-hat":   [0, 0, 0.55, 0,  0, 0, 0.55, 0,  0, 0, 0.55, 0,  0, 0, 0.55, 0,
+                 0, 0, 0.55, 0,  0, 0, 0.55, 0,  0, 0, 0.55, 0,  0, 0, 0.55, 0],
 };
 
 // --- Lo-fi ------------------------------------------------------------------
@@ -184,15 +199,15 @@ const drumLofiDustySwing: DrumTemplate = {
                  0.5, 0, 0.6, 0,  0.4, 0, 0.55, 0,  0.5, 0, 0.6, 0,  0.4, 0, 0.55, 0],
 };
 
-// --- Game music -------------------------------------------------------------
+// --- Game -------------------------------------------------------------------
 
-/** Chip march: kick on 1+3, snare on 2+4, no hats — bare-bones 8-bit drumming. */
+/** Chip march: kick on 1+3, snare on 2+4, no hats — with a military snare roll closing bar 2. */
 // prettier-ignore
 const drumGameChipMarch: DrumTemplate = {
   kick:  [1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0,
           1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0],
   snare: [0, 0, 0, 0,  0.9, 0, 0, 0,  0, 0, 0, 0,  0.9, 0, 0, 0,
-          0, 0, 0, 0,  0.9, 0, 0, 0,  0, 0, 0, 0,  0.9, 0, 0, 0],
+          0, 0, 0, 0,  0.9, 0, 0, 0,  0, 0, 0, 0,  0.9, 0.5, 0.6, 0.7],
 };
 
 /** Boss-driving: 16th-busy kick + snare on 2/4 + 8th hats — Mega-Man-style action drumming. */
@@ -229,28 +244,32 @@ const drumGameDungeon: DrumTemplate = {
 // --- Other (rhythm-feel patterns that don't fit the five genres) ------------
 
 /**
- * Driving break: kick 1, snare 2, syncopated kick on the "& of 3", snare 4 —
- * the canonical breakbeat skeleton, with a small double-kick fill in bar 2.
+ * Breakbeat: displaced kicks (1, "& of 2", "e of 3") with ghost snares on the
+ * "a of 2" / "e of 4" around the backbeat — the syncopation, not the hats,
+ * carries the groove. Bar 2 adds a kick pickup and a snare drag.
  */
 // prettier-ignore
-const drumBreakDriving: DrumTemplate = {
-  kick:         [1, 0, 0, 0,  0, 0, 0, 0,  0.8, 0, 0, 0,  0, 0, 0, 0,
-                 1, 0, 0, 0,  0, 0, 0, 0,  0.85, 0, 0.7, 0,  0, 0, 0, 0],
-  snare:        [0, 0, 0, 0,  0.9, 0, 0, 0,  0, 0, 0, 0,  0.9, 0, 0, 0,
-                 0, 0, 0, 0,  0.9, 0, 0, 0,  0, 0, 0, 0,  0.9, 0, 0, 0],
-  "closed-hat": [0.55, 0.3, 0.4, 0.3,  0.55, 0.3, 0.4, 0.3,  0.55, 0.3, 0.4, 0.3,  0.55, 0.3, 0.4, 0.3,
-                 0.55, 0.3, 0.4, 0.3,  0.55, 0.3, 0.4, 0.3,  0.55, 0.3, 0.4, 0.3,  0.55, 0.3, 0.4, 0.3],
+const drumBreakbeat: DrumTemplate = {
+  kick:         [1, 0, 0, 0,  0, 0, 0.8, 0,  0, 0.7, 0, 0,  0, 0, 0, 0,
+                 1, 0, 0, 0,  0, 0, 0.8, 0,  0, 0.7, 0, 0,  0, 0, 0.7, 0],
+  snare:        [0, 0, 0, 0,  0.9, 0, 0, 0.4,  0, 0, 0, 0.35,  0.9, 0, 0, 0,
+                 0, 0, 0, 0,  0.9, 0, 0, 0.4,  0, 0, 0.35, 0,  0.9, 0, 0, 0.5],
+  "closed-hat": [0.45, 0, 0.4, 0,  0.45, 0, 0.4, 0,  0.45, 0, 0.4, 0,  0.45, 0, 0.4, 0,
+                 0.45, 0, 0.4, 0,  0.45, 0, 0.4, 0,  0.45, 0, 0.4, 0,  0.45, 0, 0.4, 0],
 };
 
-/** Half-time break: spacious feel, syncopated kick stab at the very end of each bar. */
+/**
+ * Trap half-time: sparse syncopated kicks, snare only on beat 3, and a 16th
+ * hat bed whose velocity wave rises into a faux hat-roll at each bar's end.
+ */
 // prettier-ignore
-const drumBreakHalfTime: DrumTemplate = {
-  kick:         [1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0.7, 0,
-                 1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0.7, 0],
+const drumTrapHalfTime: DrumTemplate = {
+  kick:         [1, 0, 0, 0,  0, 0, 0, 0.7,  0, 0, 0, 0,  0, 0, 0, 0,
+                 1, 0, 0, 0,  0, 0, 0.7, 0,  0, 0, 0, 0,  0, 0.6, 0, 0],
   snare:        [0, 0, 0, 0,  0, 0, 0, 0,  0.9, 0, 0, 0,  0, 0, 0, 0,
                  0, 0, 0, 0,  0, 0, 0, 0,  0.9, 0, 0, 0,  0, 0, 0, 0],
-  "closed-hat": [0.4, 0, 0.4, 0,  0.4, 0, 0.4, 0,  0.4, 0, 0.4, 0,  0.4, 0, 0.4, 0,
-                 0.4, 0, 0.4, 0,  0.4, 0, 0.4, 0,  0.4, 0, 0.4, 0,  0.4, 0, 0.4, 0],
+  "closed-hat": [0.45, 0.3, 0.45, 0.3,  0.45, 0.3, 0.45, 0.3,  0.45, 0.3, 0.45, 0.3,  0.6, 0.4, 0.6, 0.4,
+                 0.45, 0.3, 0.45, 0.3,  0.45, 0.3, 0.45, 0.3,  0.45, 0.3, 0.45, 0.3,  0.6, 0.5, 0.7, 0.6],
 };
 
 // --- registry ----------------------------------------------------------------
@@ -260,155 +279,155 @@ export const drumPhrases: readonly DrumPhrase[] = [
   {
     id: "drum.techno.offbeat-hat",
     kind: "drum",
-    category: "Techno",
+    genre: "techno",
     name: "Off-beat Hats",
     template: drumTechnoOffbeat,
   },
   {
     id: "drum.techno.open-hat",
     kind: "drum",
-    category: "Techno",
+    genre: "techno",
     name: "Open Hats",
     template: drumTechnoOpenHat,
   },
   {
-    id: "drum.techno.driving",
+    id: "drum.techno.rumble",
     kind: "drum",
-    category: "Techno",
-    name: "Driving 16th",
-    template: drumTechnoDriving,
+    genre: "techno",
+    name: "Rumble",
+    template: drumTechnoRumble,
   },
   {
     id: "drum.techno.minimal",
     kind: "drum",
-    category: "Techno",
+    genre: "techno",
     name: "Minimal",
     template: drumTechnoMinimal,
   },
   {
     id: "drum.pop.backbeat",
     kind: "drum",
-    category: "Pop",
+    genre: "pop",
     name: "Backbeat",
     template: drumPopBackbeat,
   },
   {
     id: "drum.pop.driving",
     kind: "drum",
-    category: "Pop",
+    genre: "pop",
     name: "Driving",
     template: drumPopDriving,
   },
   {
     id: "drum.pop.half-time",
     kind: "drum",
-    category: "Pop",
+    genre: "pop",
     name: "Half-time",
     template: drumPopHalfTime,
   },
   {
-    id: "drum.pop.dance-pop",
+    id: "drum.pop.synco-kick",
     kind: "drum",
-    category: "Pop",
-    name: "Dance-pop",
-    template: drumPopDance,
+    genre: "pop",
+    name: "Synco Kick",
+    template: drumPopSyncoKick,
   },
   {
     id: "drum.disco.four-floor",
     kind: "drum",
-    category: "Disco",
+    genre: "disco",
     name: "Four-on-the-Floor",
     template: drumDiscoFourFloor,
   },
   {
     id: "drum.disco.16th-hat",
     kind: "drum",
-    category: "Disco",
+    genre: "disco",
     name: "16th Hat",
     template: drumDisco16thHat,
   },
   {
     id: "drum.disco.boogie",
     kind: "drum",
-    category: "Disco",
+    genre: "disco",
     name: "Boogie",
     template: drumDiscoBoogie,
   },
   {
-    id: "drum.disco.cowbell-feel",
+    id: "drum.disco.philly",
     kind: "drum",
-    category: "Disco",
-    name: "Cowbell Feel",
-    template: drumDiscoCowbell,
+    genre: "disco",
+    name: "Philly",
+    template: drumDiscoPhilly,
   },
   {
     id: "drum.lofi.boom-bap",
     kind: "drum",
-    category: "Lo-fi",
+    genre: "lofi",
     name: "Boom Bap",
     template: drumLofiBoomBap,
   },
   {
     id: "drum.lofi.half-time",
     kind: "drum",
-    category: "Lo-fi",
+    genre: "lofi",
     name: "Half-time",
     template: drumLofiHalfTime,
   },
   {
     id: "drum.lofi.minimal",
     kind: "drum",
-    category: "Lo-fi",
+    genre: "lofi",
     name: "Minimal",
     template: drumLofiMinimal,
   },
   {
     id: "drum.lofi.dusty-swing",
     kind: "drum",
-    category: "Lo-fi",
+    genre: "lofi",
     name: "Dusty Swing",
     template: drumLofiDustySwing,
   },
   {
     id: "drum.game.chip-march",
     kind: "drum",
-    category: "Game music",
+    genre: "game",
     name: "Chip March",
     template: drumGameChipMarch,
   },
   {
     id: "drum.game.boss-driving",
     kind: "drum",
-    category: "Game music",
+    genre: "game",
     name: "Boss Driving",
     template: drumGameBossDriving,
   },
   {
     id: "drum.game.action-fast",
     kind: "drum",
-    category: "Game music",
+    genre: "game",
     name: "Action Fast",
     template: drumGameActionFast,
   },
   {
     id: "drum.game.dungeon",
     kind: "drum",
-    category: "Game music",
+    genre: "game",
     name: "Dungeon",
     template: drumGameDungeon,
   },
   {
-    id: "drum.other.break-driving",
+    id: "drum.other.breakbeat",
     kind: "drum",
-    category: "Other",
-    name: "Break Driving",
-    template: drumBreakDriving,
+    genre: "other",
+    name: "Breakbeat",
+    template: drumBreakbeat,
   },
   {
-    id: "drum.other.break-half-time",
+    id: "drum.other.trap-half-time",
     kind: "drum",
-    category: "Other",
-    name: "Break Half-time",
-    template: drumBreakHalfTime,
+    genre: "other",
+    name: "Trap Half-time",
+    template: drumTrapHalfTime,
   },
 ];

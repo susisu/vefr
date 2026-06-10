@@ -1,9 +1,24 @@
+import {
+  autoUpdate,
+  flip,
+  FloatingFocusManager,
+  FloatingPortal,
+  offset,
+  shift,
+  size,
+  useClick,
+  useDismiss,
+  useFloating,
+  useInteractions,
+  useRole,
+} from "@floating-ui/react";
 import clsx from "clsx";
-import type { ChangeEvent, ReactElement } from "react";
+import { useState, type ChangeEvent, type ReactElement } from "react";
 import type { MaterializedPhrase } from "../../api/types.js";
+import { genreLabel, type Genre } from "../../domain/genre.js";
 import type { DrumPad } from "../../domain/pattern.js";
 import type { PhraseId } from "../../domain/phrase/phrase.js";
-import { type DrumTrack, refById, type Track } from "../../domain/track.js";
+import { type DrumTrack, refById, type Track, type TrackColorId } from "../../domain/track.js";
 import { listDrumPhrases, listPitchedPhrases } from "../../domain/phrase/registry.js";
 import type { Phrase } from "../../domain/phrase/phrase.js";
 import type { DrumTemplate, RhythmTemplate } from "../../domain/phrase/phrase.js";
@@ -55,13 +70,22 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
   const phrases: readonly Phrase[] =
     track.kind === "drum" ? listDrumPhrases() : listPitchedPhrases(track.role);
   const selected = new Set<PhraseId>(track.phraseIds);
-  const groups = groupByCategory(phrases);
 
   /** Toggle a phrase id in/out of the track's phraseIds list. */
   const togglePhrase = (id: PhraseId): void => {
     const next = new Set(selected);
     if (next.has(id)) next.delete(id);
     else next.add(id);
+    api.track.setAutoConfig(refById(track.id), { phraseIds: [...next] });
+  };
+
+  /** Select or deselect a whole genre group of phrase ids at once. */
+  const setGroup = (ids: readonly PhraseId[], select: boolean): void => {
+    const next = new Set(selected);
+    for (const id of ids) {
+      if (select) next.add(id);
+      else next.delete(id);
+    }
     api.track.setAutoConfig(refById(track.id), { phraseIds: [...next] });
   };
 
@@ -105,35 +129,13 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
         phrase={activePhrase}
         drumTrack={track.kind === "drum" ? track : undefined}
       />
-      <details className={styles.phrasesCollapsible}>
-        <summary className={styles.phrasesSummary}>
-          <span>Phrases</span>
-          <span className={styles.phrasesSummaryCount}>
-            {selected.size} / {phrases.length} selected
-          </span>
-        </summary>
-        <div className={styles.phrases}>
-          {groups.map(({ category, items }) => (
-            <fieldset key={category} className={styles.phraseGroup}>
-              <legend>{category}</legend>
-              <div className={styles.phraseList}>
-                {items.map((p) => (
-                  <label key={p.id} className={styles.phraseRow}>
-                    <input
-                      type="checkbox"
-                      checked={selected.has(p.id)}
-                      onChange={() => {
-                        togglePhrase(p.id);
-                      }}
-                    />
-                    <span>{p.name}</span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          ))}
-        </div>
-      </details>
+      <PhrasePicker
+        phrases={phrases}
+        selected={selected}
+        color={track.color}
+        togglePhrase={togglePhrase}
+        setGroup={setGroup}
+      />
       <div className={styles.params}>
         {track.kind === "pitched" ?
           <PitchedOctaveKnob track={track} />
@@ -173,23 +175,161 @@ function Inner({ track }: { track: AutoTrack }): ReactElement {
   );
 }
 
-/** Group phrases by their `category` field, preserving registry order. */
-function groupByCategory(phrases: readonly Phrase[]): ReadonlyArray<{
-  category: string;
+/** Maximum height of the phrase popover before its body scrolls. */
+const PICKER_MAX_HEIGHT = 480;
+
+/**
+ * Phrase multi-select presented as a popover. The trigger button shows the
+ * selection count; the genre-grouped checkbox list is portalled and anchored
+ * below the button with floating-ui, so opening it overlays the layout
+ * instead of resizing the track editor (which made the old inline
+ * disclosure jumpy to work with). The track's `track-color-*` class is
+ * re-applied to the popover because the portal escapes the editor's scope
+ * and the checkboxes' accent color would otherwise fall back to the global
+ * accent.
+ */
+function PhrasePicker({
+  phrases,
+  selected,
+  color,
+  togglePhrase,
+  setGroup,
+}: {
+  phrases: readonly Phrase[];
+  selected: ReadonlySet<PhraseId>;
+  color: TrackColorId;
+  togglePhrase: (id: PhraseId) => void;
+  setGroup: (ids: readonly PhraseId[], select: boolean) => void;
+}): ReactElement {
+  const [open, setOpen] = useState(false);
+  const { refs, floatingStyles, context } = useFloating({
+    open,
+    onOpenChange: setOpen,
+    placement: "bottom-start",
+    middleware: [
+      offset(4),
+      flip({ padding: 8 }),
+      shift({ padding: 8 }),
+      size({
+        padding: 8,
+        apply({ availableHeight, elements, rects }) {
+          elements.floating.style.maxHeight = `${Math.min(availableHeight, PICKER_MAX_HEIGHT)}px`;
+          // Match the trigger's width so the popover reads as the button's
+          // own drawer rather than a detached panel.
+          elements.floating.style.width = `${rects.reference.width}px`;
+        },
+      }),
+    ],
+    whileElementsMounted: autoUpdate,
+  });
+  // floating-ui types `setReference` / `setFloating` as methods, but they are
+  // stable callback refs that don't read `this` — destructuring is safe here.
+  // eslint-disable-next-line @typescript-eslint/unbound-method -- floating-ui callback ref boundary
+  const { setReference, setFloating } = refs;
+  const click = useClick(context);
+  const dismiss = useDismiss(context);
+  const role = useRole(context, { role: "dialog" });
+  const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
+  const groups = groupByGenre(phrases);
+
+  return (
+    <>
+      <button
+        type="button"
+        ref={setReference}
+        className={styles.phrasesButton}
+        {...getReferenceProps()}
+      >
+        <span aria-hidden="true" className={styles.phrasesMarker}>
+          ↕
+        </span>
+        <span>Phrases</span>
+        <span className={styles.phrasesCount}>
+          {selected.size} / {phrases.length} selected
+        </span>
+      </button>
+      {open ?
+        <FloatingPortal>
+          {/* The portalled popover is detached from the trigger in the DOM,
+           * so without the focus manager keyboard focus could never reach
+           * it. It moves focus to the first checkbox on open, keeps Tab
+           * inside via focus guards, and returns focus to the trigger on
+           * close (non-modal so outside interactions still dismiss). */}
+          <FloatingFocusManager context={context} modal={false}>
+            <div
+              ref={setFloating}
+              style={floatingStyles}
+              className={clsx(styles.phrasesPopover, `track-color-${color}`)}
+              aria-label="Phrases"
+              {...getFloatingProps()}
+            >
+              {groups.map(({ genre, items }) => {
+                const selectedCount = items.filter((p) => selected.has(p.id)).length;
+                const allSelected = selectedCount === items.length;
+                return (
+                  <fieldset key={genre} className={styles.phraseGroup}>
+                    <legend>
+                      {/* Group-level toggle: one click selects / clears the whole
+                       * genre; indeterminate marks a partial selection. */}
+                      <label className={styles.phraseGroupToggle}>
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          ref={(el) => {
+                            if (el) el.indeterminate = selectedCount > 0 && !allSelected;
+                          }}
+                          onChange={() => {
+                            setGroup(
+                              items.map((p) => p.id),
+                              !allSelected,
+                            );
+                          }}
+                        />
+                        <span>{genreLabel(genre)}</span>
+                      </label>
+                    </legend>
+                    <div className={styles.phraseList}>
+                      {items.map((p) => (
+                        <label key={p.id} className={styles.phraseRow}>
+                          <input
+                            type="checkbox"
+                            checked={selected.has(p.id)}
+                            onChange={() => {
+                              togglePhrase(p.id);
+                            }}
+                          />
+                          <span>{p.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                );
+              })}
+            </div>
+          </FloatingFocusManager>
+        </FloatingPortal>
+      : null}
+    </>
+  );
+}
+
+/** Group phrases by their `genre` field, preserving registry order. */
+function groupByGenre(phrases: readonly Phrase[]): ReadonlyArray<{
+  genre: Genre;
   items: readonly Phrase[];
 }> {
-  const order: string[] = [];
-  const buckets = new Map<string, Phrase[]>();
+  const order: Genre[] = [];
+  const buckets = new Map<Genre, Phrase[]>();
   for (const p of phrases) {
-    const bucket = buckets.get(p.category);
+    const bucket = buckets.get(p.genre);
     if (bucket) {
       bucket.push(p);
     } else {
-      order.push(p.category);
-      buckets.set(p.category, [p]);
+      order.push(p.genre);
+      buckets.set(p.genre, [p]);
     }
   }
-  return order.map((category) => ({ category, items: buckets.get(category) ?? [] }));
+  return order.map((genre) => ({ genre, items: buckets.get(genre) ?? [] }));
 }
 
 /**

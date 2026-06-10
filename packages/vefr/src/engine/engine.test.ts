@@ -166,7 +166,7 @@ describe("Engine", () => {
     const phrase: DrumPhrase = {
       id: "p.kick",
       kind: "drum",
-      category: "Test",
+      genre: "other",
       name: "Kick",
       template: {
         kick: [
@@ -215,7 +215,7 @@ describe("Engine", () => {
     const phrase: DrumPhrase = {
       id: "p.fanout",
       kind: "drum",
-      category: "Test",
+      genre: "other",
       name: "Fan-out",
       template: {
         kick: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -293,7 +293,7 @@ describe("Engine", () => {
     const phrase: DrumPhrase = {
       id: "p.lazy",
       kind: "drum",
-      category: "Test",
+      genre: "other",
       name: "Lazy",
       template: { kick: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0] },
     };
@@ -342,7 +342,7 @@ describe("Engine", () => {
     const phrase: DrumPhrase = {
       id: "p.kick-hat",
       kind: "drum",
-      category: "Test",
+      genre: "other",
       name: "Kick + Hat",
       template: {
         kick: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],

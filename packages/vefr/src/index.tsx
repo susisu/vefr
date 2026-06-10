@@ -68,12 +68,7 @@ function defaultInitial(): EngineInitial {
     volume: 0.8,
     color: "yellow",
     source: "auto",
-    phraseIds: [
-      "melody.lofi.minimal",
-      "melody.lofi.pointillist",
-      "melody.lofi.three-feel",
-      "melody.lofi.dusty-pair",
-    ],
+    phraseIds: ["melody.lofi.minimal", "melody.lofi.dusty-pair", "melody.lofi.lazy-answer"],
     seed: 443,
     params: defaultAutoParamsFor("pitched", "melody"),
   };
