@@ -1,3 +1,4 @@
+import type { Genre } from "../genre.js";
 import type { PitchedRole } from "../instrument.js";
 import type { DrumPad } from "../pattern.js";
 
@@ -29,8 +30,8 @@ export type DrumTemplate = Partial<Record<DrumPad, RhythmTemplate>>;
 export type DrumPhrase = {
   id: PhraseId;
   kind: "drum";
-  /** UI grouping label, e.g. "Techno Four". Has no engine semantics. */
-  category: string;
+  /** Preset genre the phrase is filed under. Drives UI grouping only; no engine semantics. */
+  genre: Genre;
   /** Human-readable name shown next to the phrase's checkbox. */
   name: string;
   template: DrumTemplate;
@@ -44,7 +45,8 @@ export type PitchedPhrase = {
   id: PhraseId;
   kind: "pitched";
   role: PitchedRole;
-  category: string;
+  /** Preset genre the phrase is filed under. Drives UI grouping only; no engine semantics. */
+  genre: Genre;
   name: string;
   template: RhythmTemplate;
 };

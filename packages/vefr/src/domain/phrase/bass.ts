@@ -1,5 +1,11 @@
 import type { PitchedPhrase, RhythmTemplate } from "./phrase.js";
 
+// Bass pitch is held at the root by the generator, so each entry's identity is
+// its rhythmic placement + velocity contour. Per genre: Techno = dense rolling
+// lines, Pop = beat-anchored pulses and pushes, Disco = funk syncopation,
+// Lo-fi = sparse dub weight, Game = relentless chip pulses, Other = world /
+// breaks oddballs.
+
 // --- Techno -----------------------------------------------------------------
 
 /** Driving eighth-note pulse — root on every 8th, classic four-to-the-floor sub. */
@@ -49,18 +55,14 @@ const bassPushBeat: RhythmTemplate = [
   0,    0,    0,    0.7,  1,    0,    0,    0,    0,    0,    0,    0.7,  1,    0,    0,    0,
 ];
 
-/** Latin tumbao — accent on 1 and 3 with anticipations on the "&" of 2 and 4. */
+/**
+ * Syncopated pop line — kick-figure placements (1, "& of 2", 3-and-a-half)
+ * that pair with the Synco Kick drum phrase; bar 2 resolves with a pickup.
+ */
 // prettier-ignore
-const bassTumbao: RhythmTemplate = [
-  1,    0,    0,    0,    0,    0,    0.85, 0,    1,    0,    0,    0,    0,    0,    0.85, 0,
-  1,    0,    0,    0,    0,    0,    0.85, 0,    1,    0,    0,    0,    0,    0,    0.85, 0,
-];
-
-/** Light eighth walk — eighth pulse with bar 1 / bar 2 accent variation for a phrasing feel. */
-// prettier-ignore
-const bassPopEighthWalk: RhythmTemplate = [
-  1,    0,    0.6,  0,    0.8,  0,    0.6,  0,    1,    0,    0.6,  0,    0.8,  0,    0.6,  0,
-  0.85, 0,    0.6,  0,    0.7,  0,    0.6,  0,    0.85, 0,    0.6,  0,    0.7,  0,    0.6,  0,
+const bassPopSynco: RhythmTemplate = [
+  1,    0,    0,    0.6,  0,    0,    0.85, 0,    0,    0,    1,    0,    0,    0,    0.7,  0,
+  1,    0,    0,    0.6,  0,    0,    0.85, 0,    0,    0,    1,    0,    0,    0.6,  0,    0,
 ];
 
 // --- Disco ------------------------------------------------------------------
@@ -77,13 +79,6 @@ const bassFunk16th: RhythmTemplate = [
 const bassDotted8th: RhythmTemplate = [
   1,    0,    0,    0,    0,    0,    0.8,  0,    0,    0,    0,    0,    1,    0,    0,    0,
   0,    0,    0.8,  0,    0,    0,    0,    0,    1,    0,    0,    0,    0,    0,    0,    0,
-];
-
-/** Disco eighth walk — driving 8th sub with a strong "1" accent every bar. */
-// prettier-ignore
-const bassDiscoEighthWalk: RhythmTemplate = [
-  1,    0,    0.7,  0,    0.7,  0,    0.7,  0,    0.85, 0,    0.7,  0,    0.7,  0,    0.7,  0,
-  1,    0,    0.7,  0,    0.7,  0,    0.7,  0,    0.85, 0,    0.7,  0,    0.7,  0,    0.7,  0,
 ];
 
 /**
@@ -126,7 +121,7 @@ const bassPickupRoll: RhythmTemplate = [
   1,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0.6,  0.7,
 ];
 
-// --- Game music -------------------------------------------------------------
+// --- Game -------------------------------------------------------------------
 
 /**
  * Syncopated 16th-note stabs — only on the "e of 1", "& of 2", "a of 3"
@@ -138,11 +133,15 @@ const bassSyncoStab16th: RhythmTemplate = [
   0,    1,    0,    0,    0,    0,    0.85, 0,    0,    0,    0,    0.85, 0,    0,    0.85, 0,
 ];
 
-/** Dotted 16th arpeggio — chiptune-style busy 16ths with a recurring accent contour. */
+/**
+ * Dotted arp — a hit every 3 sixteenths straight through the loop, the
+ * chiptune dotted-8th cross-rhythm that cycles against 4/4 and re-locks on
+ * the downbeat every 3 beats.
+ */
 // prettier-ignore
 const bassGameDottedArp: RhythmTemplate = [
-  1,    0.7,  0.85, 0.7,  0.7,  0.7,  0.85, 0.7,  0.85, 0.7,  0.85, 0.7,  0.7,  0.7,  0.85, 0.7,
-  1,    0.7,  0.85, 0.7,  0.7,  0.7,  0.85, 0.7,  0.85, 0.7,  0.85, 0.7,  0.7,  0.7,  0.85, 0.7,
+  1,    0,    0,    0.8,  0,    0,    0.85, 0,    0,    0.8,  0,    0,    1,    0,    0,    0.8,
+  0,    0,    0.85, 0,    0,    0.8,  0,    0,    1,    0,    0,    0.8,  0,    0,    0.85, 0,
 ];
 
 /** Fast pulse — flat-velocity 8th notes, the relentless chip-bass under arcade music. */
@@ -175,6 +174,13 @@ const bassOneDrop: RhythmTemplate = [
   0,    0,    0,    0,    0,    0,    0,    0,    1,    0,    0,    0,    0,    0,    0,    0,
 ];
 
+/** Latin tumbao — accent on 1 and 3 with anticipations on the "&" of 2 and 4. */
+// prettier-ignore
+const bassTumbao: RhythmTemplate = [
+  1,    0,    0,    0,    0,    0,    0.85, 0,    1,    0,    0,    0,    0,    0,    0.85, 0,
+  1,    0,    0,    0,    0,    0,    0.85, 0,    1,    0,    0,    0,    0,    0,    0.85, 0,
+];
+
 /** Trap 808 — sparse big stabs scattered across the phrase, like a held 808. */
 // prettier-ignore
 const bassTrap808: RhythmTemplate = [
@@ -197,7 +203,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.techno.eighth-pulse",
     kind: "pitched",
     role: "bass",
-    category: "Techno",
+    genre: "techno",
     name: "Eighth Pulse",
     template: bassEighthPulse,
   },
@@ -205,7 +211,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.techno.gallop",
     kind: "pitched",
     role: "bass",
-    category: "Techno",
+    genre: "techno",
     name: "16th Gallop",
     template: bass16thGallop,
   },
@@ -213,7 +219,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.techno.acid-roll",
     kind: "pitched",
     role: "bass",
-    category: "Techno",
+    genre: "techno",
     name: "Acid Roll",
     template: bassAcidRoll,
   },
@@ -221,7 +227,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.techno.driving-stab",
     kind: "pitched",
     role: "bass",
-    category: "Techno",
+    genre: "techno",
     name: "Driving Stab",
     template: bassTechnoDrivingStab,
   },
@@ -229,7 +235,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.pop.quarter-pulse",
     kind: "pitched",
     role: "bass",
-    category: "Pop",
+    genre: "pop",
     name: "Quarter Pulse",
     template: bassQuarterPulse,
   },
@@ -237,31 +243,23 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.pop.push",
     kind: "pitched",
     role: "bass",
-    category: "Pop",
+    genre: "pop",
     name: "Push Beat",
     template: bassPushBeat,
   },
   {
-    id: "bass.pop.tumbao",
+    id: "bass.pop.synco",
     kind: "pitched",
     role: "bass",
-    category: "Pop",
-    name: "Tumbao",
-    template: bassTumbao,
-  },
-  {
-    id: "bass.pop.eighth-walk",
-    kind: "pitched",
-    role: "bass",
-    category: "Pop",
-    name: "Eighth Walk",
-    template: bassPopEighthWalk,
+    genre: "pop",
+    name: "Pop Synco",
+    template: bassPopSynco,
   },
   {
     id: "bass.disco.funk16",
     kind: "pitched",
     role: "bass",
-    category: "Disco",
+    genre: "disco",
     name: "Funk 16th",
     template: bassFunk16th,
   },
@@ -269,23 +267,15 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.disco.dotted8",
     kind: "pitched",
     role: "bass",
-    category: "Disco",
+    genre: "disco",
     name: "Dotted 8th",
     template: bassDotted8th,
-  },
-  {
-    id: "bass.disco.eighth-walk",
-    kind: "pitched",
-    role: "bass",
-    category: "Disco",
-    name: "Eighth Walk",
-    template: bassDiscoEighthWalk,
   },
   {
     id: "bass.disco.octave-pump",
     kind: "pitched",
     role: "bass",
-    category: "Disco",
+    genre: "disco",
     name: "Octave Pump",
     template: bassDiscoOctavePump,
   },
@@ -293,7 +283,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.lofi.synco",
     kind: "pitched",
     role: "bass",
-    category: "Lo-fi",
+    genre: "lofi",
     name: "Lo-fi Synco",
     template: bassLofiSynco,
   },
@@ -301,7 +291,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.lofi.dub",
     kind: "pitched",
     role: "bass",
-    category: "Lo-fi",
+    genre: "lofi",
     name: "Sparse Dub",
     template: bassSparseDub,
   },
@@ -309,7 +299,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.lofi.half-stab",
     kind: "pitched",
     role: "bass",
-    category: "Lo-fi",
+    genre: "lofi",
     name: "Half-time Stab",
     template: bassHalfStab,
   },
@@ -317,7 +307,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.lofi.pickup",
     kind: "pitched",
     role: "bass",
-    category: "Lo-fi",
+    genre: "lofi",
     name: "Pickup Roll",
     template: bassPickupRoll,
   },
@@ -325,7 +315,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.game.stab16",
     kind: "pitched",
     role: "bass",
-    category: "Game music",
+    genre: "game",
     name: "16th Stabs",
     template: bassSyncoStab16th,
   },
@@ -333,7 +323,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.game.dotted-arp",
     kind: "pitched",
     role: "bass",
-    category: "Game music",
+    genre: "game",
     name: "Dotted Arp",
     template: bassGameDottedArp,
   },
@@ -341,7 +331,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.game.fast-pulse",
     kind: "pitched",
     role: "bass",
-    category: "Game music",
+    genre: "game",
     name: "Fast Pulse",
     template: bassGameFastPulse,
   },
@@ -349,7 +339,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.game.tense-walk",
     kind: "pitched",
     role: "bass",
-    category: "Game music",
+    genre: "game",
     name: "Tense Walk",
     template: bassGameTenseWalk,
   },
@@ -357,7 +347,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.other.offbeat-skank",
     kind: "pitched",
     role: "bass",
-    category: "Other",
+    genre: "other",
     name: "Off-beat Skank",
     template: bassOffbeat,
   },
@@ -365,15 +355,23 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.other.one-drop",
     kind: "pitched",
     role: "bass",
-    category: "Other",
+    genre: "other",
     name: "One-Drop",
     template: bassOneDrop,
+  },
+  {
+    id: "bass.other.tumbao",
+    kind: "pitched",
+    role: "bass",
+    genre: "other",
+    name: "Tumbao",
+    template: bassTumbao,
   },
   {
     id: "bass.other.trap-808",
     kind: "pitched",
     role: "bass",
-    category: "Other",
+    genre: "other",
     name: "Trap 808",
     template: bassTrap808,
   },
@@ -381,7 +379,7 @@ export const bassPhrases: readonly PitchedPhrase[] = [
     id: "bass.other.dnb-stab",
     kind: "pitched",
     role: "bass",
-    category: "Other",
+    genre: "other",
     name: "DnB Stab",
     template: bassDnbStab,
   },

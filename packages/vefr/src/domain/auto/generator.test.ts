@@ -13,7 +13,7 @@ import {
 const kickPhrase: DrumPhrase = {
   id: "test.kick",
   kind: "drum",
-  category: "Test",
+  genre: "other",
   name: "Kick",
   template: {
     kick: [
@@ -27,7 +27,7 @@ const kickPhrase: DrumPhrase = {
 const hatPhrase: DrumPhrase = {
   id: "test.hat",
   kind: "drum",
-  category: "Test",
+  genre: "other",
   name: "Hat",
   template: {
     "closed-hat": [
@@ -49,12 +49,12 @@ const sparseTemplate: RhythmTemplate = [
 
 /** Build a melody phrase wrapping a given rhythm template. */
 function melodyPhrase(id: string, template: RhythmTemplate): PitchedPhrase {
-  return { id, kind: "pitched", role: "melody", category: "Test", name: id, template };
+  return { id, kind: "pitched", role: "melody", genre: "other", name: id, template };
 }
 
 /** Build a bass phrase wrapping a given rhythm template. */
 function bassPhrase(id: string, template: RhythmTemplate): PitchedPhrase {
-  return { id, kind: "pitched", role: "bass", category: "Test", name: id, template };
+  return { id, kind: "pitched", role: "bass", genre: "other", name: id, template };
 }
 
 /** Narrow a {@link MaterializedPhrase} to the drum variant for test assertions. */

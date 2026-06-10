@@ -5,6 +5,10 @@ const V = 0.75;
 /** Softer velocity used for ghost / answer notes to highlight the main hits. */
 const G = 0.6;
 
+// The auto generator fills pitch in at materialize time, so a melody phrase's
+// identity is entirely rhythmic — each entry below earns its slot by having a
+// rhythm you could clap back after one listen.
+
 // --- Techno -----------------------------------------------------------------
 
 /** Acid lead — dense 16th line with a couple of drop-outs. */
@@ -26,13 +30,6 @@ const melodyEighth: RhythmTemplate = [
 const melodySynco: RhythmTemplate = [
   V, 0, 0, 0,  V, 0, V, 0,  V, 0, 0, V,  0, 0, V, 0,
   V, 0, 0, 0,  V, 0, V, 0,  V, 0, 0, V,  0, 0, V, V,
-];
-
-/** 16th arpeggio — three-of-four sixteenths repeating; an arpeggiator-like pattern. */
-// prettier-ignore
-const melodyTechno16thArp: RhythmTemplate = [
-  V, V, V, 0,  V, V, V, 0,  V, V, V, 0,  V, V, V, 0,
-  V, V, V, 0,  V, V, V, 0,  V, V, V, 0,  V, V, V, 0,
 ];
 
 // --- Pop --------------------------------------------------------------------
@@ -104,20 +101,6 @@ const melodyMinimal: RhythmTemplate = [
   0, 0, 0, 0,  V, 0, 0, 0,  0, 0, 0, 0,  0, 0, V, V,
 ];
 
-/** Pointillist — six widely-spaced single notes drifting across the phrase. */
-// prettier-ignore
-const melodyPointillist: RhythmTemplate = [
-  V, 0, 0, 0,  0, 0, V, 0,  0, 0, V, 0,  0, 0, 0, 0,
-  0, 0, 0, 0,  V, 0, 0, 0,  0, 0, V, 0,  0, 0, V, 0,
-];
-
-/** Three-feel against four — every-3-sixteenths placement. */
-// prettier-ignore
-const melodyThreeFeel: RhythmTemplate = [
-  V, 0, 0, V,  0, 0, V, 0,  0, V, 0, 0,  V, 0, 0, V,
-  0, 0, V, 0,  0, V, 0, 0,  V, 0, 0, V,  0, 0, V, 0,
-];
-
 /** Dusty pair — paired sixteenths trailed by ghost answers for a hazy lo-fi feel. */
 // prettier-ignore
 const melodyLofiDustyPair: RhythmTemplate = [
@@ -125,7 +108,14 @@ const melodyLofiDustyPair: RhythmTemplate = [
   V, G, 0, 0,  0, 0, V, G,  0, 0, V, 0,  V, 0, G, 0,
 ];
 
-// --- Game music -------------------------------------------------------------
+/** Lazy answer — a short statement, a beat of air, then a ghost-led reply that lands late. */
+// prettier-ignore
+const melodyLofiLazyAnswer: RhythmTemplate = [
+  V, 0, 0, G,  0, 0, V, 0,  0, G, 0, 0,  V, 0, 0, 0,
+  V, 0, 0, G,  0, 0, V, 0,  0, 0, G, 0,  V, 0, G, 0,
+];
+
+// --- Game -------------------------------------------------------------------
 
 /** 8 quarter-note hits — the simplest steady pulse. */
 // prettier-ignore
@@ -155,6 +145,13 @@ const melodyGameFanfare: RhythmTemplate = [
   V, 0, V, 0,  V, 0, V, 0,  0, 0, 0, 0,  V, V, V, V,
 ];
 
+/** Chip arp — three-of-four sixteenths repeating; an arpeggiator-like chiptune pattern. */
+// prettier-ignore
+const melodyGameChipArp: RhythmTemplate = [
+  V, V, V, 0,  V, V, V, 0,  V, V, V, 0,  V, V, V, 0,
+  V, V, V, 0,  V, V, V, 0,  V, V, V, 0,  V, V, V, 0,
+];
+
 // --- Other (rhythm-feel patterns that don't fit the five genres) ------------
 
 /** Triplet feel — uneven groupings of three sixteenths leaving space. */
@@ -164,6 +161,13 @@ const melodyTriplet: RhythmTemplate = [
   V, 0, V, 0,  V, 0, 0, 0,  V, 0, V, 0,  0, 0, 0, 0,
 ];
 
+/** Three-feel against four — every-3-sixteenths placement, a rolling cross-rhythm. */
+// prettier-ignore
+const melodyThreeFeel: RhythmTemplate = [
+  V, 0, 0, V,  0, 0, V, 0,  0, V, 0, 0,  V, 0, 0, V,
+  0, 0, V, 0,  0, V, 0, 0,  V, 0, 0, V,  0, 0, V, 0,
+];
+
 /** Call & response — a phrase, an answer with the same rhythm. */
 // prettier-ignore
 const melodyCallResponse: RhythmTemplate = [
@@ -171,18 +175,11 @@ const melodyCallResponse: RhythmTemplate = [
   V, 0, 0, 0,  V, 0, 0, 0,  0, 0, V, V,  0, 0, 0, 0,
 ];
 
-/** Random feel — looser, less grid-aligned line; intentionally jagged. */
+/** Scatter — looser, less grid-aligned line; intentionally jagged. */
 // prettier-ignore
-const melodyRandom: RhythmTemplate = [
+const melodyScatter: RhythmTemplate = [
   V, 0, 0, 0,  V, 0, V, V,  0, 0, 0, 0,  V, 0, 0, 0,
   0, 0, V, 0,  V, 0, 0, 0,  V, V, 0, 0,  0, 0, V, 0,
-];
-
-/** Irregular — asymmetric placements that resist a fixed beat reading. */
-// prettier-ignore
-const melodyIrregular: RhythmTemplate = [
-  V, 0, V, 0,  0, 0, 0, V,  0, V, 0, 0,  0, 0, V, 0,
-  V, 0, 0, 0,  0, V, 0, V,  0, 0, 0, V,  0, 0, 0, 0,
 ];
 
 // --- registry ----------------------------------------------------------------
@@ -193,7 +190,7 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.techno.acid-lead",
     kind: "pitched",
     role: "melody",
-    category: "Techno",
+    genre: "techno",
     name: "Acid Lead",
     template: melodyAcid,
   },
@@ -201,7 +198,7 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.techno.eighth-stream",
     kind: "pitched",
     role: "melody",
-    category: "Techno",
+    genre: "techno",
     name: "Eighth Stream",
     template: melodyEighth,
   },
@@ -209,23 +206,15 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.techno.synco-stab",
     kind: "pitched",
     role: "melody",
-    category: "Techno",
+    genre: "techno",
     name: "Syncopation",
     template: melodySynco,
-  },
-  {
-    id: "melody.techno.16th-arp",
-    kind: "pitched",
-    role: "melody",
-    category: "Techno",
-    name: "16th Arp",
-    template: melodyTechno16thArp,
   },
   {
     id: "melody.pop.hook",
     kind: "pitched",
     role: "melody",
-    category: "Pop",
+    genre: "pop",
     name: "Pair Hook",
     template: melodyPair,
   },
@@ -233,7 +222,7 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.pop.backbeat",
     kind: "pitched",
     role: "melody",
-    category: "Pop",
+    genre: "pop",
     name: "Backbeat",
     template: melodyBackbeat,
   },
@@ -241,7 +230,7 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.pop.sparse",
     kind: "pitched",
     role: "melody",
-    category: "Pop",
+    genre: "pop",
     name: "Sparse",
     template: melodySparse,
   },
@@ -249,7 +238,7 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.pop.chorus-stab",
     kind: "pitched",
     role: "melody",
-    category: "Pop",
+    genre: "pop",
     name: "Chorus Stab",
     template: melodyPopChorusStab,
   },
@@ -257,7 +246,7 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.disco.alternating",
     kind: "pitched",
     role: "melody",
-    category: "Disco",
+    genre: "disco",
     name: "Alternating",
     template: melodyAlternating,
   },
@@ -265,7 +254,7 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.disco.delayed",
     kind: "pitched",
     role: "melody",
-    category: "Disco",
+    genre: "disco",
     name: "Delayed Entry",
     template: melodyDelayed,
   },
@@ -273,7 +262,7 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.disco.front-loaded",
     kind: "pitched",
     role: "melody",
-    category: "Disco",
+    genre: "disco",
     name: "Front-loaded",
     template: melodyFrontLoaded,
   },
@@ -281,7 +270,7 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.disco.16th-stab",
     kind: "pitched",
     role: "melody",
-    category: "Disco",
+    genre: "disco",
     name: "16th Stab",
     template: melodyDisco16thStab,
   },
@@ -289,39 +278,31 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.lofi.minimal",
     kind: "pitched",
     role: "melody",
-    category: "Lo-fi",
+    genre: "lofi",
     name: "Minimal",
     template: melodyMinimal,
-  },
-  {
-    id: "melody.lofi.pointillist",
-    kind: "pitched",
-    role: "melody",
-    category: "Lo-fi",
-    name: "Pointillist",
-    template: melodyPointillist,
-  },
-  {
-    id: "melody.lofi.three-feel",
-    kind: "pitched",
-    role: "melody",
-    category: "Lo-fi",
-    name: "Three Feel",
-    template: melodyThreeFeel,
   },
   {
     id: "melody.lofi.dusty-pair",
     kind: "pitched",
     role: "melody",
-    category: "Lo-fi",
+    genre: "lofi",
     name: "Dusty Pair",
     template: melodyLofiDustyPair,
+  },
+  {
+    id: "melody.lofi.lazy-answer",
+    kind: "pitched",
+    role: "melody",
+    genre: "lofi",
+    name: "Lazy Answer",
+    template: melodyLofiLazyAnswer,
   },
   {
     id: "melody.game.pulse-quarter",
     kind: "pitched",
     role: "melody",
-    category: "Game music",
+    genre: "game",
     name: "Quarter Pulse",
     template: melodyQuarter,
   },
@@ -329,7 +310,7 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.game.double-tap",
     kind: "pitched",
     role: "melody",
-    category: "Game music",
+    genre: "game",
     name: "Double Tap",
     template: melodyDoubleTap,
   },
@@ -337,7 +318,7 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.game.burst",
     kind: "pitched",
     role: "melody",
-    category: "Game music",
+    genre: "game",
     name: "Burst",
     template: melodyBurst,
   },
@@ -345,40 +326,48 @@ export const melodyPhrases: readonly PitchedPhrase[] = [
     id: "melody.game.fanfare",
     kind: "pitched",
     role: "melody",
-    category: "Game music",
+    genre: "game",
     name: "Fanfare",
     template: melodyGameFanfare,
+  },
+  {
+    id: "melody.game.chip-arp",
+    kind: "pitched",
+    role: "melody",
+    genre: "game",
+    name: "Chip Arp",
+    template: melodyGameChipArp,
   },
   {
     id: "melody.other.triplet-feel",
     kind: "pitched",
     role: "melody",
-    category: "Other",
+    genre: "other",
     name: "Triplet Feel",
     template: melodyTriplet,
+  },
+  {
+    id: "melody.other.three-feel",
+    kind: "pitched",
+    role: "melody",
+    genre: "other",
+    name: "Three Feel",
+    template: melodyThreeFeel,
   },
   {
     id: "melody.other.call-response",
     kind: "pitched",
     role: "melody",
-    category: "Other",
+    genre: "other",
     name: "Call & Response",
     template: melodyCallResponse,
   },
   {
-    id: "melody.other.random",
+    id: "melody.other.scatter",
     kind: "pitched",
     role: "melody",
-    category: "Other",
-    name: "Random Feel",
-    template: melodyRandom,
-  },
-  {
-    id: "melody.other.irregular",
-    kind: "pitched",
-    role: "melody",
-    category: "Other",
-    name: "Irregular",
-    template: melodyIrregular,
+    genre: "other",
+    name: "Scatter",
+    template: melodyScatter,
   },
 ];

@@ -113,6 +113,15 @@ details[open] > .phrasesSummary::before {
   padding: 0 0.3rem;
 }
 
+/* Genre-level select-all toggle inside the legend. Shares the legend's
+ * typography; only adds the checkbox + label row layout. */
+.phraseGroupToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
 .phraseList {
   display: flex;
   flex-wrap: wrap;
