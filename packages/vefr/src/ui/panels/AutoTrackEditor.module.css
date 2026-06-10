@@ -138,6 +138,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem 0.7rem;
+  /* Indent the rows past the genre toggle in the legend so the group header
+   * clearly owns its phrases and the two checkbox columns don't blur. */
+  padding-left: 1rem;
 }
 
 .phraseRow {
