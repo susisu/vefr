@@ -10,6 +10,7 @@ import type { ImportError } from "../../api/project.js";
 import { LED, Tooltip } from "../components/index.js";
 import { useControlApi } from "../context.js";
 import { useRelayConnected } from "../hooks.js";
+import { describeImportError } from "../importError.js";
 import styles from "./TopBezel.module.css";
 
 /** Filename used for project exports — namespaced and timestamped. */
@@ -168,30 +169,9 @@ function ImportErrors({ errors }: { errors: readonly ImportError[] }): ReactElem
       <strong>Import failed:</strong>
       <ul>
         {errors.map((err, i) => (
-          <li key={i}>{describe(err)}</li>
+          <li key={i}>{describeImportError(err)}</li>
         ))}
       </ul>
     </div>
   );
-}
-
-/** Format an ImportError into a one-line user-facing string. */
-function describe(err: ImportError): string {
-  switch (err.code) {
-    case "not-an-object":
-      return "input is not a JSON object";
-    case "unknown-schema-version":
-      return `unknown schemaVersion: ${String(err.got)}`;
-    case "shape":
-      return `${err.path}: ${err.message}`;
-    case "missing-phrase":
-      return `track ${err.trackName} references unknown phrase: ${err.phraseId}`;
-    case "duplicate-id":
-      return `duplicate track id: ${err.id}`;
-    case "duplicate-name":
-      return `duplicate track name: ${err.name}`;
-    default:
-      err satisfies never;
-      return JSON.stringify(err);
-  }
 }

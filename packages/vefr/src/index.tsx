@@ -1,8 +1,10 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { InProcessControlApi } from "./api/inprocess.js";
+import { parseProject } from "./api/project.js";
 import {
   debounceAutosave,
+  deleteDatabase,
   isIndexedDbAvailable,
   loadAutosave,
   openDatabase,
@@ -16,6 +18,8 @@ import { WebAudioSoundOutput } from "./sound/webaudio.js";
 import type { RelayClientHandle } from "./api/relay-client.js";
 import { App } from "./ui/App.js";
 import { ControlApiProvider, RelayProvider } from "./ui/context.js";
+import { describeImportError } from "./ui/importError.js";
+import { RecoveryScreen } from "./ui/RecoveryScreen.js";
 
 /**
  * Default engine state used on every fresh boot when no autosave is found.
@@ -120,35 +124,73 @@ async function bootstrap(): Promise<void> {
     });
   }
 
+  const root = createRoot(container);
+  /** Mount the full app UI. */
+  const renderApp = (): void => {
+    root.render(
+      <StrictMode>
+        <ControlApiProvider api={api}>
+          <RelayProvider handle={relayHandle}>
+            <App />
+          </RelayProvider>
+        </ControlApiProvider>
+      </StrictMode>,
+    );
+  };
+
   // Restore the most recent autosave (if any) and wire up debounced autosave.
+  // Stored rows are untrusted (the persisted shape can change between app
+  // versions), so re-validate through parseProject before applying. Any
+  // failure on this path — open blocked (file://, private mode, version
+  // downgrade), read error, validation error — lands on the recovery screen,
+  // which offers an on-screen erase-and-reload so a wedged autosave can be
+  // cleared without devtools (the only escape hatch on mobile browsers).
   if (isIndexedDbAvailable()) {
+    let db: IDBDatabase | undefined;
     try {
-      const db = await openDatabase();
+      db = await openDatabase();
       const restored = await loadAutosave(db);
-      if (restored) {
-        api.project.load(restored);
+      if (restored !== undefined) {
+        const parsed = parseProject(restored);
+        if (!parsed.ok) {
+          throw new Error(parsed.errors.map(describeImportError).join("\n"));
+        }
+        api.project.load(parsed.value);
       }
       const save = debounceAutosave(db);
       api.project.onAnyChange(() => {
         save(api.project.snapshot());
       });
     } catch (err) {
-      // IndexedDB might be blocked (file://, private mode); skip autosave and
-      // run as an ephemeral session.
       // eslint-disable-next-line no-console
-      console.warn("IndexedDB is not available", err);
+      console.warn("failed to restore the autosave", err);
+      const openDb = db;
+      root.render(
+        <StrictMode>
+          <RecoveryScreen
+            detail={err instanceof Error ? err.message : String(err)}
+            onErase={() => {
+              openDb?.close();
+              deleteDatabase()
+                .catch((e: unknown) => {
+                  // Reload regardless: if erasing failed the recovery screen
+                  // simply comes back, which is the sane retry loop.
+                  // eslint-disable-next-line no-console
+                  console.warn("failed to erase the database", e);
+                })
+                .finally(() => {
+                  location.reload();
+                });
+            }}
+            onContinue={renderApp}
+          />
+        </StrictMode>,
+      );
+      return;
     }
   }
 
-  createRoot(container).render(
-    <StrictMode>
-      <ControlApiProvider api={api}>
-        <RelayProvider handle={relayHandle}>
-          <App />
-        </RelayProvider>
-      </ControlApiProvider>
-    </StrictMode>,
-  );
+  renderApp();
 }
 
 bootstrap().catch((err: unknown) => {

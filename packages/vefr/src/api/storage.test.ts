@@ -3,7 +3,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { TICKS_PER_BEAT } from "../domain/timing.js";
 import type { DrumTrack } from "../domain/track.js";
 import { CURRENT_SCHEMA_VERSION, type Project } from "./project.js";
-import { AUTOSAVE_ID, loadAutosave, openDatabase, saveAutosave } from "./storage.js";
+import {
+  AUTOSAVE_ID,
+  deleteDatabase,
+  loadAutosave,
+  openDatabase,
+  saveAutosave,
+} from "./storage.js";
 
 /** Build a tiny project for round-tripping through the autosave store. */
 function makeProject(): Project {
@@ -64,5 +70,16 @@ describe("storage", () => {
 
   it("uses a stable AUTOSAVE_ID for the canonical slot", () => {
     expect(AUTOSAVE_ID).toBe("autosave");
+  });
+
+  it("deleteDatabase erases the stored autosave", async () => {
+    const db = await openDatabase();
+    await saveAutosave(db, makeProject());
+    db.close();
+    await deleteDatabase();
+    const fresh = await openDatabase();
+    const restored = await loadAutosave(fresh);
+    expect(restored).toBeUndefined();
+    fresh.close();
   });
 });

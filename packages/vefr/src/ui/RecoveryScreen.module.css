@@ -1,0 +1,49 @@
+/* Full-chassis centering: the recovery dialog is the only panel on screen. */
+.screen {
+  display: grid;
+  place-items: center;
+}
+
+/* Cap the width so the panel reads as a dialog, not a full-width strip. */
+.dialog {
+  width: 100%;
+  max-width: 26rem;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--gap) * 2);
+}
+
+.message {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* Inset monospace readout for the failure cause(s). */
+.detail {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  background: var(--inset);
+  border: 1px solid var(--inset-rim);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--fg-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 9rem;
+  overflow-y: auto;
+}
+
+.actions {
+  display: flex;
+  gap: var(--gap);
+}
+
+.note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--fg-dim);
+}

@@ -111,6 +111,27 @@ async function del(db: IDBDatabase, id: string): Promise<void> {
   });
 }
 
+/**
+ * Delete the whole vefr database. This is the on-screen self-repair path for
+ * an autosave that fails to restore: close any open connection, call this,
+ * then reload. A delete blocked by another open connection (e.g. a second
+ * tab) is treated as success — it completes once that connection closes.
+ */
+export async function deleteDatabase(factory: IDBFactory = indexedDB): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const req = factory.deleteDatabase(DB_NAME);
+    req.onsuccess = (): void => {
+      resolve();
+    };
+    req.onblocked = (): void => {
+      resolve();
+    };
+    req.onerror = (): void => {
+      reject(req.error ?? new Error("delete failed"));
+    };
+  });
+}
+
 /** Whether `indexedDB` is usable in the current environment (e.g. some `file://` setups disable it). */
 export function isIndexedDbAvailable(): boolean {
   try {
